@@ -87,7 +87,7 @@ const HOW_IT_WORKS = [
   { title: 'Apply with confidence', detail: 'Upload your documents and get a pre-filled application summary.' },
 ]
 
-export default function LandingPage({ onStart }) {
+export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance, onOpenAdmin }) {
   const [helpOpen, setHelpOpen] = useState(false)
 
   return (
@@ -115,7 +115,19 @@ export default function LandingPage({ onStart }) {
           ))}
         </div>
         <div style={styles.navActions}>
-          <span style={styles.langPill}><GlobeIcon size={13} /> English</span>
+          {onOpenAdmin && (
+            <button
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px',
+                background: 'rgba(20,83,45,0.08)', color: 'var(--color-forest)', border: '1px solid rgba(20,83,45,0.2)',
+                borderRadius: '999px', padding: '6px 12px', fontWeight: 700, cursor: 'pointer',
+              }}
+              onClick={onOpenAdmin}
+            >
+              🏛️ GovTech Portal
+            </button>
+          )}
+          <span style={styles.langPill}><GlobeIcon size={13} /> English / हिन्दी</span>
           <button className="ym-cta" style={styles.startNowBtn} onClick={() => scrollToSection('popular')}>
             Popular Schemes <ArrowRightIcon size={14} color="var(--color-cream)" />
           </button>
@@ -124,20 +136,44 @@ export default function LandingPage({ onStart }) {
 
       <main style={styles.hero}>
         <div style={styles.heroText}>
-          <span style={styles.eyebrowPill}>Govt. Schemes · One Chat · For You</span>
+          <span style={styles.eyebrowPill}>MPOnline GovTech · One Chat · For Citizens</span>
           <h1 style={styles.headline}>
             Your dreams.<br />Our schemes.
           </h1>
           <p style={styles.subtext}>
             Yojana Mitra helps you discover government schemes that match your life —
-            with plain-language explanations, the documents you'll need, and exactly
-            how to apply, all in the language you speak at home.
+            with plain-language explanations, instant eligibility scoring, AI grievance filing
+            under CM Helpline 181, and official printable kiosk receipts.
           </p>
           <div style={styles.heroActions}>
             <button className="ym-cta" style={styles.primaryCta} onClick={() => onStart()}>
               Find My Schemes <ArrowRightIcon size={15} color="var(--color-cream)" />
             </button>
-            <a href="#how-it-works" style={styles.secondaryCta} onClick={(e) => { e.preventDefault(); scrollToSection('how-it-works') }}>How it works</a>
+            {onOpenScorecard && (
+              <button
+                className="ym-cta"
+                style={{
+                  ...styles.primaryCta,
+                  background: 'var(--color-marigold-dark)',
+                  boxShadow: '0 6px 18px rgba(201, 127, 30, 0.28)',
+                }}
+                onClick={onOpenScorecard}
+              >
+                📊 Check Eligibility Scorecard
+              </button>
+            )}
+            {onOpenGrievance && (
+              <button
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '13px 20px',
+                  borderRadius: '999px', border: '1.5px solid var(--color-forest)', background: '#fff',
+                  color: 'var(--color-forest)', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer',
+                }}
+                onClick={onOpenGrievance}
+              >
+                🚨 CM Helpline 181
+              </button>
+            )}
           </div>
           <div style={styles.featureRow}>
             {FEATURES.map((f) => (
@@ -247,6 +283,7 @@ export default function LandingPage({ onStart }) {
           ))}
         </div>
       </section>
+
       <footer id="about" style={styles.footer}>
         <div style={styles.footerRow}>
           <div style={styles.footerBrand}>
@@ -254,7 +291,7 @@ export default function LandingPage({ onStart }) {
             <span style={styles.footerBrandText}>Yojana Mitra</span>
           </div>
           <p style={styles.footerText}>
-            Currently covering Madhya Pradesh state schemes and major central government
+            Covering Madhya Pradesh state schemes and major central government
             schemes. Built for citizens who deserve a simpler way to access what they're
             entitled to.
           </p>
@@ -342,7 +379,7 @@ const styles = {
     lineHeight: 1.1, margin: '0 0 18px', color: 'var(--color-forest)',
   },
   subtext: { fontSize: '16px', lineHeight: 1.65, color: 'var(--color-charcoal-soft)', maxWidth: '480px', margin: '0 0 26px' },
-  heroActions: { display: 'flex', alignItems: 'center', gap: '22px', marginBottom: '36px', flexWrap: 'wrap' },
+  heroActions: { display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '36px', flexWrap: 'wrap' },
   primaryCta: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '15px 26px',
     fontSize: '15.5px', fontWeight: 700, fontFamily: 'var(--font-body)', color: 'var(--color-cream)',
