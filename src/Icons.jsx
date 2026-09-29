@@ -171,3 +171,39 @@ export function SearchIcon({ size = 16, color = 'currentColor' }) {
     </svg>
   )
 }
+
+export function ShieldAlertIcon({ size = 17, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2.5 L19.5 5.8 V11.5 C19.5 16.5 16.3 20.8 12 22 C7.7 20.8 4.5 16.5 4.5 11.5 V5.8 L12 2.5 Z" stroke={color} strokeWidth="1.7" strokeLinejoin="round" fill="none" />
+      <line x1="12" y1="8" x2="12" y2="12.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="12" cy="15.5" r="0.9" fill={color} />
+    </svg>
+  )
+}
+
+export function CalculatorIcon({ size = 17, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="5" y="3" width="14" height="18" rx="2.5" stroke={color} strokeWidth="1.7" />
+      <rect x="8" y="6" width="8" height="3" rx="1" stroke={color} strokeWidth="1.2" />
+      <circle cx="8.5" cy="13" r="1" fill={color} />
+      <circle cx="12" cy="13" r="1" fill={color} />
+      <circle cx="15.5" cy="13" r="1" fill={color} />
+      <circle cx="8.5" cy="17" r="1" fill={color} />
+      <circle cx="12" cy="17" r="1" fill={color} />
+      <circle cx="15.5" cy="17" r="1" fill={color} />
+    </svg>
+  )
+}
+
+export function BarChartIcon({ size = 17, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <line x1="4" y1="20" x2="20" y2="20" stroke={color} strokeWidth="1.8" strokeLinecap="round" />
+      <rect x="6" y="12" width="3" height="8" rx="1" fill={color} />
+      <rect x="11" y="8" width="3" height="12" rx="1" fill={color} />
+      <rect x="16" y="4" width="3" height="16" rx="1" fill={color} />
+    </svg>
+  )
+}
