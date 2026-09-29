@@ -9,14 +9,14 @@ import Logo from './Logo'
 import {
   MicIcon, StopIcon, SpeakerOnIcon, SpeakerOffIcon, MenuIcon, CloseIcon, PlusChatIcon,
   GridIcon, DocumentIcon, BookmarkIcon, UserCircleIcon, SettingsGearIcon, GlobeIcon,
-  SendIcon, SearchIcon,
+  SendIcon, SearchIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon,
 } from './Icons'
 import ApplicationForm from './ApplicationForm'
 import LandingPage from './LandingPage'
+import GrievanceRedressal from './GrievanceRedressal'
+import EligibilityScorecard from './EligibilityScorecard'
+import AdminDashboard from './AdminDashboard'
 
-// Voice input/output languages. Web Speech API support for Marathi and
-// Tamil depends on the browser/OS having those voices installed, but the
-// language codes themselves are standard BCP-47 tags it understands.
 const VOICE_LANGUAGES = [
   { code: 'en-IN', label: 'English' },
   { code: 'hi-IN', label: 'हिन्दी' },
@@ -107,9 +107,6 @@ function MessageContent({ text }) {
   return <>{blocks}</>
 }
 
-// Lightweight keyword matching to guess which scheme categories are
-// relevant based on the conversation so far - just narrows Gemini's
-// attention to a smaller, clearly-labeled "likely relevant" subset.
 const CATEGORY_KEYWORDS = {
   farmer: ['farmer', 'farming', 'kisan', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet'],
   student: ['student', 'scholarship', 'school', 'college', 'class ', 'study', 'studying', 'graduate', 'education'],
@@ -160,9 +157,6 @@ HOW TO RESPOND:
 6. Stay strictly in scope: you only help with Indian government schemes and the person's eligibility for them. If asked something unrelated (celebrities, general trivia, coding help, other countries, etc.), do NOT answer it - politely say that's outside what you help with, briefly state your actual purpose, and ask if they'd like help finding a scheme instead. Never answer the off-topic question itself, even partially.`
 }
 
-// Static UI text (greeting, status labels, input hints) in each supported
-// language - separate from the Gemini system prompt, which already handles
-// matching whatever language the person actually types.
 const UI_TEXT = {
   'en-IN': {
     welcome: "Namaste! I'm Yojana Mitra. Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes you may be eligible for.",
@@ -209,9 +203,6 @@ function Welcome(lang) {
   }
 }
 
-// Eligibility criteria / documents required can come back from the database
-// as an array, a plain object, or a single string - this renders whichever
-// shape shows up as something readable, without needing a network call.
 function FormattedField({ value }) {
   if (value === null || value === undefined || value === '') {
     return <span style={{ color: 'var(--color-charcoal-soft)' }}>Not specified</span>
@@ -270,6 +261,10 @@ export default function App() {
   const [profile, setProfile] = useState(() => getProfile())
   const [profileForm, setProfileForm] = useState(() => getProfile() || { name: '', age: '', occupation: '', location: '' })
   const [showSettings, setShowSettings] = useState(false)
+  const [showScorecard, setShowScorecard] = useState(false)
+  const [showGrievance, setShowGrievance] = useState(false)
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false)
+  const [applySchemeId, setApplySchemeId] = useState(null)
   const bottomRef = useRef(null)
 
   function showToast(message) {
@@ -286,8 +281,6 @@ export default function App() {
   useEffect(() => {
     fetchAllSchemes().then(({ schemes, fromCache }) => {
       if (schemes.length === 0) {
-        // First attempt came back empty (likely a transient network hiccup) -
-        // automatically retry once after a short delay before giving up.
         setTimeout(() => {
           fetchAllSchemes().then((retryResult) => {
             setSchemes(retryResult.schemes)
@@ -315,7 +308,6 @@ export default function App() {
     const unsubscribe = subscribeToConnectionStatus((online) => {
       setIsOnline(online)
       if (online) {
-        // Reconnected - fetch fresh scheme data in the background
         fetchAllSchemes().then(({ schemes, fromCache }) => {
           setSchemes(schemes)
           setUsingCachedSchemes(fromCache)
@@ -338,10 +330,6 @@ export default function App() {
     return () => document.removeEventListener('click', handleClickOutside)
   }, [showLangMenu])
 
-  // If the person switches language before the conversation has really
-  // started (still just showing the initial greeting), update that greeting
-  // to match - so picking Hindi/Marathi/Tamil actually changes what's on
-  // screen, not just the voice.
   useEffect(() => {
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].role === 'assistant') {
@@ -351,16 +339,12 @@ export default function App() {
     })
   }, [voiceLang])
 
-  // If the user started the chat from a landing-page category card (or a
-  // quick chip), fire off that opener as their first message as soon as
-  // the chat is up and the scheme list has loaded.
   useEffect(() => {
     if (started && pendingOpener && !loadingSchemes) {
       const opener = pendingOpener
       setPendingOpener(null)
       handleSend(opener)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, pendingOpener, loadingSchemes])
 
   async function handleSend(overrideText) {
@@ -501,7 +485,38 @@ export default function App() {
   }, [])
 
   if (!started) {
-    return <LandingPage onStart={handleStart} />
+    return (
+      <>
+        <LandingPage
+          onStart={handleStart}
+          onOpenScorecard={() => setShowScorecard(true)}
+          onOpenGrievance={() => setShowGrievance(true)}
+          onOpenAdmin={() => setShowAdminDashboard(true)}
+        />
+        {showScorecard && (
+          <EligibilityScorecard
+            defaultProfile={profile}
+            onClose={() => setShowScorecard(false)}
+            onSelectSchemeToApply={(scheme) => {
+              setApplySchemeId(scheme.id)
+              setStarted(true)
+              setShowApplyForm(true)
+            }}
+          />
+        )}
+        {showGrievance && (
+          <GrievanceRedressal
+            defaultProfile={profile}
+            onClose={() => setShowGrievance(false)}
+          />
+        )}
+        {showAdminDashboard && (
+          <AdminDashboard
+            onClose={() => setShowAdminDashboard(false)}
+          />
+        )}
+      </>
+    )
   }
 
   const filteredSchemes = schemes.filter((s) =>
@@ -535,6 +550,12 @@ export default function App() {
         <button className="ym-nav-item" onClick={() => { setShowBrowseSchemes(true); setIsMobileNavOpen(false) }}>
           <GridIcon size={16} /> Schemes
         </button>
+        <button className="ym-nav-item" onClick={() => { setShowScorecard(true); setIsMobileNavOpen(false) }}>
+          <CalculatorIcon size={16} /> Eligibility Scorecard
+        </button>
+        <button className="ym-nav-item" onClick={() => { setShowGrievance(true); setIsMobileNavOpen(false) }}>
+          <ShieldAlertIcon size={16} /> CM Helpline 181
+        </button>
         <button className="ym-nav-item" onClick={() => { setShowApplyForm(true); setIsMobileNavOpen(false) }}>
           <DocumentIcon size={16} /> My Applications
         </button>
@@ -542,7 +563,10 @@ export default function App() {
           <BookmarkIcon size={16} /> Saved Schemes
         </button>
 
-        <div style={styles.sidebarSectionLabel}>Account</div>
+        <div style={styles.sidebarSectionLabel}>Governance & Account</div>
+        <button className="ym-nav-item" onClick={() => { setShowAdminDashboard(true); setIsMobileNavOpen(false) }}>
+          <BarChartIcon size={16} /> GovTech Portal
+        </button>
         <button className="ym-nav-item" onClick={() => { setProfileForm(profile || { name: '', age: '', occupation: '', location: '' }); setShowProfile(true); setIsMobileNavOpen(false) }}>
           <UserCircleIcon size={16} /> Profile
         </button>
@@ -589,6 +613,27 @@ export default function App() {
             </div>
           </div>
           <div style={styles.headerActions}>
+            <button
+              className="ym-icon-btn"
+              onClick={() => setShowScorecard(true)}
+              title="Citizen Eligibility Scorecard"
+            >
+              <CalculatorIcon size={13} /> Scorecard
+            </button>
+            <button
+              className="ym-icon-btn"
+              onClick={() => setShowGrievance(true)}
+              title="CM Helpline 181 Grievance"
+            >
+              <ShieldAlertIcon size={13} /> 181 Helpline
+            </button>
+            <button
+              className="ym-icon-btn"
+              onClick={() => setShowAdminDashboard(true)}
+              title="GovTech Intelligence & Admin Portal"
+            >
+              <BarChartIcon size={13} /> GovTech
+            </button>
             {isVoiceInputSupported && (
               <div style={styles.langMenuWrap} onClick={(e) => e.stopPropagation()}>
                 <button
@@ -761,7 +806,36 @@ export default function App() {
       </aside>
 
       {showApplyForm && (
-        <ApplicationForm schemes={schemes} onClose={() => setShowApplyForm(false)} onRetryLoadSchemes={retryLoadSchemes} />
+        <ApplicationForm
+          schemes={schemes}
+          initialSchemeId={applySchemeId}
+          onClose={() => { setShowApplyForm(false); setApplySchemeId(null) }}
+          onRetryLoadSchemes={retryLoadSchemes}
+        />
+      )}
+
+      {showScorecard && (
+        <EligibilityScorecard
+          defaultProfile={profile}
+          onClose={() => setShowScorecard(false)}
+          onSelectSchemeToApply={(scheme) => {
+            setApplySchemeId(scheme.id)
+            setShowApplyForm(true)
+          }}
+        />
+      )}
+
+      {showGrievance && (
+        <GrievanceRedressal
+          defaultProfile={profile}
+          onClose={() => setShowGrievance(false)}
+        />
+      )}
+
+      {showAdminDashboard && (
+        <AdminDashboard
+          onClose={() => setShowAdminDashboard(false)}
+        />
       )}
 
       {showBrowseSchemes && (
@@ -815,8 +889,8 @@ export default function App() {
             </div>
             <div style={styles.browseList}>
               {savedSchemesList.length === 0 ? (
-                <p style={{ fontSize: '13px', color: 'var(--color-charcoal-soft)', padding: '12px 0' }}>
-                  Nothing saved yet — open any scheme and tap "Save" to keep it here for later, even offline.
+                <p style={{ fontSize: '13px', color: 'var(--color-charcoal-soft)', padding: '16px 0', textAlign: 'center' }}>
+                  No saved schemes yet. Tap the bookmark icon on any scheme to save it for quick offline reference.
                 </p>
               ) : (
                 savedSchemesList.map((s) => (
@@ -825,6 +899,7 @@ export default function App() {
                     <span>
                       <span style={styles.schemeRowName}>{s.scheme_name}</span>
                       <span style={styles.schemeRowCategory}>{s.category} · {s.level}</span>
+                      {s.benefits && <span style={styles.browseRowBenefit}>{s.benefits}</span>}
                     </span>
                   </button>
                 ))
@@ -838,60 +913,64 @@ export default function App() {
         <div style={styles.overlay} onClick={() => setViewingScheme(null)}>
           <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.browseHeader}>
-              <h2 style={styles.browseTitle}>{viewingScheme.scheme_name}</h2>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <button
-                  style={styles.saveIconBtn}
-                  onClick={() => handleToggleSaved(viewingScheme)}
-                  title={savedSchemeIds.includes(viewingScheme.id) ? 'Remove from saved' : 'Save for later'}
-                >
-                  <BookmarkIcon size={18} color="var(--color-forest)" filled={savedSchemeIds.includes(viewingScheme.id)} />
-                </button>
-                <button style={styles.browseCloseBtn} onClick={() => setViewingScheme(null)}>
-                  <CloseIcon size={17} />
-                </button>
+              <div>
+                <h2 style={styles.browseTitle}>{viewingScheme.scheme_name}</h2>
+                {viewingScheme.scheme_name_hindi && (
+                  <div style={styles.detailHindiTitle}>{viewingScheme.scheme_name_hindi}</div>
+                )}
+                <span style={styles.detailBadge}>{viewingScheme.category} · {viewingScheme.level}</span>
               </div>
+              <button style={styles.browseCloseBtn} onClick={() => setViewingScheme(null)}>
+                <CloseIcon size={17} />
+              </button>
             </div>
             <div style={styles.detailBody}>
-              {!isOnline && (
-                <div style={styles.detailOfflineNote}>
-                  Showing details saved on your device. Reconnect to ask Yojana Mitra follow-up questions in chat.
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Description</div>
+                <p style={styles.detailText}>{viewingScheme.description}</p>
+              </div>
+              {viewingScheme.benefits && (
+                <div style={styles.detailSection}>
+                  <div style={styles.detailSectionTitle}>Benefits</div>
+                  <p style={styles.detailText}>{viewingScheme.benefits}</p>
                 </div>
               )}
-              <div style={styles.detailMeta}>
-                {viewingScheme.category} · {viewingScheme.level}
-                {viewingScheme.scheme_name_hindi ? ` · ${viewingScheme.scheme_name_hindi}` : ''}
-              </div>
-
-              {viewingScheme.description && (
-                <p style={styles.detailParagraph}>{viewingScheme.description}</p>
+              {viewingScheme.eligibility_criteria && (
+                <div style={styles.detailSection}>
+                  <div style={styles.detailSectionTitle}>Eligibility Criteria</div>
+                  <FormattedField value={viewingScheme.eligibility_criteria} />
+                </div>
               )}
-
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Benefits</div>
-                <FormattedField value={viewingScheme.benefits} />
-              </div>
-
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Who's eligible</div>
-                <FormattedField value={viewingScheme.eligibility_criteria} />
-              </div>
-
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Documents needed</div>
-                <FormattedField value={viewingScheme.documents_required} />
-              </div>
-
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>How to apply</div>
-                <FormattedField value={viewingScheme.how_to_apply} />
-              </div>
+              {viewingScheme.documents_required && (
+                <div style={styles.detailSection}>
+                  <div style={styles.detailSectionTitle}>Documents Required</div>
+                  <FormattedField value={viewingScheme.documents_required} />
+                </div>
+              )}
+              {viewingScheme.how_to_apply && (
+                <div style={styles.detailSection}>
+                  <div style={styles.detailSectionTitle}>How to Apply</div>
+                  <p style={styles.detailText}>{viewingScheme.how_to_apply}</p>
+                </div>
+              )}
             </div>
-            {isOnline && (
-              <button className="ym-cta" style={styles.detailAskBtn} onClick={() => handleAskAboutScheme(viewingScheme)}>
-                Ask Yojana Mitra about this in chat
+            <div style={styles.detailFooter}>
+              <button
+                style={{
+                  ...styles.detailBookmarkBtn,
+                  ...(savedSchemeIds.includes(viewingScheme.id) ? styles.detailBookmarkActive : {}),
+                }}
+                onClick={() => handleToggleSaved(viewingScheme)}
+              >
+                <BookmarkIcon size={14} filled={savedSchemeIds.includes(viewingScheme.id)} />
+                {savedSchemeIds.includes(viewingScheme.id) ? 'Saved' : 'Save'}
               </button>
-            )}
+              {isOnline && (
+                <button className="ym-cta" style={styles.detailAskBtn} onClick={() => handleAskAboutScheme(viewingScheme)}>
+                  Ask in Chat →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -900,54 +979,45 @@ export default function App() {
         <div style={styles.overlay} onClick={() => setShowProfile(false)}>
           <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.browseHeader}>
-              <h2 style={styles.browseTitle}>Profile</h2>
+              <h2 style={styles.browseTitle}>Your Profile</h2>
               <button style={styles.browseCloseBtn} onClick={() => setShowProfile(false)}>
                 <CloseIcon size={17} />
               </button>
             </div>
-            <div style={styles.detailBody}>
-              <p style={{ fontSize: '12.5px', color: 'var(--color-charcoal-soft)', margin: '0 0 14px', lineHeight: 1.5 }}>
-                Saved only on this device. Fill this in once and reuse it to skip the intro questions in chat.
-              </p>
-              <label style={styles.formLabel}>
-                Name
+            <p style={{ fontSize: '12.5px', color: 'var(--color-charcoal-soft)', margin: '0 0 14px', lineHeight: 1.4 }}>
+              Saved locally on this device — fills your intro in chat with one tap so you don't have to retype your situation every time.
+            </p>
+            <div style={styles.formGrid}>
+              <label style={styles.formFieldLabel}>
+                Name (optional)
                 <input
                   style={styles.formInput}
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  placeholder="e.g. Radha Devi"
+                  placeholder="e.g. Ramesh"
                 />
               </label>
-              <label style={styles.formLabel}>
+              <label style={styles.formFieldLabel}>
                 Age
                 <input
                   style={styles.formInput}
+                  type="number"
                   value={profileForm.age}
                   onChange={(e) => setProfileForm({ ...profileForm, age: e.target.value })}
-                  placeholder="e.g. 45"
-                  inputMode="numeric"
+                  placeholder="e.g. 42"
                 />
               </label>
-              <label style={styles.formLabel}>
+              <label style={styles.formFieldLabel}>
                 Occupation
-                <select
+                <input
                   style={styles.formInput}
                   value={profileForm.occupation}
                   onChange={(e) => setProfileForm({ ...profileForm, occupation: e.target.value })}
-                >
-                  <option value="">Select...</option>
-                  <option>Farmer</option>
-                  <option>Student</option>
-                  <option>Homemaker</option>
-                  <option>Business owner</option>
-                  <option>Daily wage worker</option>
-                  <option>Unemployed</option>
-                  <option>Senior citizen</option>
-                  <option>Other</option>
-                </select>
+                  placeholder="e.g. Farmer, Student, Homemaker"
+                />
               </label>
-              <label style={styles.formLabel}>
-                Location (district/state)
+              <label style={styles.formFieldLabel}>
+                Location / District
                 <input
                   style={styles.formInput}
                   value={profileForm.location}
@@ -1002,8 +1072,8 @@ export default function App() {
               </div>
 
               <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Default voice language</div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
+                <div style={styles.detailSectionTitle}>Default language</div>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
                   {VOICE_LANGUAGES.map((l) => (
                     <button
                       key={l.code}
@@ -1062,190 +1132,239 @@ const styles = {
   sidebarBrandTitle: { fontSize: '15px', fontWeight: 700, lineHeight: 1.2 },
   sidebarBrandSub: { fontSize: '10.5px', opacity: 0.75 },
   mobileCloseBtn: {
-    display: 'none', marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer',
+    display: 'none',
+    position: 'absolute',
+    right: 0,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '4px',
   },
   sidebarSectionLabel: {
-    fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.55,
-    margin: '16px 12px 4px',
+    fontSize: '10.5px',
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.6px',
+    opacity: 0.6,
+    padding: '12px 10px 4px',
   },
   sidebarHelp: {
-    marginTop: 'auto', background: 'rgba(250,247,240,0.08)', borderRadius: '12px',
-    padding: '14px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
+    marginTop: 'auto',
+    padding: '14px 12px 6px',
+    borderRadius: '12px',
+    background: 'rgba(250,247,240,0.06)',
+    border: '1px solid rgba(250,247,240,0.1)',
   },
-  sidebarHelpAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(250,247,240,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' },
+  sidebarHelpAvatar: {
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    background: 'rgba(250,247,240,0.14)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: '8px',
+  },
   sidebarHelpTitle: { fontSize: '13px', fontWeight: 700 },
-  sidebarHelpText: { fontSize: '11.5px', opacity: 0.8, lineHeight: 1.4, marginBottom: '6px' },
+  sidebarHelpText: { fontSize: '11px', opacity: 0.8, lineHeight: 1.4, margin: '2px 0 10px' },
   sidebarVoiceBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', borderRadius: '999px',
-    padding: '7px 14px', background: 'var(--color-forest-light)', color: 'var(--color-cream)',
-    fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-  },
-  mainCol: { display: 'flex', flexDirection: 'column', minWidth: 0, height: '100dvh', background: 'var(--color-cream)' },
-  mobileMenuBtn: {
-    display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', marginRight: '2px',
-  },
-  statusDot: { display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', marginRight: '5px' },
-  header: {
-    background: 'var(--color-forest)',
+    background: 'rgba(250,247,240,0.14)',
+    border: '1px solid rgba(250,247,240,0.25)',
+    borderRadius: '8px',
+    padding: '7px 10px',
+    fontSize: '12px',
+    fontWeight: 600,
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    cursor: 'pointer',
     color: 'var(--color-cream)',
-    padding: '14px 18px',
+  },
+  sidebarRight: {
+    background: 'var(--color-cream)',
+    padding: '16px 14px',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '14px',
+    borderLeft: '1px solid rgba(20,83,45,0.12)',
+    overflowY: 'auto',
+  },
+  rightCard: {
+    background: '#ffffff',
+    borderRadius: '12px',
+    padding: '12px',
+    border: '1px solid rgba(20,83,45,0.1)',
+  },
+  rightCardHeader: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '10px',
-    flexWrap: 'wrap',
+    fontSize: '12.5px',
+    fontWeight: 700,
+    color: 'var(--color-forest)',
+    marginBottom: '8px',
+  },
+  viewAllBtn: {
+    background: 'none',
+    border: 'none',
+    fontSize: '11.5px',
+    color: 'var(--color-marigold-dark)',
+    fontWeight: 600,
+    cursor: 'pointer',
+    padding: 0,
+  },
+  schemeRowDot: {
+    width: '6px',
+    height: '6px',
+    borderRadius: '50%',
+    background: 'var(--color-marigold)',
+    marginTop: '6px',
+    flexShrink: 0,
+  },
+  schemeRowName: {
+    display: 'block',
+    fontSize: '12.5px',
+    fontWeight: 600,
+    color: 'var(--color-charcoal)',
+    lineHeight: 1.3,
+  },
+  schemeRowCategory: {
+    display: 'block',
+    fontSize: '11px',
+    color: 'var(--color-charcoal-soft)',
+    marginTop: '2px',
+  },
+  promoCard: {
+    marginTop: 'auto',
+    background: 'var(--color-forest)',
+    color: 'var(--color-cream)',
+    padding: '14px',
+    borderRadius: '12px',
+  },
+  mainCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    minWidth: 0,
+    background: 'var(--color-cream)',
+  },
+  header: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 18px',
+    background: 'var(--color-forest)',
+    color: 'var(--color-cream)',
+    borderBottom: '1px solid rgba(250,247,240,0.12)',
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
+    gap: '12px',
+  },
+  mobileMenuBtn: {
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    padding: '4px',
+  },
+  title: {
+    margin: 0,
+    fontSize: '16.5px',
+    fontWeight: 700,
+    lineHeight: 1.2,
+  },
+  subtitle: {
+    margin: '2px 0 0',
+    fontSize: '11.5px',
+    opacity: 0.85,
+    display: 'flex',
+    alignItems: 'center',
     gap: '6px',
   },
-  title: { margin: 0, fontSize: '17px', fontFamily: 'var(--font-body)', fontWeight: 700 },
-  subtitle: { margin: '2px 0 0', fontSize: '11.5px', opacity: 0.85, display: 'flex', alignItems: 'center' },
+  statusDot: {
+    width: '7px',
+    height: '7px',
+    borderRadius: '50%',
+    display: 'inline-block',
+  },
   headerActions: {
     display: 'flex',
+    alignItems: 'center',
     gap: '8px',
   },
-  langMenuWrap: { position: 'relative' },
+  langMenuWrap: {
+    position: 'relative',
+  },
   langMenuDropdown: {
-    position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#ffffff',
-    borderRadius: '10px', boxShadow: '0 10px 28px rgba(20,83,45,0.28)', padding: '6px',
-    display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '130px', zIndex: 50,
+    position: 'absolute',
+    top: 'calc(100% + 6px)',
+    right: 0,
+    background: '#ffffff',
+    color: 'var(--color-charcoal)',
+    borderRadius: '10px',
+    boxShadow: '0 8px 24px rgba(20,83,45,0.22)',
+    border: '1px solid rgba(20,83,45,0.12)',
+    padding: '4px',
+    zIndex: 30,
+    minWidth: '120px',
+    display: 'flex',
+    flexDirection: 'column',
   },
   langMenuItem: {
-    textAlign: 'left', padding: '8px 10px', borderRadius: '7px', border: 'none',
-    background: 'transparent', color: 'var(--color-charcoal)', fontSize: '13.5px',
-    cursor: 'pointer', fontFamily: 'inherit',
+    background: 'transparent',
+    border: 'none',
+    padding: '8px 12px',
+    textAlign: 'left',
+    fontSize: '13px',
+    fontFamily: 'inherit',
+    cursor: 'pointer',
+    borderRadius: '6px',
   },
-  langMenuItemActive: { background: 'var(--color-sage)', color: 'var(--color-forest)', fontWeight: 700 },
-  sidebarRight: { padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', borderLeft: '1px solid rgba(20,83,45,0.1)' },
-  rightCard: { background: '#ffffff', borderRadius: '14px', padding: '12px', border: '1px solid rgba(20,83,45,0.1)' },
-  rightCardHeader: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: 700,
-    color: 'var(--color-forest)', marginBottom: '6px', padding: '2px 6px',
-  },
-  viewAllBtn: { background: 'transparent', border: 'none', color: 'var(--color-marigold-dark)', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  schemeRowDot: { width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-marigold)', marginTop: '6px', flexShrink: 0 },
-  schemeRowName: { display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--color-charcoal)', lineHeight: 1.35 },
-  schemeRowCategory: { display: 'block', fontSize: '11px', color: 'var(--color-charcoal-soft)', textTransform: 'capitalize', marginTop: '1px' },
-  promoCard: {
-    background: 'linear-gradient(135deg, var(--color-forest) 0%, var(--color-forest-light) 100%)',
-    color: 'var(--color-cream)', borderRadius: '14px', padding: '16px',
-  },
-  overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(20,83,45,0.45)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 70,
-  },
-  browseModal: {
-    background: 'var(--color-cream)', borderRadius: '16px', padding: '18px', maxWidth: '480px', width: '100%',
-    maxHeight: '82vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body)',
-  },
-  browseHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
-  browseTitle: { margin: 0, fontSize: '18px', color: 'var(--color-forest)', fontWeight: 700 },
-  browseCloseBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-charcoal-soft)' },
-  saveIconBtn: {
-    background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex',
-    alignItems: 'center', justifyContent: 'center', padding: '4px',
-  },
-  detailModal: {
-    background: 'var(--color-cream)', borderRadius: '16px', padding: '18px', maxWidth: '520px', width: '100%',
-    maxHeight: '86vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body)',
-  },
-  detailBody: { overflowY: 'auto', paddingRight: '4px' },
-  detailOfflineNote: {
-    background: '#f5e6c8', color: '#6b4d0f', fontSize: '12.5px', padding: '9px 12px',
-    borderRadius: '10px', marginBottom: '12px', lineHeight: 1.45,
-  },
-  detailMeta: { fontSize: '12.5px', color: 'var(--color-charcoal-soft)', textTransform: 'capitalize', marginBottom: '8px' },
-  detailParagraph: { fontSize: '13.5px', lineHeight: 1.55, margin: '0 0 14px' },
-  detailSection: { marginBottom: '14px', fontSize: '13.5px', lineHeight: 1.5 },
-  detailSectionTitle: { fontSize: '12.5px', fontWeight: 700, color: 'var(--color-forest)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '3px' },
-  detailAskBtn: {
-    marginTop: '10px', width: '100%', textAlign: 'center', padding: '12px', borderRadius: '12px',
-    border: 'none', background: 'var(--color-forest)', color: 'var(--color-cream)', fontSize: '14px',
-    fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-  },
-  formLabel: {
-    display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', fontWeight: 700,
-    color: 'var(--color-forest)', marginBottom: '12px',
-  },
-  formInput: {
-    fontFamily: 'inherit', fontSize: '14px', fontWeight: 400, color: 'var(--color-charcoal)',
-    padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(20,83,45,0.2)', background: '#fff',
-  },
-  formSecondaryBtn: {
-    padding: '10px 16px', borderRadius: '10px', border: '1px solid rgba(20,83,45,0.25)', background: 'transparent',
-    color: 'var(--color-forest)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-  },
-  formLinkBtn: {
-    marginTop: '10px', width: '100%', textAlign: 'center', background: 'none', border: 'none',
-    color: 'var(--color-marigold-dark)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-  },
-  formToggleBtn: {
-    padding: '8px 14px', borderRadius: '999px', border: '1px solid rgba(20,83,45,0.2)', background: '#fff',
-    color: 'var(--color-charcoal)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
-  },
-  formToggleBtnActive: {
-    background: 'var(--color-forest)', color: 'var(--color-cream)', borderColor: 'var(--color-forest)', fontWeight: 700,
-  },
-  browseSearchRow: {
-    display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid rgba(20,83,45,0.2)',
-    borderRadius: '10px', padding: '9px 12px', marginBottom: '10px',
-  },
-  browseSearchInput: { border: 'none', outline: 'none', flex: 1, fontSize: '13.5px', fontFamily: 'inherit', background: 'transparent' },
-  browseList: { overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' },
-  browseRow: { alignItems: 'flex-start', background: '#fff', marginBottom: '4px', border: '1px solid rgba(20,83,45,0.08)' },
-  browseRowBenefit: { display: 'block', fontSize: '11.5px', color: 'var(--color-charcoal-soft)', marginTop: '3px', lineHeight: 1.4 },
-  linksBar: {
-    display: 'flex',
-    flexWrap: 'wrap',
-    gap: '8px',
-    padding: '10px 18px',
+  langMenuItemActive: {
     background: 'var(--color-sage)',
-    borderBottom: '1px solid rgba(20,83,45,0.1)',
+    color: 'var(--color-forest)',
+    fontWeight: 700,
   },
   offlineBanner: {
-    background: '#f5e6c8',
-    color: '#6b4d0f',
-    fontSize: '13px',
-    padding: '10px 18px',
-    lineHeight: 1.5,
-    borderBottom: '1px solid rgba(107,77,15,0.15)',
+    background: '#fff3cd',
+    color: '#664d03',
+    padding: '9px 18px',
+    fontSize: '12.5px',
+    borderBottom: '1px solid #ffe69c',
   },
   offlineSchemeList: {
-    marginTop: '8px',
-    border: '1px solid rgba(20,83,45,0.15)',
-    borderRadius: '12px',
-    padding: '12px 14px',
     background: '#ffffff',
+    borderRadius: '12px',
+    padding: '12px',
+    border: '1px solid rgba(20,83,45,0.15)',
+    margin: '12px 0',
   },
   offlineListTitle: {
-    margin: '0 0 8px',
-    fontSize: '13px',
+    fontSize: '12.5px',
     fontWeight: 700,
     color: 'var(--color-forest)',
+    margin: '0 0 8px',
   },
   offlineSchemeItem: {
-    display: 'block',
-    width: '100%',
-    padding: '8px 0',
-    borderTop: '1px solid rgba(20,83,45,0.08)',
-    borderLeft: 'none',
-    borderRight: 'none',
-    borderBottom: 'none',
-    background: 'transparent',
-    textAlign: 'left',
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-    fontSize: '13.5px',
-    lineHeight: 1.45,
-    color: 'inherit',
+    marginBottom: '6px',
+    borderBottom: '1px solid rgba(20,83,45,0.08)',
+    paddingBottom: '8px',
   },
   offlineSchemeCategory: {
-    fontSize: '11.5px',
+    fontSize: '11px',
     color: 'var(--color-charcoal-soft)',
-    textTransform: 'capitalize',
     margin: '2px 0 4px',
+  },
+  linksBar: {
+    display: 'flex',
+    gap: '8px',
+    padding: '8px 18px',
+    overflowX: 'auto',
+    background: '#ffffff',
+    borderBottom: '1px solid rgba(20,83,45,0.1)',
   },
   chatArea: {
     flex: 1,
@@ -1316,5 +1435,219 @@ const styles = {
     fontSize: '15px',
     fontWeight: 600,
     cursor: 'pointer',
+  },
+  overlay: {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(20,83,45,0.45)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '16px',
+    zIndex: 50,
+  },
+  browseModal: {
+    background: 'var(--color-cream)',
+    borderRadius: '16px',
+    padding: '18px',
+    maxWidth: '540px',
+    width: '100%',
+    maxHeight: '85vh',
+    display: 'flex',
+    flexDirection: 'column',
+    fontFamily: 'var(--font-body)',
+  },
+  browseHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '10px',
+  },
+  browseTitle: {
+    margin: 0,
+    fontSize: '18px',
+    color: 'var(--color-forest)',
+    fontWeight: 700,
+  },
+  browseCloseBtn: {
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'var(--color-charcoal-soft)',
+    padding: '4px',
+  },
+  browseSearchRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    padding: '8px 12px',
+    background: '#ffffff',
+    borderRadius: '10px',
+    border: '1px solid rgba(20,83,45,0.18)',
+    marginBottom: '10px',
+  },
+  browseSearchInput: {
+    border: 'none',
+    outline: 'none',
+    flex: 1,
+    fontSize: '13.5px',
+    fontFamily: 'inherit',
+  },
+  browseList: {
+    flex: 1,
+    overflowY: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '6px',
+  },
+  browseRow: {
+    background: '#ffffff',
+    border: '1px solid rgba(20,83,45,0.08)',
+  },
+  browseRowBenefit: {
+    display: 'block',
+    fontSize: '11px',
+    color: 'var(--color-marigold-dark)',
+    marginTop: '2px',
+    fontWeight: 600,
+  },
+  detailModal: {
+    background: 'var(--color-cream)',
+    borderRadius: '16px',
+    padding: '20px',
+    maxWidth: '520px',
+    width: '100%',
+    maxHeight: '88vh',
+    display: 'flex',
+    flexDirection: 'column',
+    fontFamily: 'var(--font-body)',
+  },
+  detailHindiTitle: {
+    fontSize: '13px',
+    color: 'var(--color-charcoal-soft)',
+    marginTop: '2px',
+  },
+  detailBadge: {
+    display: 'inline-block',
+    fontSize: '11px',
+    fontWeight: 600,
+    color: 'var(--color-forest)',
+    background: 'var(--color-sage)',
+    padding: '3px 8px',
+    borderRadius: '999px',
+    marginTop: '6px',
+  },
+  detailBody: {
+    flex: 1,
+    overflowY: 'auto',
+    margin: '12px 0',
+  },
+  detailSection: {
+    marginBottom: '12px',
+  },
+  detailSectionTitle: {
+    fontSize: '12px',
+    fontWeight: 700,
+    color: 'var(--color-forest)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px',
+    marginBottom: '4px',
+  },
+  detailText: {
+    fontSize: '13.5px',
+    lineHeight: 1.5,
+    margin: 0,
+    color: 'var(--color-charcoal)',
+  },
+  detailFooter: {
+    display: 'flex',
+    gap: '8px',
+    paddingTop: '8px',
+    borderTop: '1px solid rgba(20,83,45,0.12)',
+  },
+  detailBookmarkBtn: {
+    padding: '10px 14px',
+    borderRadius: '10px',
+    border: '1px solid rgba(20,83,45,0.2)',
+    background: '#ffffff',
+    color: 'var(--color-charcoal)',
+    fontSize: '13px',
+    fontWeight: 600,
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+  },
+  detailBookmarkActive: {
+    background: 'var(--color-sage)',
+    borderColor: 'var(--color-forest)',
+    color: 'var(--color-forest)',
+  },
+  detailAskBtn: {
+    flex: 1,
+    padding: '10px',
+    borderRadius: '10px',
+    border: 'none',
+    background: 'var(--color-forest)',
+    color: 'var(--color-cream)',
+    fontSize: '13.5px',
+    fontWeight: 600,
+    cursor: 'pointer',
+  },
+  formGrid: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '10px',
+  },
+  formFieldLabel: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+    fontSize: '12px',
+    fontWeight: 600,
+    color: 'var(--color-forest)',
+  },
+  formInput: {
+    padding: '8px 10px',
+    borderRadius: '8px',
+    border: '1px solid rgba(20,83,45,0.2)',
+    fontSize: '13px',
+    fontFamily: 'inherit',
+    background: '#ffffff',
+  },
+  formSecondaryBtn: {
+    padding: '8px 14px',
+    borderRadius: '8px',
+    border: '1px solid rgba(20,83,45,0.2)',
+    background: '#ffffff',
+    color: 'var(--color-charcoal)',
+    fontSize: '12.5px',
+    cursor: 'pointer',
+  },
+  formLinkBtn: {
+    background: 'none',
+    border: 'none',
+    padding: '8px 0 0',
+    color: 'var(--color-forest)',
+    fontSize: '12.5px',
+    fontWeight: 600,
+    textDecoration: 'underline',
+    cursor: 'pointer',
+    textAlign: 'center',
+  },
+  formToggleBtn: {
+    padding: '7px 14px',
+    borderRadius: '8px',
+    border: '1px solid rgba(20,83,45,0.2)',
+    background: '#ffffff',
+    color: 'var(--color-charcoal)',
+    fontSize: '12.5px',
+    cursor: 'pointer',
+  },
+  formToggleBtnActive: {
+    background: 'var(--color-forest)',
+    color: 'var(--color-cream)',
+    borderColor: 'var(--color-forest)',
+    fontWeight: 700,
   },
 }
