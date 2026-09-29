@@ -17,9 +17,7 @@ import GrievanceRedressal from './GrievanceRedressal'
 import EligibilityScorecard from './EligibilityScorecard'
 import AdminDashboard from './AdminDashboard'
 
-// Voice input/output languages. Web Speech API support for Marathi and
-// Tamil depends on the browser/OS having those voices installed, but the
-// language codes themselves are standard BCP-47 tags it understands.
+// Voice input/output languages
 const VOICE_LANGUAGES = [
   { code: 'en-IN', label: 'English' },
   { code: 'hi-IN', label: 'हिन्दी' },
@@ -549,56 +547,56 @@ export default function App() {
       {/* Left sidebar: brand + primary navigation */}
       <aside className={`ym-shell-left${isMobileNavOpen ? ' ym-open' : ''}`} style={styles.sidebarLeft}>
         <div style={styles.sidebarBrand}>
-          <Logo size={32} />
+          <Logo size={36} />
           <div>
             <div style={styles.sidebarBrandTitle}>Jan Seva (जन सेवा)</div>
             <div style={styles.sidebarBrandSub}>AI Citizen Welfare & Governance</div>
           </div>
           <button className="ym-mobile-close-btn" style={styles.mobileCloseBtn} onClick={() => setIsMobileNavOpen(false)} aria-label="Close menu">
-            <CloseIcon size={16} color="var(--color-cream)" />
+            <CloseIcon size={16} color="#0f172a" />
           </button>
         </div>
 
-        <button className="ym-nav-item ym-nav-active" onClick={handleClearChat} style={{ marginTop: '6px' }}>
-          <PlusChatIcon size={16} /> New Chat
+        <button className="ym-nav-item ym-nav-primary" onClick={handleClearChat} style={{ marginTop: '4px' }}>
+          <PlusChatIcon size={16} color="#ffffff" /> New Chat
         </button>
 
         <div style={styles.sidebarSectionLabel}>Browse</div>
         <button className="ym-nav-item" onClick={() => { setShowBrowseSchemes(true); setIsMobileNavOpen(false) }}>
-          <GridIcon size={16} /> Schemes
+          <GridIcon size={16} color="#059669" /> Schemes
         </button>
         <button className="ym-nav-item" onClick={() => { setShowScorecard(true); setIsMobileNavOpen(false) }}>
-          <CalculatorIcon size={16} /> Eligibility Scorecard
+          <CalculatorIcon size={16} color="#059669" /> Eligibility Scorecard
         </button>
         <button className="ym-nav-item" onClick={() => { setShowGrievance(true); setIsMobileNavOpen(false) }}>
-          <ShieldAlertIcon size={16} /> CM Helpline 181
+          <ShieldAlertIcon size={16} color="#e11d48" /> CM Helpline 181
         </button>
         <button className="ym-nav-item" onClick={() => { setShowApplyForm(true); setIsMobileNavOpen(false) }}>
-          <DocumentIcon size={16} /> My Applications
+          <DocumentIcon size={16} color="#0284c7" /> My Applications
         </button>
         <button className="ym-nav-item" onClick={() => { setShowSavedSchemes(true); setIsMobileNavOpen(false) }}>
-          <BookmarkIcon size={16} /> Saved Schemes
+          <BookmarkIcon size={16} color="#f59e0b" /> Saved Schemes
         </button>
 
         <div style={styles.sidebarSectionLabel}>Governance & Account</div>
         <button className="ym-nav-item" onClick={() => { setShowAdminDashboard(true); setIsMobileNavOpen(false) }}>
-          <BarChartIcon size={16} /> GovTech Portal
+          <BarChartIcon size={16} color="#7c3aed" /> GovTech Portal
         </button>
         <button className="ym-nav-item" onClick={() => { setProfileForm(profile || { name: '', age: '', occupation: '', location: '' }); setShowProfile(true); setIsMobileNavOpen(false) }}>
-          <UserCircleIcon size={16} /> Profile
+          <UserCircleIcon size={16} color="#059669" /> Profile
         </button>
         <button className="ym-nav-item" onClick={() => { setShowSettings(true); setIsMobileNavOpen(false) }}>
-          <SettingsGearIcon size={16} /> Settings
+          <SettingsGearIcon size={16} color="#475569" /> Settings
         </button>
         <button className="ym-nav-item" onClick={() => { setShowLinks((s) => !s); setIsMobileNavOpen(false) }}>
-          <GlobeIcon size={16} /> Official Sites
+          <GlobeIcon size={16} color="#0284c7" /> Official Sites
         </button>
         <button className="ym-nav-item" onClick={() => { setShowApplyForm(true); setIsMobileNavOpen(false) }}>
-          <DocumentIcon size={16} /> Apply for Scheme
+          <DocumentIcon size={16} color="#059669" /> Apply for Scheme
         </button>
 
         <div style={styles.sidebarHelp}>
-          <div style={styles.sidebarHelpAvatar}><Logo size={20} /></div>
+          <div style={styles.sidebarHelpAvatar}><Logo size={24} /></div>
           <div style={styles.sidebarHelpTitle}>Need help?</div>
           <div style={styles.sidebarHelpText}>Use voice, type, or ask in your preferred language.</div>
           {isVoiceInputSupported && (
@@ -608,7 +606,7 @@ export default function App() {
               onClick={() => { handleMicClick(); setIsMobileNavOpen(false) }}
               disabled={loadingSchemes || !isOnline}
             >
-              <MicIcon size={14} color={isListening ? 'white' : 'var(--color-cream)'} /> {isListening ? 'Listening...' : 'Try Voice'}
+              <MicIcon size={15} color={isListening ? 'white' : '#ffffff'} /> {isListening ? 'Listening...' : 'Try Voice'}
             </button>
           )}
         </div>
@@ -619,12 +617,12 @@ export default function App() {
         <header style={styles.header}>
           <div style={styles.headerLeft}>
             <button className="ym-mobile-menu-btn" style={styles.mobileMenuBtn} onClick={() => setIsMobileNavOpen(true)} aria-label="Open menu">
-              <MenuIcon size={19} color="var(--color-cream)" />
+              <MenuIcon size={19} color="#0f172a" />
             </button>
             <div>
               <h1 className="ym-title-text" style={styles.title}>Jan Seva (जन सेवा)</h1>
               <p className="ym-subtitle-text" style={styles.subtitle}>
-                <span style={{ ...styles.statusDot, background: isOnline ? '#3fbf6b' : '#c97f1e' }} />
+                <span style={{ ...styles.statusDot, background: isOnline ? '#10b981' : '#f59e0b' }} />
                 {isOnline ? t(voiceLang, 'online') : t(voiceLang, 'offline')}
               </p>
             </div>
@@ -635,21 +633,21 @@ export default function App() {
               onClick={() => setShowScorecard(true)}
               title="Citizen Eligibility Scorecard"
             >
-              <CalculatorIcon size={13} /> Scorecard
+              <CalculatorIcon size={14} color="#059669" /> Scorecard
             </button>
             <button
               className="ym-icon-btn"
               onClick={() => setShowGrievance(true)}
               title="CM Helpline 181 Grievance"
             >
-              <ShieldAlertIcon size={13} /> 181 Helpline
+              <ShieldAlertIcon size={14} color="#e11d48" /> 181 Helpline
             </button>
             <button
               className="ym-icon-btn"
               onClick={() => setShowAdminDashboard(true)}
               title="GovTech Intelligence & Admin Portal"
             >
-              <BarChartIcon size={13} /> GovTech
+              <BarChartIcon size={14} color="#7c3aed" /> GovTech
             </button>
             {isVoiceInputSupported && (
               <div style={styles.langMenuWrap} onClick={(e) => e.stopPropagation()}>
@@ -658,7 +656,7 @@ export default function App() {
                   onClick={() => setShowLangMenu((s) => !s)}
                   title="Voice input/output language"
                 >
-                  <GlobeIcon size={13} /> {VOICE_LANGUAGES.find((l) => l.code === voiceLang)?.label}
+                  <GlobeIcon size={14} color="#0284c7" /> {VOICE_LANGUAGES.find((l) => l.code === voiceLang)?.label}
                 </button>
                 {showLangMenu && (
                   <div style={styles.langMenuDropdown}>
@@ -687,7 +685,7 @@ export default function App() {
                 }}
                 title="Read replies aloud"
               >
-                {speakEnabled ? <SpeakerOnIcon size={15} /> : <SpeakerOffIcon size={15} />}
+                {speakEnabled ? <SpeakerOnIcon size={15} color="#059669" /> : <SpeakerOffIcon size={15} color="#64748b" />}
                 {speakEnabled ? ' On' : ' Off'}
               </button>
             )}
@@ -1136,8 +1134,9 @@ export default function App() {
 
 const styles = {
   sidebarLeft: {
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
+    background: '#f0fdf4',
+    borderRight: '1px solid #bbf7d0',
+    color: '#0f172a',
     padding: '18px 14px',
     display: 'flex',
     flexDirection: 'column',
@@ -1147,53 +1146,59 @@ const styles = {
   sidebarBrand: {
     display: 'flex',
     alignItems: 'center',
-    gap: '9px',
+    gap: '10px',
     marginBottom: '14px',
+    paddingBottom: '12px',
+    borderBottom: '1px solid #dcfce7',
     position: 'relative',
   },
-  sidebarBrandTitle: { fontSize: '15px', fontWeight: 700, lineHeight: 1.2 },
-  sidebarBrandSub: { fontSize: '10.5px', opacity: 0.75 },
+  sidebarBrandTitle: { fontSize: '15.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 },
+  sidebarBrandSub: { fontSize: '11px', color: '#059669', fontWeight: 700, marginTop: '2px' },
   mobileCloseBtn: {
-    display: 'none', marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer',
+    display: 'none', marginLeft: 'auto', background: '#dcfce7', border: 'none', borderRadius: '8px', padding: '6px', cursor: 'pointer',
   },
   sidebarSectionLabel: {
-    fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.55,
-    margin: '16px 12px 4px',
+    fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800,
+    color: '#047857', margin: '18px 8px 6px',
   },
   sidebarHelp: {
-    marginTop: 'auto', background: 'rgba(250,247,240,0.08)', borderRadius: '12px',
-    padding: '14px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
+    marginTop: 'auto', background: '#ffffff', borderRadius: '14px',
+    padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '5px',
+    border: '1.5px solid #bbf7d0', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.08)',
   },
-  sidebarHelpAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(250,247,240,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' },
-  sidebarHelpTitle: { fontSize: '13px', fontWeight: 700 },
-  sidebarHelpText: { fontSize: '11.5px', opacity: 0.8, lineHeight: 1.4, marginBottom: '6px' },
+  sidebarHelpAvatar: { width: '32px', height: '32px', borderRadius: '10px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' },
+  sidebarHelpTitle: { fontSize: '13.5px', fontWeight: 800, color: '#0f172a' },
+  sidebarHelpText: { fontSize: '12px', color: '#475569', lineHeight: 1.45, marginBottom: '8px' },
   sidebarVoiceBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', borderRadius: '999px',
-    padding: '7px 14px', background: 'var(--color-forest-light)', color: 'var(--color-cream)',
-    fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', border: 'none', borderRadius: '10px',
+    padding: '8px 16px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#ffffff',
+    fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+    boxShadow: '0 4px 10px rgba(5, 150, 105, 0.25)',
   },
-  mainCol: { display: 'flex', flexDirection: 'column', minWidth: 0, height: '100dvh', background: 'var(--color-cream)' },
+  mainCol: { display: 'flex', flexDirection: 'column', minWidth: 0, height: '100dvh', background: '#f8fafc' },
   mobileMenuBtn: {
-    display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', marginRight: '2px',
+    display: 'none', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', padding: '6px', marginRight: '2px',
   },
   statusDot: { display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', marginRight: '5px' },
   header: {
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
-    padding: '14px 18px',
+    background: 'rgba(255, 255, 255, 0.95)',
+    backdropFilter: 'blur(12px)',
+    color: '#0f172a',
+    padding: '14px 20px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '10px',
+    gap: '12px',
     flexWrap: 'wrap',
+    borderBottom: '1px solid #e2e8f0',
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '6px',
+    gap: '8px',
   },
-  title: { margin: 0, fontSize: '17px', fontFamily: 'var(--font-body)', fontWeight: 700 },
-  subtitle: { margin: '2px 0 0', fontSize: '11.5px', opacity: 0.85, display: 'flex', alignItems: 'center' },
+  title: { margin: 0, fontSize: '18px', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#0f172a' },
+  subtitle: { margin: '2px 0 0', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', fontWeight: 500 },
   headerActions: {
     display: 'flex',
     gap: '8px',
@@ -1201,28 +1206,29 @@ const styles = {
   langMenuWrap: { position: 'relative' },
   langMenuDropdown: {
     position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#ffffff',
-    borderRadius: '10px', boxShadow: '0 10px 28px rgba(20,83,45,0.28)', padding: '6px',
+    borderRadius: '10px', boxShadow: '0 10px 28px rgba(15, 23, 42, 0.15)', padding: '6px',
     display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '130px', zIndex: 50,
+    border: '1px solid #e2e8f0',
   },
   langMenuItem: {
     textAlign: 'left', padding: '8px 10px', borderRadius: '7px', border: 'none',
-    background: 'transparent', color: 'var(--color-charcoal)', fontSize: '13.5px',
-    cursor: 'pointer', fontFamily: 'inherit',
+    background: 'transparent', color: '#1e293b', fontSize: '13.5px',
+    cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500,
   },
-  langMenuItemActive: { background: 'var(--color-sage)', color: 'var(--color-forest)', fontWeight: 700 },
-  sidebarRight: { padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', borderLeft: '1px solid rgba(20,83,45,0.1)' },
-  rightCard: { background: '#ffffff', borderRadius: '14px', padding: '12px', border: '1px solid rgba(20,83,45,0.1)' },
+  langMenuItemActive: { background: '#ecfdf5', color: '#059669', fontWeight: 700 },
+  sidebarRight: { padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', borderLeft: '1px solid #e2e8f0', background: '#f8fafc' },
+  rightCard: { background: '#ffffff', borderRadius: '14px', padding: '14px', border: '1px solid #e2e8f0', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' },
   rightCardHeader: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: 700,
-    color: 'var(--color-forest)', marginBottom: '6px', padding: '2px 6px',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13.5px', fontWeight: 800,
+    color: '#0f172a', marginBottom: '8px', padding: '2px 4px',
   },
-  viewAllBtn: { background: 'transparent', border: 'none', color: 'var(--color-marigold-dark)', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
-  schemeRowDot: { width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-marigold)', marginTop: '6px', flexShrink: 0 },
-  schemeRowName: { display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--color-charcoal)', lineHeight: 1.35 },
-  schemeRowCategory: { display: 'block', fontSize: '11px', color: 'var(--color-charcoal-soft)', textTransform: 'capitalize', marginTop: '1px' },
+  viewAllBtn: { background: 'transparent', border: 'none', color: '#059669', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  schemeRowDot: { width: '7px', height: '7px', borderRadius: '50%', background: '#059669', marginTop: '6px', flexShrink: 0 },
+  schemeRowName: { display: 'block', fontSize: '13px', fontWeight: 700, color: '#0f172a', lineHeight: 1.35 },
+  schemeRowCategory: { display: 'block', fontSize: '11px', color: '#64748b', textTransform: 'capitalize', marginTop: '2px' },
   promoCard: {
-    background: 'linear-gradient(135deg, var(--color-forest) 0%, var(--color-forest-light) 100%)',
-    color: 'var(--color-cream)', borderRadius: '14px', padding: '16px',
+    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#ffffff', borderRadius: '14px', padding: '16px', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
   },
   overlay: {
     position: 'fixed', inset: 0, background: 'rgba(20,83,45,0.45)',
