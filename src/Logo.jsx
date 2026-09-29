@@ -7,23 +7,37 @@ export default function Logo({ size = 40 }) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      {/* Shield shape - represents protection/entitlement/trust */}
+      <defs>
+        <linearGradient id="janSevaGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#059669" />
+          <stop offset="0.5" stopColor="#0284c7" />
+          <stop offset="1" stopColor="#f59e0b" />
+        </linearGradient>
+        <linearGradient id="shieldGrad" x1="12" y1="8" x2="36" y2="40" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#0f172a" />
+          <stop offset="1" stopColor="#1e293b" />
+        </linearGradient>
+      </defs>
+
+      {/* Modern hexagonal/shield base */}
+      <rect x="2" y="2" width="44" height="44" rx="14" fill="url(#shieldGrad)" stroke="url(#janSevaGrad)" strokeWidth="2" />
+
+      {/* Saffron Arc (Top Left) */}
+      <path d="M14 16 C 18 10, 30 10, 34 16" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" fill="none" />
+
+      {/* Central Citizen Pillar & Wings */}
+      <circle cx="24" cy="19" r="4" fill="#38bdf8" />
       <path
-        d="M24 4 L40 10 V22 C40 32.5 33.5 40.5 24 44 C14.5 40.5 8 32.5 8 22 V10 Z"
-        fill="var(--color-forest)"
-        stroke="var(--color-marigold)"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      {/* Checkmark - represents eligibility confirmed / verified match */}
-      <path
-        d="M16 24 L21.5 29.5 L33 17"
-        stroke="var(--color-marigold)"
-        strokeWidth="3.2"
+        d="M15 32 C15 26.5 19 24 24 24 C29 24 33 26.5 33 32"
+        stroke="#10b981"
+        strokeWidth="2.8"
         strokeLinecap="round"
-        strokeLinejoin="round"
         fill="none"
       />
+
+      {/* AI Intelligence Sparkle nodes */}
+      <circle cx="35" cy="13" r="2.5" fill="#f59e0b" />
+      <circle cx="13" cy="35" r="2" fill="#10b981" />
     </svg>
   )
 }
