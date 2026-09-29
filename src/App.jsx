@@ -17,6 +17,9 @@ import GrievanceRedressal from './GrievanceRedressal'
 import EligibilityScorecard from './EligibilityScorecard'
 import AdminDashboard from './AdminDashboard'
 
+// Voice input/output languages. Web Speech API support for Marathi and
+// Tamil depends on the browser/OS having those voices installed, but the
+// language codes themselves are standard BCP-47 tags it understands.
 const VOICE_LANGUAGES = [
   { code: 'en-IN', label: 'English' },
   { code: 'hi-IN', label: 'हिन्दी' },
@@ -140,7 +143,7 @@ function buildSystemInstruction(schemes, conversationText) {
   Documents: ${JSON.stringify(s.documents_required)}
   How to apply: ${s.how_to_apply}`
 
-  return `You are Yojana Mitra, a friendly assistant that helps Indian citizens (especially in Madhya Pradesh) find government schemes they may be eligible for.
+  return `You are Jan Seva (जन सेवा), an advanced AI Citizen Welfare & Governance Assistant for citizens of Madhya Pradesh and India.
 
 LIKELY RELEVANT SCHEMES based on the conversation so far - check these carefully first, they are probably what this person needs:
 ${likelyRelevant.map(formatScheme).join('\n')}
@@ -159,34 +162,34 @@ HOW TO RESPOND:
 
 const UI_TEXT = {
   'en-IN': {
-    welcome: "Namaste! I'm Yojana Mitra. Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes you may be eligible for.",
+    welcome: "Namaste! I am Jan Seva (जन सेवा). Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes and benefits you qualify for.",
     online: 'Online',
     offline: 'Offline',
-    placeholderIdle: "Type your message... (e.g. 'I am a farmer with 2 acres of land')",
+    placeholderIdle: "Ask Jan Seva... (e.g. 'I am a farmer with 2 acres of land in MP')",
     placeholderOffline: 'Reconnect to internet to keep chatting...',
     placeholderListening: 'Listening... speak now',
   },
   'hi-IN': {
-    welcome: 'नमस्ते! मैं योजना मित्र हूँ। मुझे अपने बारे में थोड़ा बताएं — आपका व्यवसाय, उम्र, या स्थिति — और मैं आपको उन सरकारी योजनाओं को खोजने में मदद करूंगा जिनके लिए आप पात्र हो सकते हैं।',
+    welcome: 'नमस्ते! मैं जन सेवा (Jan Seva) हूँ। मुझे अपने बारे में थोड़ा बताएं — आपका व्यवसाय, उम्र, या स्थिति — और मैं आपको उन सरकारी योजनाओं को खोजने में मदद करूंगा जिनके लिए आप पात्र हैं।',
     online: 'ऑनलाइन',
     offline: 'ऑफलाइन',
-    placeholderIdle: "अपना संदेश लिखें... (उदाहरण: 'मैं 2 एकड़ जमीन वाला किसान हूं')",
+    placeholderIdle: "जन सेवा से पूछें... (उदा: 'मैं 2 एकड़ जमीन वाला किसान हूं')",
     placeholderOffline: 'बातचीत जारी रखने के लिए इंटरनेट से दोबारा जुड़ें...',
     placeholderListening: 'सुन रहा हूं... अब बोलें',
   },
   'mr-IN': {
-    welcome: 'नमस्कार! मी योजना मित्र आहे. मला तुमच्याबद्दल थोडं सांगा — तुमचा व्यवसाय, वय किंवा परिस्थिती — आणि मी तुम्हाला पात्र असलेल्या सरकारी योजना शोधण्यात मदत करेन.',
+    welcome: 'नमस्कार! मी जन सेवा (Jan Seva) आहे. मला तुमच्याबद्दल थोडं सांगा — तुमचा व्यवसाय, वय किंवा परिस्थिती — आणि मी तुम्हाला पात्र असलेल्या सरकारी योजना शोधण्यात मदत करेन.',
     online: 'ऑनलाइन',
     offline: 'ऑफलाइन',
-    placeholderIdle: "तुमचा संदेश टाइप करा... (उदा. 'मी 2 एकर जमीन असलेला शेतकरी आहे')",
+    placeholderIdle: "जन सेवेला विचारा... (उदा: 'मी 2 एकर जमीन असलेला शेतकरी आहे')",
     placeholderOffline: 'गप्पा सुरू ठेवण्यासाठी इंटरनेटशी पुन्हा कनेक्ट करा...',
     placeholderListening: 'ऐकत आहे... आता बोला',
   },
   'ta-IN': {
-    welcome: 'வணக்கம்! நான் யோஜனா மித்ரா. உங்களைப் பற்றி கொஞ்சம் சொல்லுங்கள் — உங்கள் தொழில், வயது அல்லது சூழ்நிலை — நீங்கள் தகுதி பெறக்கூடிய அரசு திட்டங்களைக் கண்டறிய நான் உதவுகிறேன்.',
+    welcome: 'வணக்கம்! நான் ஜன் சேவா (Jan Seva). உங்களைப் பற்றி கொஞ்சம் சொல்லுங்கள் — உங்கள் தொழில், வயது அல்லது சூழ்நிலை — நீங்கள் தகுதி பெறக்கூடிய அரசு திட்டங்களைக் கண்டறிய நான் உதவுகிறேன்.',
     online: 'ஆன்லைன்',
     offline: 'ஆஃப்லைன்',
-    placeholderIdle: "உங்கள் செய்தியை தட்டச்சு செய்யவும்... (எ.கா. 'நான் 2 ஏக்கர் நிலம் உள்ள விவசாயி')",
+    placeholderIdle: "ஜன் சேவாவிடம் கேளுங்கள்...",
     placeholderOffline: 'உரையாடலைத் தொடர இணையத்துடன் மீண்டும் இணையவும்...',
     placeholderListening: 'கேட்கிறேன்... இப்போது பேசுங்கள்',
   },
@@ -386,18 +389,46 @@ export default function App() {
   }
 
   function handleClearChat() {
+    stopSpeaking()
+    if (listenControllerRef.current) {
+      listenControllerRef.current.abort()
+      listenControllerRef.current = null
+      setIsListening(false)
+    }
     setMessages([Welcome(voiceLang)])
     setError(null)
-    setShowLinks(false)
     setIsMobileNavOpen(false)
-    stopSpeaking()
+  }
+
+  function openSchemeDetail(scheme) {
+    setViewingScheme(scheme)
+    setShowBrowseSchemes(false)
+    setShowSavedSchemes(false)
+  }
+
+  function handleToggleSaved(scheme) {
+    const nextSaved = toggleSavedScheme(scheme.id)
+    setSavedSchemeIds(nextSaved)
+    const isNowSaved = nextSaved.includes(scheme.id)
+    showToast(isNowSaved ? 'Saved to your offline list' : 'Removed from saved schemes')
+  }
+
+  function handleClearCache() {
+    clearSchemesCache()
+    showToast('Offline cache cleared')
+  }
+
+  function handleClearSaved() {
+    clearSavedSchemes()
+    setSavedSchemeIds([])
+    showToast('Saved schemes cleared')
   }
 
   function handleSaveProfile() {
     saveProfile(profileForm)
     setProfile(profileForm)
-    showToast('Profile saved')
     setShowProfile(false)
+    showToast('Profile saved')
   }
 
   function handleClearProfile() {
@@ -408,71 +439,57 @@ export default function App() {
   }
 
   function handleUseProfileInChat() {
+    if (!profile) return
     const opener = profileToOpener(profile)
     setShowProfile(false)
-    if (opener) handleSend(opener)
+    handleSend(opener)
   }
 
-  function handleChangeSetting(key, value) {
-    const next = { ...settings, [key]: value }
+  function handleChangeSetting(key, val) {
+    const next = saveSettings({ [key]: val })
     setSettings(next)
-    saveSettings(next)
-    if (key === 'defaultVoiceLang') setVoiceLang(value)
-  }
-
-  function handleClearCache() {
-    clearSchemesCache()
-    showToast('Offline scheme cache cleared')
-  }
-
-  function handleClearSaved() {
-    clearSavedSchemes()
-    setSavedSchemeIds([])
-    showToast('Saved schemes cleared')
+    if (key === 'defaultVoiceLang') {
+      setVoiceLang(val)
+    }
   }
 
   function handleAskAboutScheme(scheme) {
-    setShowBrowseSchemes(false)
     setViewingScheme(null)
-    setIsMobileNavOpen(false)
-    handleSend(`Tell me more about ${scheme.scheme_name} and whether I might be eligible.`)
-  }
-
-  function openSchemeDetail(scheme) {
-    setShowBrowseSchemes(false)
-    setShowSavedSchemes(false)
-    setIsMobileNavOpen(false)
-    setViewingScheme(scheme)
-  }
-
-  function handleToggleSaved(scheme) {
-    const nowSaved = toggleSavedScheme(scheme.id)
-    setSavedSchemeIds(getSavedSchemeIds())
-    showToast(nowSaved ? 'Saved for later' : 'Removed from saved')
+    const prompt = `Tell me more about ${scheme.scheme_name}. Am I eligible, and how do I apply?`
+    handleSend(prompt)
   }
 
   function handleMicClick() {
     if (isListening) {
-      listenControllerRef.current?.stop()
+      if (listenControllerRef.current) {
+        listenControllerRef.current.abort()
+        listenControllerRef.current = null
+      }
       setIsListening(false)
       return
     }
+
+    if (!isVoiceInputSupported) {
+      setError('Voice input is not supported in this browser. Please use Chrome, Edge, or Safari.')
+      return
+    }
+
     stopSpeaking()
+    setError(null)
     setIsListening(true)
+
     listenControllerRef.current = startListening({
       lang: voiceLang,
-      onResult: (transcript, isFinal) => {
-        setInput(transcript)
-        if (isFinal && transcript.trim()) {
-          setIsListening(false)
+      onResult: (transcript) => {
+        setIsListening(false)
+        listenControllerRef.current = null
+        if (transcript) {
           handleSend(transcript)
         }
       },
-      onEnd: () => {
-        setIsListening(false)
-      },
       onError: (err) => {
         setIsListening(false)
+        listenControllerRef.current = null
         if (err !== 'no-speech' && err !== 'aborted') {
           setError(`Voice input error: ${err}`)
         }
@@ -532,10 +549,10 @@ export default function App() {
       {/* Left sidebar: brand + primary navigation */}
       <aside className={`ym-shell-left${isMobileNavOpen ? ' ym-open' : ''}`} style={styles.sidebarLeft}>
         <div style={styles.sidebarBrand}>
-          <Logo size={30} />
+          <Logo size={32} />
           <div>
-            <div style={styles.sidebarBrandTitle}>Yojana Mitra</div>
-            <div style={styles.sidebarBrandSub}>Your Scheme Companion</div>
+            <div style={styles.sidebarBrandTitle}>Jan Seva (जन सेवा)</div>
+            <div style={styles.sidebarBrandSub}>AI Citizen Welfare & Governance</div>
           </div>
           <button className="ym-mobile-close-btn" style={styles.mobileCloseBtn} onClick={() => setIsMobileNavOpen(false)} aria-label="Close menu">
             <CloseIcon size={16} color="var(--color-cream)" />
@@ -605,7 +622,7 @@ export default function App() {
               <MenuIcon size={19} color="var(--color-cream)" />
             </button>
             <div>
-              <h1 className="ym-title-text" style={styles.title}>Yojana Mitra</h1>
+              <h1 className="ym-title-text" style={styles.title}>Jan Seva (जन सेवा)</h1>
               <p className="ym-subtitle-text" style={styles.subtitle}>
                 <span style={{ ...styles.statusDot, background: isOnline ? '#3fbf6b' : '#c97f1e' }} />
                 {isOnline ? t(voiceLang, 'online') : t(voiceLang, 'offline')}
@@ -725,6 +742,7 @@ export default function App() {
             </div>
           )}
           {error && <div style={styles.errorNote}>⚠️ {error}</div>}
+
           {!isOnline && schemes.length > 0 && (
             <div style={styles.offlineSchemeList}>
               <p style={styles.offlineListTitle}>Saved schemes you can browse offline — tap one for eligibility & how to apply:</p>
@@ -800,8 +818,8 @@ export default function App() {
           )}
         </div>
         <div style={styles.promoCard}>
-          <strong style={{ fontSize: '13.5px' }}>Many schemes. One platform.</strong>
-          <p style={{ fontSize: '12px', margin: '6px 0 0', opacity: 0.9 }}>Yojana Mitra — always with you.</p>
+          <strong style={{ fontSize: '13.5px' }}>Jan Seva · Sovereign AI</strong>
+          <p style={{ fontSize: '12px', margin: '6px 0 0', opacity: 0.9 }}>AI-Powered Governance for Every Citizen</p>
         </div>
       </aside>
 
@@ -889,8 +907,8 @@ export default function App() {
             </div>
             <div style={styles.browseList}>
               {savedSchemesList.length === 0 ? (
-                <p style={{ fontSize: '13px', color: 'var(--color-charcoal-soft)', padding: '16px 0', textAlign: 'center' }}>
-                  No saved schemes yet. Tap the bookmark icon on any scheme to save it for quick offline reference.
+                <p style={{ fontSize: '13px', color: 'var(--color-charcoal-soft)', padding: '12px 0' }}>
+                  Nothing saved yet — open any scheme and tap "Save" to keep it here for later, even offline.
                 </p>
               ) : (
                 savedSchemesList.map((s) => (
@@ -899,7 +917,6 @@ export default function App() {
                     <span>
                       <span style={styles.schemeRowName}>{s.scheme_name}</span>
                       <span style={styles.schemeRowCategory}>{s.category} · {s.level}</span>
-                      {s.benefits && <span style={styles.browseRowBenefit}>{s.benefits}</span>}
                     </span>
                   </button>
                 ))
@@ -913,64 +930,60 @@ export default function App() {
         <div style={styles.overlay} onClick={() => setViewingScheme(null)}>
           <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.browseHeader}>
-              <div>
-                <h2 style={styles.browseTitle}>{viewingScheme.scheme_name}</h2>
-                {viewingScheme.scheme_name_hindi && (
-                  <div style={styles.detailHindiTitle}>{viewingScheme.scheme_name_hindi}</div>
-                )}
-                <span style={styles.detailBadge}>{viewingScheme.category} · {viewingScheme.level}</span>
+              <h2 style={styles.browseTitle}>{viewingScheme.scheme_name}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  style={styles.saveIconBtn}
+                  onClick={() => handleToggleSaved(viewingScheme)}
+                  title={savedSchemeIds.includes(viewingScheme.id) ? 'Remove from saved' : 'Save for later'}
+                >
+                  <BookmarkIcon size={18} color="var(--color-forest)" filled={savedSchemeIds.includes(viewingScheme.id)} />
+                </button>
+                <button style={styles.browseCloseBtn} onClick={() => setViewingScheme(null)}>
+                  <CloseIcon size={17} />
+                </button>
               </div>
-              <button style={styles.browseCloseBtn} onClick={() => setViewingScheme(null)}>
-                <CloseIcon size={17} />
-              </button>
             </div>
             <div style={styles.detailBody}>
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Description</div>
-                <p style={styles.detailText}>{viewingScheme.description}</p>
+              {!isOnline && (
+                <div style={styles.detailOfflineNote}>
+                  Showing details saved on your device. Reconnect to ask Jan Seva follow-up questions in chat.
+                </div>
+              )}
+              <div style={styles.detailMeta}>
+                {viewingScheme.category} · {viewingScheme.level}
+                {viewingScheme.scheme_name_hindi ? ` · ${viewingScheme.scheme_name_hindi}` : ''}
               </div>
-              {viewingScheme.benefits && (
-                <div style={styles.detailSection}>
-                  <div style={styles.detailSectionTitle}>Benefits</div>
-                  <p style={styles.detailText}>{viewingScheme.benefits}</p>
-                </div>
+
+              {viewingScheme.description && (
+                <p style={styles.detailParagraph}>{viewingScheme.description}</p>
               )}
-              {viewingScheme.eligibility_criteria && (
-                <div style={styles.detailSection}>
-                  <div style={styles.detailSectionTitle}>Eligibility Criteria</div>
-                  <FormattedField value={viewingScheme.eligibility_criteria} />
-                </div>
-              )}
-              {viewingScheme.documents_required && (
-                <div style={styles.detailSection}>
-                  <div style={styles.detailSectionTitle}>Documents Required</div>
-                  <FormattedField value={viewingScheme.documents_required} />
-                </div>
-              )}
-              {viewingScheme.how_to_apply && (
-                <div style={styles.detailSection}>
-                  <div style={styles.detailSectionTitle}>How to Apply</div>
-                  <p style={styles.detailText}>{viewingScheme.how_to_apply}</p>
-                </div>
-              )}
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Benefits</div>
+                <FormattedField value={viewingScheme.benefits} />
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Who's eligible</div>
+                <FormattedField value={viewingScheme.eligibility_criteria} />
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Documents needed</div>
+                <FormattedField value={viewingScheme.documents_required} />
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>How to apply</div>
+                <FormattedField value={viewingScheme.how_to_apply} />
+              </div>
             </div>
-            <div style={styles.detailFooter}>
-              <button
-                style={{
-                  ...styles.detailBookmarkBtn,
-                  ...(savedSchemeIds.includes(viewingScheme.id) ? styles.detailBookmarkActive : {}),
-                }}
-                onClick={() => handleToggleSaved(viewingScheme)}
-              >
-                <BookmarkIcon size={14} filled={savedSchemeIds.includes(viewingScheme.id)} />
-                {savedSchemeIds.includes(viewingScheme.id) ? 'Saved' : 'Save'}
+            {isOnline && (
+              <button className="ym-cta" style={styles.detailAskBtn} onClick={() => handleAskAboutScheme(viewingScheme)}>
+                Ask Jan Seva about this in chat
               </button>
-              {isOnline && (
-                <button className="ym-cta" style={styles.detailAskBtn} onClick={() => handleAskAboutScheme(viewingScheme)}>
-                  Ask in Chat →
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -979,45 +992,54 @@ export default function App() {
         <div style={styles.overlay} onClick={() => setShowProfile(false)}>
           <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.browseHeader}>
-              <h2 style={styles.browseTitle}>Your Profile</h2>
+              <h2 style={styles.browseTitle}>Profile</h2>
               <button style={styles.browseCloseBtn} onClick={() => setShowProfile(false)}>
                 <CloseIcon size={17} />
               </button>
             </div>
-            <p style={{ fontSize: '12.5px', color: 'var(--color-charcoal-soft)', margin: '0 0 14px', lineHeight: 1.4 }}>
-              Saved locally on this device — fills your intro in chat with one tap so you don't have to retype your situation every time.
-            </p>
-            <div style={styles.formGrid}>
-              <label style={styles.formFieldLabel}>
-                Name (optional)
+            <div style={styles.detailBody}>
+              <p style={{ fontSize: '12.5px', color: 'var(--color-charcoal-soft)', margin: '0 0 14px', lineHeight: 1.5 }}>
+                Saved only on this device. Fill this in once and reuse it to skip the intro questions in chat.
+              </p>
+              <label style={styles.formLabel}>
+                Name
                 <input
                   style={styles.formInput}
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  placeholder="e.g. Ramesh"
+                  placeholder="e.g. Radha Devi"
                 />
               </label>
-              <label style={styles.formFieldLabel}>
+              <label style={styles.formLabel}>
                 Age
                 <input
                   style={styles.formInput}
-                  type="number"
                   value={profileForm.age}
                   onChange={(e) => setProfileForm({ ...profileForm, age: e.target.value })}
-                  placeholder="e.g. 42"
+                  placeholder="e.g. 45"
+                  inputMode="numeric"
                 />
               </label>
-              <label style={styles.formFieldLabel}>
+              <label style={styles.formLabel}>
                 Occupation
-                <input
+                <select
                   style={styles.formInput}
                   value={profileForm.occupation}
                   onChange={(e) => setProfileForm({ ...profileForm, occupation: e.target.value })}
-                  placeholder="e.g. Farmer, Student, Homemaker"
-                />
+                >
+                  <option value="">Select...</option>
+                  <option>Farmer</option>
+                  <option>Student</option>
+                  <option>Homemaker</option>
+                  <option>Business owner</option>
+                  <option>Daily wage worker</option>
+                  <option>Unemployed</option>
+                  <option>Senior citizen</option>
+                  <option>Other</option>
+                </select>
               </label>
-              <label style={styles.formFieldLabel}>
-                Location / District
+              <label style={styles.formLabel}>
+                Location (district/state)
                 <input
                   style={styles.formInput}
                   value={profileForm.location}
@@ -1072,8 +1094,8 @@ export default function App() {
               </div>
 
               <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Default language</div>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
+                <div style={styles.detailSectionTitle}>Default voice language</div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
                   {VOICE_LANGUAGES.map((l) => (
                     <button
                       key={l.code}
@@ -1132,239 +1154,190 @@ const styles = {
   sidebarBrandTitle: { fontSize: '15px', fontWeight: 700, lineHeight: 1.2 },
   sidebarBrandSub: { fontSize: '10.5px', opacity: 0.75 },
   mobileCloseBtn: {
-    display: 'none',
-    position: 'absolute',
-    right: 0,
-    top: '50%',
-    transform: 'translateY(-50%)',
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '4px',
+    display: 'none', marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer',
   },
   sidebarSectionLabel: {
-    fontSize: '10.5px',
-    fontWeight: 700,
-    textTransform: 'uppercase',
-    letterSpacing: '0.6px',
-    opacity: 0.6,
-    padding: '12px 10px 4px',
+    fontSize: '10.5px', textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.55,
+    margin: '16px 12px 4px',
   },
   sidebarHelp: {
-    marginTop: 'auto',
-    padding: '14px 12px 6px',
-    borderRadius: '12px',
-    background: 'rgba(250,247,240,0.06)',
-    border: '1px solid rgba(250,247,240,0.1)',
+    marginTop: 'auto', background: 'rgba(250,247,240,0.08)', borderRadius: '12px',
+    padding: '14px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px',
   },
-  sidebarHelpAvatar: {
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    background: 'rgba(250,247,240,0.14)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '8px',
-  },
+  sidebarHelpAvatar: { width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(250,247,240,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '4px' },
   sidebarHelpTitle: { fontSize: '13px', fontWeight: 700 },
-  sidebarHelpText: { fontSize: '11px', opacity: 0.8, lineHeight: 1.4, margin: '2px 0 10px' },
+  sidebarHelpText: { fontSize: '11.5px', opacity: 0.8, lineHeight: 1.4, marginBottom: '6px' },
   sidebarVoiceBtn: {
-    background: 'rgba(250,247,240,0.14)',
-    border: '1px solid rgba(250,247,240,0.25)',
-    borderRadius: '8px',
-    padding: '7px 10px',
-    fontSize: '12px',
-    fontWeight: 600,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    cursor: 'pointer',
-    color: 'var(--color-cream)',
+    display: 'inline-flex', alignItems: 'center', gap: '6px', border: 'none', borderRadius: '999px',
+    padding: '7px 14px', background: 'var(--color-forest-light)', color: 'var(--color-cream)',
+    fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
   },
-  sidebarRight: {
-    background: 'var(--color-cream)',
-    padding: '16px 14px',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '14px',
-    borderLeft: '1px solid rgba(20,83,45,0.12)',
-    overflowY: 'auto',
+  mainCol: { display: 'flex', flexDirection: 'column', minWidth: 0, height: '100dvh', background: 'var(--color-cream)' },
+  mobileMenuBtn: {
+    display: 'none', background: 'transparent', border: 'none', cursor: 'pointer', padding: '4px', marginRight: '2px',
   },
-  rightCard: {
-    background: '#ffffff',
-    borderRadius: '12px',
-    padding: '12px',
-    border: '1px solid rgba(20,83,45,0.1)',
-  },
-  rightCardHeader: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    fontSize: '12.5px',
-    fontWeight: 700,
-    color: 'var(--color-forest)',
-    marginBottom: '8px',
-  },
-  viewAllBtn: {
-    background: 'none',
-    border: 'none',
-    fontSize: '11.5px',
-    color: 'var(--color-marigold-dark)',
-    fontWeight: 600,
-    cursor: 'pointer',
-    padding: 0,
-  },
-  schemeRowDot: {
-    width: '6px',
-    height: '6px',
-    borderRadius: '50%',
-    background: 'var(--color-marigold)',
-    marginTop: '6px',
-    flexShrink: 0,
-  },
-  schemeRowName: {
-    display: 'block',
-    fontSize: '12.5px',
-    fontWeight: 600,
-    color: 'var(--color-charcoal)',
-    lineHeight: 1.3,
-  },
-  schemeRowCategory: {
-    display: 'block',
-    fontSize: '11px',
-    color: 'var(--color-charcoal-soft)',
-    marginTop: '2px',
-  },
-  promoCard: {
-    marginTop: 'auto',
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
-    padding: '14px',
-    borderRadius: '12px',
-  },
-  mainCol: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    minWidth: 0,
-    background: 'var(--color-cream)',
-  },
+  statusDot: { display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', marginRight: '5px' },
   header: {
+    background: 'var(--color-forest)',
+    color: 'var(--color-cream)',
+    padding: '14px 18px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: '12px 18px',
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
-    borderBottom: '1px solid rgba(250,247,240,0.12)',
+    gap: '10px',
+    flexWrap: 'wrap',
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '12px',
-  },
-  mobileMenuBtn: {
-    background: 'transparent',
-    border: 'none',
-    cursor: 'pointer',
-    padding: '4px',
-  },
-  title: {
-    margin: 0,
-    fontSize: '16.5px',
-    fontWeight: 700,
-    lineHeight: 1.2,
-  },
-  subtitle: {
-    margin: '2px 0 0',
-    fontSize: '11.5px',
-    opacity: 0.85,
-    display: 'flex',
-    alignItems: 'center',
     gap: '6px',
   },
-  statusDot: {
-    width: '7px',
-    height: '7px',
-    borderRadius: '50%',
-    display: 'inline-block',
-  },
+  title: { margin: 0, fontSize: '17px', fontFamily: 'var(--font-body)', fontWeight: 700 },
+  subtitle: { margin: '2px 0 0', fontSize: '11.5px', opacity: 0.85, display: 'flex', alignItems: 'center' },
   headerActions: {
     display: 'flex',
-    alignItems: 'center',
     gap: '8px',
   },
-  langMenuWrap: {
-    position: 'relative',
-  },
+  langMenuWrap: { position: 'relative' },
   langMenuDropdown: {
-    position: 'absolute',
-    top: 'calc(100% + 6px)',
-    right: 0,
-    background: '#ffffff',
-    color: 'var(--color-charcoal)',
-    borderRadius: '10px',
-    boxShadow: '0 8px 24px rgba(20,83,45,0.22)',
-    border: '1px solid rgba(20,83,45,0.12)',
-    padding: '4px',
-    zIndex: 30,
-    minWidth: '120px',
-    display: 'flex',
-    flexDirection: 'column',
+    position: 'absolute', top: 'calc(100% + 6px)', right: 0, background: '#ffffff',
+    borderRadius: '10px', boxShadow: '0 10px 28px rgba(20,83,45,0.28)', padding: '6px',
+    display: 'flex', flexDirection: 'column', gap: '2px', minWidth: '130px', zIndex: 50,
   },
   langMenuItem: {
-    background: 'transparent',
-    border: 'none',
-    padding: '8px 12px',
-    textAlign: 'left',
-    fontSize: '13px',
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    borderRadius: '6px',
+    textAlign: 'left', padding: '8px 10px', borderRadius: '7px', border: 'none',
+    background: 'transparent', color: 'var(--color-charcoal)', fontSize: '13.5px',
+    cursor: 'pointer', fontFamily: 'inherit',
   },
-  langMenuItemActive: {
-    background: 'var(--color-sage)',
-    color: 'var(--color-forest)',
-    fontWeight: 700,
+  langMenuItemActive: { background: 'var(--color-sage)', color: 'var(--color-forest)', fontWeight: 700 },
+  sidebarRight: { padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto', borderLeft: '1px solid rgba(20,83,45,0.1)' },
+  rightCard: { background: '#ffffff', borderRadius: '14px', padding: '12px', border: '1px solid rgba(20,83,45,0.1)' },
+  rightCardHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', fontWeight: 700,
+    color: 'var(--color-forest)', marginBottom: '6px', padding: '2px 6px',
   },
-  offlineBanner: {
-    background: '#fff3cd',
-    color: '#664d03',
-    padding: '9px 18px',
-    fontSize: '12.5px',
-    borderBottom: '1px solid #ffe69c',
+  viewAllBtn: { background: 'transparent', border: 'none', color: 'var(--color-marigold-dark)', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' },
+  schemeRowDot: { width: '6px', height: '6px', borderRadius: '50%', background: 'var(--color-marigold)', marginTop: '6px', flexShrink: 0 },
+  schemeRowName: { display: 'block', fontSize: '12.5px', fontWeight: 700, color: 'var(--color-charcoal)', lineHeight: 1.35 },
+  schemeRowCategory: { display: 'block', fontSize: '11px', color: 'var(--color-charcoal-soft)', textTransform: 'capitalize', marginTop: '1px' },
+  promoCard: {
+    background: 'linear-gradient(135deg, var(--color-forest) 0%, var(--color-forest-light) 100%)',
+    color: 'var(--color-cream)', borderRadius: '14px', padding: '16px',
   },
-  offlineSchemeList: {
-    background: '#ffffff',
-    borderRadius: '12px',
-    padding: '12px',
-    border: '1px solid rgba(20,83,45,0.15)',
-    margin: '12px 0',
+  overlay: {
+    position: 'fixed', inset: 0, background: 'rgba(20,83,45,0.45)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 70,
   },
-  offlineListTitle: {
-    fontSize: '12.5px',
-    fontWeight: 700,
-    color: 'var(--color-forest)',
-    margin: '0 0 8px',
+  browseModal: {
+    background: 'var(--color-cream)', borderRadius: '16px', padding: '18px', maxWidth: '480px', width: '100%',
+    maxHeight: '82vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body)',
   },
-  offlineSchemeItem: {
-    marginBottom: '6px',
-    borderBottom: '1px solid rgba(20,83,45,0.08)',
-    paddingBottom: '8px',
+  browseHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
+  browseTitle: { margin: 0, fontSize: '18px', color: 'var(--color-forest)', fontWeight: 700 },
+  browseCloseBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-charcoal-soft)' },
+  saveIconBtn: {
+    background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex',
+    alignItems: 'center', justifyContent: 'center', padding: '4px',
   },
-  offlineSchemeCategory: {
-    fontSize: '11px',
-    color: 'var(--color-charcoal-soft)',
-    margin: '2px 0 4px',
+  detailModal: {
+    background: 'var(--color-cream)', borderRadius: '16px', padding: '18px', maxWidth: '520px', width: '100%',
+    maxHeight: '86vh', display: 'flex', flexDirection: 'column', fontFamily: 'var(--font-body)',
   },
+  detailBody: { overflowY: 'auto', paddingRight: '4px' },
+  detailOfflineNote: {
+    background: '#f5e6c8', color: '#6b4d0f', fontSize: '12.5px', padding: '9px 12px',
+    borderRadius: '10px', marginBottom: '12px', lineHeight: 1.45,
+  },
+  detailMeta: { fontSize: '12.5px', color: 'var(--color-charcoal-soft)', textTransform: 'capitalize', marginBottom: '8px' },
+  detailParagraph: { fontSize: '13.5px', lineHeight: 1.55, margin: '0 0 14px' },
+  detailSection: { marginBottom: '14px', fontSize: '13.5px', lineHeight: 1.5 },
+  detailSectionTitle: { fontSize: '12.5px', fontWeight: 700, color: 'var(--color-forest)', textTransform: 'uppercase', letterSpacing: '0.03em', marginBottom: '3px' },
+  detailAskBtn: {
+    marginTop: '10px', width: '100%', textAlign: 'center', padding: '12px', borderRadius: '12px',
+    border: 'none', background: 'var(--color-forest)', color: 'var(--color-cream)', fontSize: '14px',
+    fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+  },
+  formLabel: {
+    display: 'flex', flexDirection: 'column', gap: '5px', fontSize: '12.5px', fontWeight: 700,
+    color: 'var(--color-forest)', marginBottom: '12px',
+  },
+  formInput: {
+    fontFamily: 'inherit', fontSize: '14px', fontWeight: 400, color: 'var(--color-charcoal)',
+    padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(20,83,45,0.2)', background: '#fff',
+  },
+  formSecondaryBtn: {
+    padding: '10px 16px', borderRadius: '10px', border: '1px solid rgba(20,83,45,0.25)', background: 'transparent',
+    color: 'var(--color-forest)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+  },
+  formLinkBtn: {
+    marginTop: '10px', width: '100%', textAlign: 'center', background: 'none', border: 'none',
+    color: 'var(--color-marigold-dark)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
+  },
+  formToggleBtn: {
+    padding: '8px 14px', borderRadius: '999px', border: '1px solid rgba(20,83,45,0.2)', background: '#fff',
+    color: 'var(--color-charcoal)', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit',
+  },
+  formToggleBtnActive: {
+    background: 'var(--color-forest)', color: 'var(--color-cream)', borderColor: 'var(--color-forest)', fontWeight: 700,
+  },
+  browseSearchRow: {
+    display: 'flex', alignItems: 'center', gap: '8px', background: '#fff', border: '1px solid rgba(20,83,45,0.2)',
+    borderRadius: '10px', padding: '9px 12px', marginBottom: '10px',
+  },
+  browseSearchInput: { border: 'none', outline: 'none', flex: 1, fontSize: '13.5px', fontFamily: 'inherit', background: 'transparent' },
+  browseList: { overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' },
+  browseRow: { alignItems: 'flex-start', background: '#fff', marginBottom: '4px', border: '1px solid rgba(20,83,45,0.08)' },
+  browseRowBenefit: { display: 'block', fontSize: '11.5px', color: 'var(--color-charcoal-soft)', marginTop: '3px', lineHeight: 1.4 },
   linksBar: {
     display: 'flex',
+    flexWrap: 'wrap',
     gap: '8px',
-    padding: '8px 18px',
-    overflowX: 'auto',
-    background: '#ffffff',
+    padding: '10px 18px',
+    background: 'var(--color-sage)',
     borderBottom: '1px solid rgba(20,83,45,0.1)',
+  },
+  offlineBanner: {
+    background: '#f5e6c8',
+    color: '#6b4d0f',
+    fontSize: '13px',
+    padding: '10px 18px',
+    lineHeight: 1.5,
+    borderBottom: '1px solid rgba(107,77,15,0.15)',
+  },
+  offlineSchemeList: {
+    marginTop: '8px',
+    border: '1px solid rgba(20,83,45,0.15)',
+    borderRadius: '12px',
+    padding: '12px 14px',
+    background: '#ffffff',
+  },
+  offlineListTitle: {
+    margin: '0 0 8px',
+    fontSize: '13px',
+    fontWeight: 700,
+    color: 'var(--color-forest)',
+  },
+  offlineSchemeItem: {
+    display: 'block',
+    width: '100%',
+    padding: '8px 0',
+    borderTop: '1px solid rgba(20,83,45,0.08)',
+    borderLeft: 'none',
+    borderRight: 'none',
+    borderBottom: 'none',
+    background: 'transparent',
+    textAlign: 'left',
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    fontSize: '13.5px',
+    lineHeight: 1.45,
+    color: 'inherit',
+  },
+  offlineSchemeCategory: {
+    fontSize: '11.5px',
+    color: 'var(--color-charcoal-soft)',
+    textTransform: 'capitalize',
+    margin: '2px 0 4px',
   },
   chatArea: {
     flex: 1,
@@ -1435,219 +1408,5 @@ const styles = {
     fontSize: '15px',
     fontWeight: 600,
     cursor: 'pointer',
-  },
-  overlay: {
-    position: 'fixed',
-    inset: 0,
-    background: 'rgba(20,83,45,0.45)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '16px',
-    zIndex: 50,
-  },
-  browseModal: {
-    background: 'var(--color-cream)',
-    borderRadius: '16px',
-    padding: '18px',
-    maxWidth: '540px',
-    width: '100%',
-    maxHeight: '85vh',
-    display: 'flex',
-    flexDirection: 'column',
-    fontFamily: 'var(--font-body)',
-  },
-  browseHeader: {
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: '10px',
-  },
-  browseTitle: {
-    margin: 0,
-    fontSize: '18px',
-    color: 'var(--color-forest)',
-    fontWeight: 700,
-  },
-  browseCloseBtn: {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    color: 'var(--color-charcoal-soft)',
-    padding: '4px',
-  },
-  browseSearchRow: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    padding: '8px 12px',
-    background: '#ffffff',
-    borderRadius: '10px',
-    border: '1px solid rgba(20,83,45,0.18)',
-    marginBottom: '10px',
-  },
-  browseSearchInput: {
-    border: 'none',
-    outline: 'none',
-    flex: 1,
-    fontSize: '13.5px',
-    fontFamily: 'inherit',
-  },
-  browseList: {
-    flex: 1,
-    overflowY: 'auto',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  browseRow: {
-    background: '#ffffff',
-    border: '1px solid rgba(20,83,45,0.08)',
-  },
-  browseRowBenefit: {
-    display: 'block',
-    fontSize: '11px',
-    color: 'var(--color-marigold-dark)',
-    marginTop: '2px',
-    fontWeight: 600,
-  },
-  detailModal: {
-    background: 'var(--color-cream)',
-    borderRadius: '16px',
-    padding: '20px',
-    maxWidth: '520px',
-    width: '100%',
-    maxHeight: '88vh',
-    display: 'flex',
-    flexDirection: 'column',
-    fontFamily: 'var(--font-body)',
-  },
-  detailHindiTitle: {
-    fontSize: '13px',
-    color: 'var(--color-charcoal-soft)',
-    marginTop: '2px',
-  },
-  detailBadge: {
-    display: 'inline-block',
-    fontSize: '11px',
-    fontWeight: 600,
-    color: 'var(--color-forest)',
-    background: 'var(--color-sage)',
-    padding: '3px 8px',
-    borderRadius: '999px',
-    marginTop: '6px',
-  },
-  detailBody: {
-    flex: 1,
-    overflowY: 'auto',
-    margin: '12px 0',
-  },
-  detailSection: {
-    marginBottom: '12px',
-  },
-  detailSectionTitle: {
-    fontSize: '12px',
-    fontWeight: 700,
-    color: 'var(--color-forest)',
-    textTransform: 'uppercase',
-    letterSpacing: '0.4px',
-    marginBottom: '4px',
-  },
-  detailText: {
-    fontSize: '13.5px',
-    lineHeight: 1.5,
-    margin: 0,
-    color: 'var(--color-charcoal)',
-  },
-  detailFooter: {
-    display: 'flex',
-    gap: '8px',
-    paddingTop: '8px',
-    borderTop: '1px solid rgba(20,83,45,0.12)',
-  },
-  detailBookmarkBtn: {
-    padding: '10px 14px',
-    borderRadius: '10px',
-    border: '1px solid rgba(20,83,45,0.2)',
-    background: '#ffffff',
-    color: 'var(--color-charcoal)',
-    fontSize: '13px',
-    fontWeight: 600,
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-  },
-  detailBookmarkActive: {
-    background: 'var(--color-sage)',
-    borderColor: 'var(--color-forest)',
-    color: 'var(--color-forest)',
-  },
-  detailAskBtn: {
-    flex: 1,
-    padding: '10px',
-    borderRadius: '10px',
-    border: 'none',
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
-    fontSize: '13.5px',
-    fontWeight: 600,
-    cursor: 'pointer',
-  },
-  formGrid: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-  },
-  formFieldLabel: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '4px',
-    fontSize: '12px',
-    fontWeight: 600,
-    color: 'var(--color-forest)',
-  },
-  formInput: {
-    padding: '8px 10px',
-    borderRadius: '8px',
-    border: '1px solid rgba(20,83,45,0.2)',
-    fontSize: '13px',
-    fontFamily: 'inherit',
-    background: '#ffffff',
-  },
-  formSecondaryBtn: {
-    padding: '8px 14px',
-    borderRadius: '8px',
-    border: '1px solid rgba(20,83,45,0.2)',
-    background: '#ffffff',
-    color: 'var(--color-charcoal)',
-    fontSize: '12.5px',
-    cursor: 'pointer',
-  },
-  formLinkBtn: {
-    background: 'none',
-    border: 'none',
-    padding: '8px 0 0',
-    color: 'var(--color-forest)',
-    fontSize: '12.5px',
-    fontWeight: 600,
-    textDecoration: 'underline',
-    cursor: 'pointer',
-    textAlign: 'center',
-  },
-  formToggleBtn: {
-    padding: '7px 14px',
-    borderRadius: '8px',
-    border: '1px solid rgba(20,83,45,0.2)',
-    background: '#ffffff',
-    color: 'var(--color-charcoal)',
-    fontSize: '12.5px',
-    cursor: 'pointer',
-  },
-  formToggleBtnActive: {
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
-    borderColor: 'var(--color-forest)',
-    fontWeight: 700,
   },
 }
