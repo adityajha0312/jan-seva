@@ -252,3 +252,21 @@ body {
 .ym-shell.ym-text-large .ym-subtitle-text {
   font-size: 13px !important;
 }
+
+/* ---- Print Styles for Official MPOnline Slips & Petitions ---- */
+@media print {
+  body {
+    background: #ffffff !important;
+    background-image: none !important;
+  }
+  .no-print, header, aside, .ym-input-area, .ym-links-bar {
+    display: none !important;
+  }
+  .printable-receipt {
+    border: 2px solid #000 !important;
+    padding: 20px !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+  }
+}
