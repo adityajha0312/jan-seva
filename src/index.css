@@ -62,21 +62,22 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  border-radius: 8px;
-  padding: 6px 12px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  border-radius: 9px;
+  padding: 7px 12px;
   font-size: 12.5px;
   font-family: var(--font-body);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  backdrop-filter: blur(8px);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 .ym-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  border-color: rgba(255, 255, 255, 0.4);
+  background: #f0fdf4;
+  border-color: #059669;
+  color: #047857;
   transform: translateY(-1px);
 }
 
@@ -147,7 +148,7 @@ body {
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #bbf7d0;
   background: #ffffff;
   color: var(--color-forest);
   cursor: pointer;
@@ -193,14 +194,14 @@ body {
 /* ---- Chat shell layout ---- */
 .ym-shell {
   display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 280px;
+  grid-template-columns: 255px minmax(0, 1fr) 280px;
   height: 100vh;
   height: 100dvh;
   background: #f8fafc;
 }
 
 @media (max-width: 1080px) {
-  .ym-shell { grid-template-columns: 240px minmax(0, 1fr); }
+  .ym-shell { grid-template-columns: 255px minmax(0, 1fr); }
   .ym-shell-right { display: none; }
 }
 
@@ -209,14 +210,14 @@ body {
   .ym-shell-left {
     position: fixed;
     top: 0; left: 0; bottom: 0;
-    width: 260px;
+    width: 270px;
     z-index: 60;
     transform: translateX(-100%);
     transition: transform 0.25s ease;
   }
   .ym-shell-left.ym-open {
     transform: translateX(0);
-    box-shadow: 12px 0 40px rgba(0,0,0,0.3);
+    box-shadow: 12px 0 40px rgba(0,0,0,0.25);
   }
   .ym-mobile-menu-btn { display: inline-flex !important; }
   .ym-mobile-close-btn { display: inline-flex !important; align-items: center; justify-content: center; }
@@ -228,19 +229,59 @@ body {
 
 .ym-mobile-menu-btn { display: none; }
 
+/* ---- High-Contrast, Bright Navigation Items ---- */
 .ym-nav-item {
-  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
-  padding: 10px 12px; border-radius: 10px; border: none; background: transparent;
-  color: #94a3b8; font-size: 13px; font-family: inherit; font-weight: 500; cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 9.5px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #1e293b;
+  font-size: 13.5px;
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.15s ease;
 }
-.ym-nav-item:hover { background: rgba(255,255,255,0.08); color: #ffffff; }
-.ym-nav-item.ym-nav-active { background: rgba(5,150,105,0.22); color: #34d399; font-weight: 700; border: 1px solid rgba(5,150,105,0.3); }
+.ym-nav-item:hover {
+  background: #ffffff;
+  color: #059669;
+  border-color: #bbf7d0;
+  box-shadow: 0 2px 8px rgba(5, 150, 105, 0.08);
+  transform: translateX(2px);
+}
+.ym-nav-item.ym-nav-primary,
+.ym-nav-item.ym-nav-active {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%);
+  color: #ffffff !important;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
+}
+.ym-nav-item.ym-nav-primary:hover,
+.ym-nav-item.ym-nav-active:hover {
+  background: linear-gradient(135deg, #047857 0%, #064e3b 100%);
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
 
 .ym-scheme-row {
-  display: flex; align-items: flex-start; gap: 10px; width: 100%; text-align: left;
-  padding: 11px; border-radius: 10px; border: none; background: transparent; cursor: pointer;
-  font-family: inherit; transition: all 0.15s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s ease;
 }
 .ym-scheme-row:hover { background: #f1f5f9; }
 
