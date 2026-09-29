@@ -547,58 +547,59 @@ export default function App() {
       {/* Left sidebar: brand + primary navigation */}
       <aside className={`ym-shell-left${isMobileNavOpen ? ' ym-open' : ''}`} style={styles.sidebarLeft}>
         <div style={styles.sidebarBrand}>
-          <Logo size={36} />
-          <div>
+          <Logo size={28} />
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={styles.sidebarBrandTitle}>Jan Seva (जन सेवा)</div>
-            <div style={styles.sidebarBrandSub}>AI Citizen Welfare & Governance</div>
+            <div style={styles.sidebarBrandSub}>AI Citizen Governance</div>
           </div>
           <button className="ym-mobile-close-btn" style={styles.mobileCloseBtn} onClick={() => setIsMobileNavOpen(false)} aria-label="Close menu">
             <CloseIcon size={16} color="#0f172a" />
           </button>
         </div>
 
-        <button className="ym-nav-item ym-nav-primary" onClick={handleClearChat} style={{ marginTop: '4px' }}>
-          <PlusChatIcon size={16} color="#ffffff" /> New Chat
+        <button className="ym-nav-item ym-nav-primary" onClick={handleClearChat} style={{ margin: '2px 0 4px' }}>
+          <PlusChatIcon size={15} color="#ffffff" /> New Chat
         </button>
 
         <div style={styles.sidebarSectionLabel}>Browse</div>
         <button className="ym-nav-item" onClick={() => { setShowBrowseSchemes(true); setIsMobileNavOpen(false) }}>
-          <GridIcon size={16} color="#059669" /> Schemes
+          <GridIcon size={15} color="#059669" /> Schemes
         </button>
         <button className="ym-nav-item" onClick={() => { setShowScorecard(true); setIsMobileNavOpen(false) }}>
-          <CalculatorIcon size={16} color="#059669" /> Eligibility Scorecard
+          <CalculatorIcon size={15} color="#059669" /> Eligibility Scorecard
         </button>
         <button className="ym-nav-item" onClick={() => { setShowGrievance(true); setIsMobileNavOpen(false) }}>
-          <ShieldAlertIcon size={16} color="#e11d48" /> CM Helpline 181
+          <ShieldAlertIcon size={15} color="#e11d48" /> CM Helpline 181
         </button>
         <button className="ym-nav-item" onClick={() => { setShowApplyForm(true); setIsMobileNavOpen(false) }}>
-          <DocumentIcon size={16} color="#0284c7" /> My Applications
+          <DocumentIcon size={15} color="#0284c7" /> Applications & Forms
         </button>
         <button className="ym-nav-item" onClick={() => { setShowSavedSchemes(true); setIsMobileNavOpen(false) }}>
-          <BookmarkIcon size={16} color="#f59e0b" /> Saved Schemes
+          <BookmarkIcon size={15} color="#f59e0b" /> Saved Schemes
         </button>
 
         <div style={styles.sidebarSectionLabel}>Governance & Account</div>
         <button className="ym-nav-item" onClick={() => { setShowAdminDashboard(true); setIsMobileNavOpen(false) }}>
-          <BarChartIcon size={16} color="#7c3aed" /> GovTech Portal
+          <BarChartIcon size={15} color="#7c3aed" /> GovTech Portal
         </button>
         <button className="ym-nav-item" onClick={() => { setProfileForm(profile || { name: '', age: '', occupation: '', location: '' }); setShowProfile(true); setIsMobileNavOpen(false) }}>
-          <UserCircleIcon size={16} color="#059669" /> Profile
+          <UserCircleIcon size={15} color="#059669" /> Citizen Profile
         </button>
         <button className="ym-nav-item" onClick={() => { setShowSettings(true); setIsMobileNavOpen(false) }}>
-          <SettingsGearIcon size={16} color="#475569" /> Settings
+          <SettingsGearIcon size={15} color="#475569" /> Settings
         </button>
         <button className="ym-nav-item" onClick={() => { setShowLinks((s) => !s); setIsMobileNavOpen(false) }}>
-          <GlobeIcon size={16} color="#0284c7" /> Official Sites
-        </button>
-        <button className="ym-nav-item" onClick={() => { setShowApplyForm(true); setIsMobileNavOpen(false) }}>
-          <DocumentIcon size={16} color="#059669" /> Apply for Scheme
+          <GlobeIcon size={15} color="#0284c7" /> Official Portals
         </button>
 
         <div style={styles.sidebarHelp}>
-          <div style={styles.sidebarHelpAvatar}><Logo size={24} /></div>
-          <div style={styles.sidebarHelpTitle}>Need help?</div>
-          <div style={styles.sidebarHelpText}>Use voice, type, or ask in your preferred language.</div>
+          <div style={styles.sidebarHelpRow}>
+            <div style={styles.sidebarHelpAvatar}><Logo size={18} /></div>
+            <div>
+              <div style={styles.sidebarHelpTitle}>Voice Assistant</div>
+              <div style={styles.sidebarHelpText}>Speak in your mother tongue</div>
+            </div>
+          </div>
           {isVoiceInputSupported && (
             <button
               className={isListening ? 'ym-mic-btn ym-mic-active' : 'ym-nav-item'}
@@ -606,7 +607,7 @@ export default function App() {
               onClick={() => { handleMicClick(); setIsMobileNavOpen(false) }}
               disabled={loadingSchemes || !isOnline}
             >
-              <MicIcon size={15} color={isListening ? 'white' : '#ffffff'} /> {isListening ? 'Listening...' : 'Try Voice'}
+              <MicIcon size={14} color={isListening ? 'white' : '#ffffff'} /> {isListening ? 'Listening...' : 'Try Voice'}
             </button>
           )}
         </div>
@@ -629,21 +630,21 @@ export default function App() {
           </div>
           <div style={styles.headerActions}>
             <button
-              className="ym-icon-btn"
+              className="ym-icon-btn ym-header-desktop-only"
               onClick={() => setShowScorecard(true)}
               title="Citizen Eligibility Scorecard"
             >
               <CalculatorIcon size={14} color="#059669" /> Scorecard
             </button>
             <button
-              className="ym-icon-btn"
+              className="ym-icon-btn ym-header-desktop-only"
               onClick={() => setShowGrievance(true)}
               title="CM Helpline 181 Grievance"
             >
               <ShieldAlertIcon size={14} color="#e11d48" /> 181 Helpline
             </button>
             <button
-              className="ym-icon-btn"
+              className="ym-icon-btn ym-header-desktop-only"
               onClick={() => setShowAdminDashboard(true)}
               title="GovTech Intelligence & Admin Portal"
             >
@@ -777,7 +778,7 @@ export default function App() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={!isOnline ? t(voiceLang, 'placeholderOffline') : isListening ? t(voiceLang, 'placeholderListening') : t(voiceLang, 'placeholderIdle')}
-            rows={2}
+            rows={1}
             disabled={loadingSchemes || !isOnline}
           />
           <button
@@ -787,7 +788,7 @@ export default function App() {
             disabled={loading || loadingSchemes || !input.trim() || !isOnline}
             aria-label="Send"
           >
-            <SendIcon size={16} color="var(--color-cream)" />
+            <SendIcon size={16} color="#ffffff" />
           </button>
         </div>
       </div>
@@ -1137,71 +1138,91 @@ const styles = {
     background: '#f0fdf4',
     borderRight: '1px solid #bbf7d0',
     color: '#0f172a',
-    padding: '18px 14px',
+    padding: '12px 10px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '3px',
+    gap: '2px',
     overflowY: 'auto',
+    overflowX: 'hidden',
   },
   sidebarBrand: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    marginBottom: '14px',
-    paddingBottom: '12px',
+    gap: '8px',
+    marginBottom: '8px',
+    paddingBottom: '8px',
     borderBottom: '1px solid #dcfce7',
     position: 'relative',
   },
-  sidebarBrandTitle: { fontSize: '15.5px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 },
-  sidebarBrandSub: { fontSize: '11px', color: '#059669', fontWeight: 700, marginTop: '2px' },
+  sidebarBrandTitle: { fontSize: '14px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap' },
+  sidebarBrandSub: { fontSize: '10px', color: '#059669', fontWeight: 700, marginTop: '1px', whiteSpace: 'nowrap' },
   mobileCloseBtn: {
-    display: 'none', marginLeft: 'auto', background: '#dcfce7', border: 'none', borderRadius: '8px', padding: '6px', cursor: 'pointer',
+    display: 'none', marginLeft: 'auto', background: '#dcfce7', border: 'none', borderRadius: '6px', padding: '4px', cursor: 'pointer',
   },
   sidebarSectionLabel: {
-    fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 800,
-    color: '#047857', margin: '18px 8px 6px',
+    fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800,
+    color: '#047857', margin: '8px 6px 2px',
   },
   sidebarHelp: {
-    marginTop: 'auto', background: '#ffffff', borderRadius: '14px',
-    padding: '16px', display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '5px',
-    border: '1.5px solid #bbf7d0', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.08)',
+    marginTop: 'auto', background: '#ffffff', borderRadius: '10px',
+    padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '6px',
+    border: '1px solid #bbf7d0', boxShadow: '0 2px 8px rgba(5, 150, 105, 0.06)',
   },
-  sidebarHelpAvatar: { width: '32px', height: '32px', borderRadius: '10px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '2px' },
-  sidebarHelpTitle: { fontSize: '13.5px', fontWeight: 800, color: '#0f172a' },
-  sidebarHelpText: { fontSize: '12px', color: '#475569', lineHeight: 1.45, marginBottom: '8px' },
+  sidebarHelpRow: { display: 'flex', alignItems: 'center', gap: '6px' },
+  sidebarHelpAvatar: { width: '24px', height: '24px', borderRadius: '6px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  sidebarHelpTitle: { fontSize: '12px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 },
+  sidebarHelpText: { fontSize: '10.5px', color: '#64748b', lineHeight: 1.2 },
   sidebarVoiceBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', border: 'none', borderRadius: '10px',
-    padding: '8px 16px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#ffffff',
-    fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit',
-    boxShadow: '0 4px 10px rgba(5, 150, 105, 0.25)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: 'none', borderRadius: '8px',
+    padding: '6px 10px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#ffffff',
+    fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.2)',
   },
-  mainCol: { display: 'flex', flexDirection: 'column', minWidth: 0, height: '100dvh', background: '#f8fafc' },
+  mainCol: {
+    display: 'flex',
+    flexDirection: 'column',
+    minWidth: 0,
+    width: '100%',
+    height: '100dvh',
+    maxHeight: '100dvh',
+    overflow: 'hidden',
+    position: 'relative',
+    background: '#f8fafc',
+  },
   mobileMenuBtn: {
-    display: 'none', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', padding: '6px', marginRight: '2px',
+    display: 'none', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '7px', cursor: 'pointer', padding: '5px 7px', marginRight: '4px',
   },
-  statusDot: { display: 'inline-block', width: '7px', height: '7px', borderRadius: '50%', marginRight: '5px' },
+  statusDot: { display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', marginRight: '4px' },
   header: {
-    background: 'rgba(255, 255, 255, 0.95)',
+    background: 'rgba(255, 255, 255, 0.96)',
     backdropFilter: 'blur(12px)',
     color: '#0f172a',
-    padding: '14px 20px',
+    padding: '8px 14px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: '12px',
-    flexWrap: 'wrap',
+    gap: '8px',
+    flexWrap: 'nowrap',
     borderBottom: '1px solid #e2e8f0',
+    width: '100%',
+    boxSizing: 'border-box',
+    overflow: 'hidden',
+    flexShrink: 0,
   },
   headerLeft: {
     display: 'flex',
     alignItems: 'center',
-    gap: '8px',
+    gap: '6px',
+    minWidth: 0,
+    overflow: 'hidden',
   },
-  title: { margin: 0, fontSize: '18px', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#0f172a' },
-  subtitle: { margin: '2px 0 0', fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', fontWeight: 500 },
+  title: { margin: 0, fontSize: '15.5px', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' },
+  subtitle: { margin: 0, fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', fontWeight: 500, whiteSpace: 'nowrap' },
   headerActions: {
     display: 'flex',
-    gap: '8px',
+    alignItems: 'center',
+    gap: '6px',
+    flexShrink: 0,
   },
   langMenuWrap: { position: 'relative' },
   langMenuDropdown: {
@@ -1348,32 +1369,38 @@ const styles = {
   chatArea: {
     flex: 1,
     overflowY: 'auto',
-    padding: '18px',
+    overflowX: 'hidden',
+    padding: '12px clamp(8px, 2.5vw, 18px)',
     display: 'flex',
     flexDirection: 'column',
     gap: '10px',
+    minHeight: 0,
+    WebkitOverflowScrolling: 'touch',
   },
   bubble: {
-    padding: '13px 15px',
+    padding: '11px 14px',
     borderRadius: '16px',
-    maxWidth: '85%',
+    maxWidth: '88%',
     whiteSpace: 'pre-wrap',
+    wordBreak: 'break-word',
+    overflowWrap: 'break-word',
     lineHeight: 1.5,
-    fontSize: '15px',
+    fontSize: '14.5px',
   },
   userBubble: {
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
+    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#ffffff',
     alignSelf: 'flex-end',
     borderBottomRightRadius: '4px',
+    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.2)',
   },
   assistantBubble: {
     background: '#ffffff',
-    color: 'var(--color-charcoal)',
+    color: '#0f172a',
     alignSelf: 'flex-start',
     borderBottomLeftRadius: '4px',
-    boxShadow: '0 1px 4px rgba(20,83,45,0.08)',
-    border: '1px solid rgba(20,83,45,0.06)',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
+    border: '1px solid #e2e8f0',
   },
   systemNote: {
     fontSize: '13px',
@@ -1389,30 +1416,44 @@ const styles = {
   },
   inputArea: {
     display: 'flex',
+    alignItems: 'center',
     gap: '8px',
-    padding: '12px',
-    paddingBottom: 'max(12px, env(safe-area-inset-bottom, 12px))',
-    borderTop: '1px solid rgba(20,83,45,0.12)',
+    padding: '8px 12px',
+    paddingBottom: 'max(8px, env(safe-area-inset-bottom, 8px))',
+    borderTop: '1px solid #e2e8f0',
     background: '#ffffff',
+    width: '100%',
+    boxSizing: 'border-box',
+    flexShrink: 0,
   },
   textInput: {
     flex: 1,
+    minWidth: 0,
     resize: 'none',
-    padding: '10px 12px',
-    borderRadius: '12px',
-    border: '1px solid rgba(20,83,45,0.2)',
-    fontSize: '15px',
+    padding: '9px 12px',
+    borderRadius: '10px',
+    border: '1px solid #cbd5e1',
+    fontSize: '14px',
     fontFamily: 'inherit',
-    background: 'var(--color-cream)',
+    background: '#f8fafc',
+    color: '#0f172a',
+    outline: 'none',
+    boxSizing: 'border-box',
+    lineHeight: 1.4,
+    height: '40px',
   },
   sendButton: {
-    padding: '0 20px',
-    borderRadius: '12px',
+    width: '40px',
+    height: '40px',
+    borderRadius: '10px',
     border: 'none',
-    background: 'var(--color-forest)',
-    color: 'var(--color-cream)',
-    fontSize: '15px',
-    fontWeight: 600,
+    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#ffffff',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     cursor: 'pointer',
+    flexShrink: 0,
+    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
   },
 }
