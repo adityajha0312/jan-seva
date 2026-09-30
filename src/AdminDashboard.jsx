@@ -53,24 +53,26 @@ export default function AdminDashboard({ onClose }) {
   )
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="ym-modal-overlay" style={styles.overlay} onClick={onClose}>
+      <div className="ym-modal-card" style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div style={styles.header}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0, paddingRight: '10px' }}>
             <Logo size={34} />
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={styles.adminBadge}>MPOnline GovTech Command</span>
                 <span style={styles.liveIndicator}>● Live Monitoring</span>
               </div>
               <h2 style={styles.title}>Nodal Officer & GovTech Analytics Dashboard</h2>
             </div>
           </div>
-          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
+          <button className="ym-close-pill-btn" onClick={onClose} aria-label="Close" title="Close">
             <CloseIcon size={18} />
           </button>
         </div>
 
+        {/* Top KPIs Banner */}
         <div style={styles.kpiRow}>
           <div style={styles.kpiCard}>
             <div style={styles.kpiLabel}>Citizen Inquiries Processed</div>
@@ -94,7 +96,9 @@ export default function AdminDashboard({ onClose }) {
           </div>
         </div>
 
+        {/* Main Content: Split Grid */}
         <div style={styles.gridSection}>
+          {/* Left: District Wise Scheme Penetration */}
           <div style={styles.panelCard}>
             <div style={styles.panelHeader}>
               <h3 style={styles.panelTitle}>Madhya Pradesh District Penetration</h3>
@@ -138,7 +142,9 @@ export default function AdminDashboard({ onClose }) {
             </div>
           </div>
 
+          {/* Right: Scheme Share & AI Policy Insights */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Scheme Distribution */}
             <div style={styles.panelCard}>
               <h3 style={styles.panelTitle}>Citizen Scheme Demand Share</h3>
               <div style={styles.barContainer}>
@@ -156,6 +162,7 @@ export default function AdminDashboard({ onClose }) {
               </div>
             </div>
 
+            {/* AI Policy Insights */}
             <div style={styles.panelCard}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
                 <span style={styles.aiSparkle}>✨</span>
@@ -183,16 +190,17 @@ export default function AdminDashboard({ onClose }) {
 
 const styles = {
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(20,83,45,0.52)',
+    position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '16px', zIndex: 60, backdropFilter: 'blur(3px)',
+    padding: '16px', zIndex: 9999, backdropFilter: 'blur(5px)',
   },
   modal: {
-    background: '#ffffff', borderRadius: '16px', padding: '24px',
-    maxWidth: '920px', width: '100%', maxHeight: '92vh', overflowY: 'auto',
-    fontFamily: 'var(--font-body)', boxShadow: '0 24px 60px rgba(0,0,0,0.25)',
+    background: '#ffffff', borderRadius: '18px', padding: '24px',
+    maxWidth: '920px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+    fontFamily: 'var(--font-body)', boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.35)',
+    position: 'relative',
   },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '16px', gap: '10px' },
   adminBadge: {
     background: 'var(--color-forest)', color: '#fff', fontSize: '11px',
     fontWeight: 700, padding: '3px 9px', borderRadius: '999px',
