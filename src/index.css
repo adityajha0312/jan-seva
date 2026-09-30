@@ -229,7 +229,6 @@ body {
     position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 55;
     backdrop-filter: blur(4px);
   }
-  /* Hide desktop buttons from mobile header so it NEVER overflows horizontally */
   .ym-header-desktop-only {
     display: none !important;
   }
@@ -237,7 +236,7 @@ body {
 
 .ym-mobile-menu-btn { display: none; }
 
-/* ---- Compact & High-Contrast Navigation Items (Fits laptops without scrolling) ---- */
+/* ---- Compact Navigation Items ---- */
 .ym-nav-item {
   display: flex;
   align-items: center;
@@ -300,6 +299,93 @@ body {
   border-radius: 999px; font-size: 13px; font-weight: 600; z-index: 100;
   animation: ym-rise 0.2s ease-out; box-shadow: 0 12px 30px rgba(0,0,0,0.3);
   border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* ---- Universal Responsive Modal & Overlay System ---- */
+.ym-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 16px !important;
+  z-index: 9999 !important; /* Above everything including header! */
+  backdrop-filter: blur(5px) !important;
+  -webkit-backdrop-filter: blur(5px) !important;
+  overflow-y: auto !important;
+  touch-action: pan-y !important;
+}
+
+.ym-modal-card {
+  background: #ffffff !important;
+  border-radius: 18px !important;
+  padding: 24px !important;
+  width: 100% !important;
+  max-height: 90vh !important;
+  max-height: 90dvh !important;
+  overflow-y: auto !important;
+  font-family: var(--font-body) !important;
+  box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35) !important;
+  border: 1px solid rgba(226, 232, 240, 0.9) !important;
+  position: relative !important;
+  margin: auto !important;
+}
+
+@media (max-width: 768px) {
+  .ym-modal-overlay {
+    padding: 10px 8px !important;
+  }
+  .ym-modal-card {
+    padding: 18px 14px !important;
+    border-radius: 16px !important;
+    max-height: 94vh !important;
+    max-height: 94dvh !important;
+  }
+}
+
+/* High-Visibility Tap-Friendly Close Button for Phones & Laptops */
+.ym-close-pill-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 38px !important;
+  height: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  border-radius: 50% !important;
+  background: #f1f5f9 !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  flex-shrink: 0 !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+}
+.ym-close-pill-btn:hover {
+  background: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #dc2626 !important;
+  transform: scale(1.05) !important;
+}
+.ym-close-pill-btn:active {
+  transform: scale(0.95) !important;
+}
+
+/* Responsive Scorecard Grid: 2 columns on desktop, 1 clean stack on phone */
+.ym-scorecard-grid {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 20px;
+  width: 100%;
+}
+
+@media (max-width: 820px) {
+  .ym-scorecard-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
 }
 
 /* ---- Print Styles for Official MPOnline Slips & Petitions ---- */
