@@ -42,6 +42,7 @@ const QUICK_GRIEVANCE_TEMPLATES = [
   }
 ]
 
+// Mock tracker database for demo mode & persistence
 const DEFAULT_TRACKED_COMPLAINTS = [
   {
     token: 'MP-CMH-2026-89421',
@@ -70,7 +71,7 @@ const DEFAULT_TRACKED_COMPLAINTS = [
 ]
 
 export default function GrievanceRedressal({ onClose, defaultProfile }) {
-  const [activeTab, setActiveTab] = useState('lodge')
+  const [activeTab, setActiveTab] = useState('lodge') // 'lodge' | 'track'
   const [applicantName, setApplicantName] = useState(defaultProfile?.name || '')
   const [mobileNumber, setMobileNumber] = useState('')
   const [district, setDistrict] = useState(defaultProfile?.location || 'Bhopal')
@@ -79,102 +80,120 @@ export default function GrievanceRedressal({ onClose, defaultProfile }) {
   const [isListening, setIsListening] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [generatedPetition, setGeneratedPetition] = useState(null)
+  const [copied, setCopied] = useState(false)
+
+  // Tracking state
   const [trackTokenInput, setTrackTokenInput] = useState('')
+  const [trackedList, setTrackedList] = useState(DEFAULT_TRACKED_COMPLAINTS)
   const [trackedResult, setTrackedResult] = useState(null)
   const [trackError, setTrackError] = useState(null)
-  const [trackedList, setTrackedList] = useState(DEFAULT_TRACKED_COMPLAINTS)
-  const [copied, setCopied] = useState(false)
-  const listenRef = useRef(null)
+
+  const listenControllerRef = useRef(null)
 
   function handleVoiceInput() {
     if (isListening) {
-      listenRef.current?.stop()
+      if (listenControllerRef.current) {
+        listenControllerRef.current.stop()
+        listenControllerRef.current = null
+      }
       setIsListening(false)
       return
     }
+
     stopSpeaking()
-    setIsListening(true)
-    listenRef.current = startListening({
+    listenControllerRef.current = startListening({
       lang: 'hi-IN',
-      onResult: (transcript, isFinal) => {
-        setGrievanceText((prev) => (isFinal ? (prev ? prev + ' ' : '') + transcript : transcript))
-        if (isFinal) setIsListening(false)
+      onResult: (transcript) => {
+        setIsListening(false)
+        listenControllerRef.current = null
+        if (transcript && transcript.trim()) {
+          setGrievanceText((prev) => (prev ? `${prev} ${transcript.trim()}` : transcript.trim()))
+        }
       },
-      onEnd: () => setIsListening(false),
-      onError: () => setIsListening(false)
+      onError: () => {
+        setIsListening(false)
+        listenControllerRef.current = null
+      }
     })
+    setIsListening(true)
   }
 
-  async function handleAnalyzeAndDraft() {
+  function handleSelectTemplate(tpl) {
+    setGrievanceText(tpl.desc)
+  }
+
+  async function handleGenerateAndFile() {
     if (!grievanceText.trim()) return
 
     setAnalyzing(true)
     const token = `MP-CMH-2026-${Math.floor(10000 + Math.random() * 90000)}`
 
-    const prompt = `You are the AI Citizen Grievance Redressal Assistant for Madhya Pradesh CM Helpline (181) and Public Service Guarantee Act (Lok Sewa Guarantee Kanoon).
-Analyze this citizen's grievance:
-"${grievanceText}"
-Citizen Details:
-Name: ${applicantName || 'Citizen'}
+    const prompt = `You are the Madhya Pradesh CM Helpline 181 & Lok Sewa Guarantee Act Redressal AI Officer.
+A citizen has reported the following grievance:
+Applicant Name: ${applicantName || 'Citizen Applicant'}
+Mobile: ${mobileNumber || 'Not provided'}
 District: ${district}
-Tehsil/Ward: ${tehsilWard || 'Unspecified'}
+Tehsil/Ward: ${tehsilWard || 'Local Block'}
+Issue Description: "${grievanceText}"
 
-Generate a formal response in JSON format with NO markdown formatting, matching this exact schema:
-{
-  "department": "The exact MP government department responsible",
-  "category": "Short classification",
-  "urgency": "High | Medium | Routine",
-  "slaDays": 7,
-  "summary": "Clear 2-sentence summary of the core grievance under MP Public Service Guarantee Act 2010",
-  "formalPetition": "Complete, officially worded petition formatted for the District Collector / Sub-Divisional Magistrate (SDM) in professional Hindi or English.",
-  "recommendedAction": "Actionable next steps for the citizen."
-}`
+Generate a clean JSON response with the following keys:
+- department: The exact government department responsible in MP (e.g. "Revenue Department (Panchayat/Tehsil)", "Food, Civil Supplies and Consumer Protection", "Public Health Engineering", "Women and Child Development", "School Education")
+- category: A concise official classification of the issue (e.g. "PDS Ration Distribution Irregularity", "Delay in Land Record Mutation", "Drinking Water Infrastructure Deficit")
+- urgency: "Standard" | "High" | "Critical"
+- slaDays: Target SLA resolution days under MP Public Service Guarantee Act 2010 (number between 3 and 15, default 7)
+- summary: A 2-sentence executive summary of the complaint
+- formalPetition: A formal representation drafted to the Sub-Divisional Officer (SDM) / District Magistrate citing the MP Public Services Guarantee Act 2010 and demanding action within SLA.
+- recommendedAction: What the citizen should expect next (e.g. "Nodal officer will call within 48 hours for spot inspection.")`
 
     try {
-      if (isCurrentlyOnline()) {
-        const raw = await askGemini(
-          'You are an expert GovTech grievance officer. Respond ONLY with valid raw JSON.',
-          [{ role: 'user', text: prompt }],
-          true
-        )
-        const parsed = JSON.parse(raw)
-        const finalPetition = {
-          token,
-          applicant: applicantName || 'Citizen of MP',
-          mobile: mobileNumber || '98XXXXXXXX',
-          district,
-          tehsilWard,
-          date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-          ...parsed
-        }
-        setGeneratedPetition(finalPetition)
-        setTrackedList((prev) => [
-          {
-            token,
-            applicant: finalPetition.applicant,
-            district,
-            dept: finalPetition.department,
-            subject: finalPetition.category,
-            status: 'Lodged (Under Scrutiny)',
-            step: 1,
-            date: finalPetition.date,
-            slaDate: `Within ${finalPetition.slaDays || 7} Days SLA`,
-            officer: `District Nodal Officer (${district})`
-          },
-          ...prev
-        ])
-      } else {
-        throw new Error('Offline fallback')
+      const reply = await askGemini(prompt, [{ role: 'user', text: 'Analyze and draft official CM Helpline grievance petition.' }])
+      let parsed = null
+      try {
+        const jsonMatch = reply.match(/\{[\s\S]*\}/)
+        if (jsonMatch) parsed = JSON.parse(jsonMatch[0])
+      } catch (e) {
+        // Fallback handled below
       }
-    } catch {
+
+      const petitionData = {
+        token,
+        date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        applicant: applicantName || 'Citizen Applicant',
+        mobile: mobileNumber || 'Registered Mobile',
+        district,
+        department: parsed?.department || 'District Administration (Collectorate)',
+        category: parsed?.category || 'Public Service Delivery Grievance',
+        urgency: parsed?.urgency || 'High',
+        slaDays: parsed?.slaDays || 7,
+        summary: parsed?.summary || `Grievance registered regarding ${grievanceText.slice(0, 100)}... under MP Public Service Guarantee Act.`,
+        formalPetition: parsed?.formalPetition || `To,\nThe Sub-Divisional Magistrate (SDM) / Collector,\nDistrict ${district}, Government of Madhya Pradesh.\n\nSUBJECT: Formal Grievance Petition under MP Public Services Guarantee Act 2010 & CM Helpline 181.\n\nRespected Sir/Madam,\n\nI, ${applicantName || 'the undersigned applicant'}, residing in ${tehsilWard || district}, District ${district}, submit this formal grievance regarding:\n"${grievanceText}"\n\nDespite repeated verbal submissions, the entitled public service has not been delivered within the statutory timeline. I request immediate inspection, strict adherence to the 7-day SLA under the Guarantee Act, and formal action.\n\nYours faithfully,\n${applicantName || 'Citizen Applicant'}\nContact: ${mobileNumber || 'Registered Mobile'}\nDate: ${new Date().toLocaleDateString('en-IN')}`,
+        recommendedAction: parsed?.recommendedAction || 'Keep this CM Helpline Token number handy. You will receive an automated IVR call & SMS confirmation on your mobile.'
+      }
+
+      setGeneratedPetition(petitionData)
+      setTrackedList((prev) => [
+        {
+          token,
+          applicant: petitionData.applicant,
+          district,
+          dept: petitionData.department,
+          subject: petitionData.category,
+          status: 'Lodged (Under Scrutiny)',
+          step: 1,
+          date: petitionData.date,
+          slaDate: `${petitionData.slaDays} Days SLA`,
+          officer: `SDM Nodal Officer (${district})`
+        },
+        ...prev
+      ])
+    } catch (err) {
       const fallback = {
         token,
-        applicant: applicantName || 'Shri/Smt. Citizen',
-        mobile: mobileNumber || '98260XXXXX',
-        district,
-        tehsilWard: tehsilWard || 'Gram Panchayat Center',
         date: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        department: grievanceText.toLowerCase().includes('ration') || grievanceText.toLowerCase().includes('bpl')
+        applicant: applicantName || 'Citizen Applicant',
+        mobile: mobileNumber || 'Registered Mobile',
+        district,
+        department: grievanceText.toLowerCase().includes('ration') || grievanceText.toLowerCase().includes('pds')
           ? 'Food, Civil Supplies and Consumer Protection Dept.'
           : grievanceText.toLowerCase().includes('kisan') || grievanceText.toLowerCase().includes('land')
           ? 'Revenue Department (Collectorate / Tehsil)'
@@ -183,7 +202,7 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
         urgency: 'High',
         slaDays: 7,
         summary: `Grievance submitted regarding public service delivery failure in ${district}. Citizen alleges delay exceeding the statutory time limit under Madhya Pradesh Public Services Guarantee Act 2010.`,
-        formalPetition: `To,\nThe District Magistrate / Sub-Divisional Officer (SDM)\nDistrict ${district}, Government of Madhya Pradesh\n\nSUBJECT: Formal Representation & Grievance under MP CM Helpline 181 and Lok Sewa Guarantee Act.\n\nRespected Sir/Madam,\n\nI, ${applicantName || 'Applicant'}, resident of ${tehsilWard || 'Tehsil/Ward'}, District ${district}, submit this formal grievance regarding:\n"${grievanceText}"\n\nDespite repeated submissions at the local panchayat/block level, no redressal has been provided within the designated timeline stipulated under the Public Service Guarantee Act 2010.\n\nRELIEF PRAYED FOR:\n1. Immediate inquiry and directive to the concerned nodal department.\n2. Redressal of service deficit within the mandated 7-day SLA.\n3. Intimation of action taken report via SMS to ${mobileNumber || 'registered mobile'}.\n\nYours faithfully,\n${applicantName || 'Citizen Applicant'}\nDate: ${new Date().toLocaleDateString('en-IN')}`,
+        formalPetition: `To,\nThe District Magistrate / Sub-Divisional Officer (SDM)\nDistrict ${district}, Government of Madhya Pradesh\n\nSUBJECT: Formal Representation & Grievance under MP CM Helpline 181 and Lok Sewa Guarantee Act.\n\nRespected Sir/Madam,\n\nI, ${applicantName || 'Applicant'}, resident of ${tehsilWard || 'Tehsil/Ward'}, District ${district}, submit this formal grievance regarding:\n"${grievanceText}"\n\nDespite repeated submissions at the local panchayat/block level, no redressal has been provided within the designated timeline stipulated under the Public Service Guarantee Act 2010.\n\nRELIEF PRAYED FOR:\n1. Immediate inquiry and issuance of directive to the concerned nodal department.\n2. Redressal of service deficit within the mandated 7-day SLA.\n3. Intimation of action taken report via SMS to ${mobileNumber || 'registered mobile'}.\n\nYours faithfully,\n${applicantName || 'Citizen Applicant'}\nDate: ${new Date().toLocaleDateString('en-IN')}`,
         recommendedAction: 'Keep this CM Helpline Token number handy. You will receive an automated IVR call & SMS confirmation on your mobile.'
       }
       setGeneratedPetition(fallback)
@@ -234,8 +253,9 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
   }
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="ym-modal-overlay" style={styles.overlay} onClick={onClose}>
+      <div className="ym-modal-card" style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div style={styles.header}>
           <div style={styles.headerLeft}>
             <span style={styles.badge}>GovTech · CM Helpline 181</span>
@@ -244,11 +264,12 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
               Voice or text grievance drafting with auto-classification under the MP Public Service Guarantee Act.
             </p>
           </div>
-          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
+          <button className="ym-close-pill-btn" onClick={onClose} aria-label="Close" title="Close">
             <CloseIcon size={18} />
           </button>
         </div>
 
+        {/* Navigation Tabs */}
         <div style={styles.tabBar}>
           <button
             style={{ ...styles.tabBtn, ...(activeTab === 'lodge' ? styles.tabBtnActive : {}) }}
@@ -264,26 +285,28 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
           </button>
         </div>
 
-        {activeTab === 'lodge' && (
+        {activeTab === 'lodge' ? (
           <div>
             {!generatedPetition ? (
-              <>
+              <div>
+                {/* Quick Templates */}
                 <div style={styles.quickSection}>
                   <div style={styles.sectionHeading}>Common MP Public Service Grievance Templates:</div>
                   <div style={styles.quickGrid}>
-                    {QUICK_GRIEVANCE_TEMPLATES.map((tmpl) => (
+                    {QUICK_GRIEVANCE_TEMPLATES.map((tpl, i) => (
                       <button
-                        key={tmpl.title}
+                        key={i}
                         style={styles.quickCard}
-                        onClick={() => setGrievanceText(tmpl.desc)}
+                        onClick={() => handleSelectTemplate(tpl)}
                       >
-                        <div style={styles.quickCardTitle}>{tmpl.title}</div>
-                        <div style={styles.quickCardDept}>{tmpl.dept}</div>
+                        <div style={styles.quickCardTitle}>{tpl.title}</div>
+                        <div style={styles.quickCardDept}>{tpl.dept}</div>
                       </button>
                     ))}
                   </div>
                 </div>
 
+                {/* Form Fields */}
                 <div style={styles.formGrid}>
                   <div>
                     <label style={styles.fieldLabel}>Applicant Full Name</label>
@@ -319,7 +342,7 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
                     <label style={styles.fieldLabel}>Tehsil / Block / Gram Panchayat</label>
                     <input
                       style={styles.input}
-                      placeholder="e.g. Ichhawar / Ward No. 12"
+                      placeholder="e.g. Ichhawar / Ward 12"
                       value={tehsilWard}
                       onChange={(e) => setTehsilWard(e.target.value)}
                     />
@@ -327,26 +350,23 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
                 </div>
 
                 <div style={{ marginTop: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                    <label style={styles.fieldLabel}>Describe the Grievance / Problem</label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={styles.fieldLabel}>Describe the issue in your own words (Hindi, English, or spoken):</label>
                     {isVoiceInputSupported && (
                       <button
-                        type="button"
+                        style={{ ...styles.voiceBtn, ...(isListening ? styles.voiceBtnActive : {}) }}
                         onClick={handleVoiceInput}
-                        style={{
-                          ...styles.voiceBtn,
-                          ...(isListening ? styles.voiceBtnActive : {})
-                        }}
+                        type="button"
                       >
                         {isListening ? <StopIcon size={14} color="#fff" /> : <MicIcon size={14} color="var(--color-forest)" />}
-                        <span>{isListening ? 'Listening...' : 'Speak in Hindi/English'}</span>
+                        <span>{isListening ? 'Listening...' : 'Voice Dictate'}</span>
                       </button>
                     )}
                   </div>
                   <textarea
-                    style={styles.textarea}
                     rows={4}
-                    placeholder="Describe what happened, which office is causing delay, or speak freely in your language..."
+                    style={styles.textarea}
+                    placeholder="e.g. Hamare gaanv me 2 mahine se ration nahi mila hai, kotedar machine kharab batata hai..."
                     value={grievanceText}
                     onChange={(e) => setGrievanceText(e.target.value)}
                   />
@@ -354,120 +374,123 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
 
                 <button
                   className="ym-cta"
-                  style={styles.submitBtn}
-                  onClick={handleAnalyzeAndDraft}
+                  style={{ ...styles.submitBtn, opacity: analyzing ? 0.7 : 1 }}
+                  onClick={handleGenerateAndFile}
                   disabled={analyzing || !grievanceText.trim()}
                 >
-                  {analyzing ? 'AI Analyzing Department & Generating Petition...' : 'Generate Official CM Helpline Petition & Token →'}
+                  {analyzing ? 'Drafting Official Petition with AI...' : 'Draft Legal Petition & Lodge on CM Helpline 181 →'}
                 </button>
-              </>
+              </div>
             ) : (
-              <div style={styles.petitionResult}>
-                <div style={styles.successBar}>
-                  <div>
-                    <span style={styles.tokenPill}>Token: {generatedPetition.token}</span>
-                    <strong style={{ marginLeft: '10px', color: 'var(--color-forest)', fontSize: '15px' }}>
-                      Grievance Formally Registered
-                    </strong>
+              /* Success / Result View */
+              <div style={styles.resultView}>
+                <div style={styles.resultHeader}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={styles.tokenBadge}>Token: {generatedPetition.token}</span>
+                    <span style={styles.urgencyBadge}>{generatedPetition.urgency} Urgency</span>
+                    <span style={styles.slaBadge}>Statutory SLA: {generatedPetition.slaDays} Days</span>
                   </div>
-                  <div style={styles.slaBadge}>SLA: {generatedPetition.slaDays || 7} Working Days</div>
+                  <div style={{ fontSize: '12px', color: 'var(--color-charcoal-soft)' }}>
+                    Filing Date: {generatedPetition.date}
+                  </div>
                 </div>
 
                 <div style={styles.classificationGrid}>
                   <div style={styles.classItem}>
-                    <div style={styles.classLabel}>Assigned Department</div>
-                    <div style={styles.classValue}>{generatedPetition.department}</div>
+                    <div style={styles.classLabel}>Assigned Department:</div>
+                    <div style={styles.classVal}>{generatedPetition.department}</div>
                   </div>
                   <div style={styles.classItem}>
-                    <div style={styles.classLabel}>Grievance Category</div>
-                    <div style={styles.classValue}>{generatedPetition.category}</div>
+                    <div style={styles.classLabel}>Category:</div>
+                    <div style={styles.classVal}>{generatedPetition.category}</div>
                   </div>
                   <div style={styles.classItem}>
-                    <div style={styles.classLabel}>Priority & Urgency</div>
-                    <div style={{ ...styles.classValue, color: generatedPetition.urgency === 'High' ? '#b00020' : 'var(--color-forest)' }}>
-                      {generatedPetition.urgency} Urgency
+                    <div style={styles.classLabel}>Citizen Applicant:</div>
+                    <div style={styles.classVal}>{generatedPetition.applicant} ({generatedPetition.district})</div>
+                  </div>
+                </div>
+
+                <div style={styles.noticeBox}>
+                  <strong>Action Notice:</strong> {generatedPetition.recommendedAction}
+                </div>
+
+                <div style={{ marginTop: '16px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <div style={styles.sectionHeading}>Official Representation & Legal Petition:</div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button style={styles.actionBtnSmall} onClick={handleCopyPetition}>
+                        {copied ? '✓ Copied' : 'Copy Petition'}
+                      </button>
+                      <button style={styles.actionBtnSmall} onClick={handlePrintPetition}>
+                        Print Slip
+                      </button>
                     </div>
                   </div>
-                  <div style={styles.classItem}>
-                    <div style={styles.classLabel}>District Nodal Office</div>
-                    <div style={styles.classValue}>Collectorate, {generatedPetition.district}</div>
-                  </div>
+                  <pre style={styles.petitionPre}>{generatedPetition.formalPetition}</pre>
                 </div>
 
-                <div style={styles.memoContainer}>
-                  <div style={styles.memoHeader}>
-                    <span>GOVERNMENT OF MADHYA PRADESH · CM HELPLINE 181 PETITION</span>
-                    <button style={styles.copyBtn} onClick={handleCopyPetition}>
-                      {copied ? '✓ Copied!' : 'Copy Petition'}
-                    </button>
-                  </div>
-                  <pre style={styles.memoContent}>{generatedPetition.formalPetition}</pre>
-                </div>
-
-                {generatedPetition.recommendedAction && (
-                  <div style={styles.actionNote}>
-                    <strong>Next Steps for Citizen:</strong> {generatedPetition.recommendedAction}
-                  </div>
-                )}
-
-                <div style={styles.resultActions}>
-                  <button className="ym-cta" style={styles.printBtn} onClick={handlePrintPetition}>
-                    🖨️ Print / Save Official PDF
-                  </button>
+                <div style={{ display: 'flex', gap: '10px', marginTop: '16px' }}>
                   <button
-                    style={styles.newGrievanceBtn}
+                    style={styles.resetBtn}
                     onClick={() => {
                       setGeneratedPetition(null)
                       setGrievanceText('')
                     }}
                   >
-                    Lodge Another Grievance
+                    + Lodge Another Grievance
+                  </button>
+                  <button
+                    className="ym-cta"
+                    style={{ ...styles.submitBtn, marginTop: 0, flex: 1 }}
+                    onClick={() => {
+                      setActiveTab('track')
+                      setTrackTokenInput(generatedPetition.token)
+                      setTrackedResult(trackedList[0])
+                    }}
+                  >
+                    Track Status in Real-Time →
                   </button>
                 </div>
               </div>
             )}
           </div>
-        )}
-
-        {activeTab === 'track' && (
-          <div style={styles.trackSection}>
-            <div style={styles.trackSearchRow}>
+        ) : (
+          /* Tracker Tab */
+          <div>
+            <div style={styles.trackInputRow}>
               <input
                 style={styles.trackInput}
-                placeholder="Enter Token ID (e.g. MP-CMH-2026-89421)"
+                placeholder="Enter 14-digit CM Helpline Token (e.g. MP-CMH-2026-89421)"
                 value={trackTokenInput}
                 onChange={(e) => setTrackTokenInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleTrackLookup()}
               />
               <button className="ym-cta" style={styles.trackBtn} onClick={handleTrackLookup}>
                 Track Status
               </button>
             </div>
 
-            {trackError && <div style={styles.trackError}>{trackError}</div>}
+            {trackError && <div style={styles.errorText}>{trackError}</div>}
 
             {trackedResult && (
-              <div style={styles.trackCard}>
-                <div style={styles.trackCardHead}>
+              <div style={styles.statusCard}>
+                <div style={styles.statusCardTop}>
                   <div>
-                    <span style={styles.tokenPill}>{trackedResult.token}</span>
-                    <h3 style={{ margin: '6px 0 0', color: 'var(--color-forest)', fontSize: '16px' }}>
-                      {trackedResult.subject}
-                    </h3>
+                    <span style={styles.tokenBadge}>{trackedResult.token}</span>
+                    <h3 style={styles.statusSubject}>{trackedResult.subject}</h3>
+                    <div style={styles.statusSub}>
+                      Dept: <strong>{trackedResult.dept}</strong> · District: <strong>{trackedResult.district}</strong>
+                    </div>
                   </div>
-                  <span style={styles.statusPill}>{trackedResult.status}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={styles.liveStatusPill}>{trackedResult.status}</span>
+                    <div style={{ fontSize: '11px', color: 'var(--color-charcoal-soft)', marginTop: '4px' }}>
+                      Target: {trackedResult.slaDate}
+                    </div>
+                  </div>
                 </div>
 
-                <div style={styles.trackDetailsGrid}>
-                  <div><strong>Applicant:</strong> {trackedResult.applicant}</div>
-                  <div><strong>District:</strong> {trackedResult.district}</div>
-                  <div><strong>Department:</strong> {trackedResult.dept}</div>
-                  <div><strong>Assigned Officer:</strong> {trackedResult.officer}</div>
-                  <div><strong>Date Filed:</strong> {trackedResult.date}</div>
-                  <div><strong>Target SLA:</strong> {trackedResult.slaDate}</div>
-                </div>
-
-                <div style={styles.timelineWrap}>
+                {/* Visual 4-Step SLA Progress */}
+                <div style={styles.timeline}>
                   <div style={styles.timelineStep}>
                     <div style={{ ...styles.stepCircle, ...(trackedResult.step >= 1 ? styles.stepCircleDone : {}) }}>1</div>
                     <div style={styles.stepTitle}>Lodged</div>
@@ -475,7 +498,7 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
                   <div style={{ ...styles.stepLine, ...(trackedResult.step >= 2 ? styles.stepLineDone : {}) }} />
                   <div style={styles.timelineStep}>
                     <div style={{ ...styles.stepCircle, ...(trackedResult.step >= 2 ? styles.stepCircleDone : {}) }}>2</div>
-                    <div style={styles.stepTitle}>AI Classified & Routed</div>
+                    <div style={styles.stepTitle}>Nodal Assigned</div>
                   </div>
                   <div style={{ ...styles.stepLine, ...(trackedResult.step >= 3 ? styles.stepLineDone : {}) }} />
                   <div style={styles.timelineStep}>
@@ -491,6 +514,7 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
               </div>
             )}
 
+            {/* List of sample / existing tokens */}
             <div style={{ marginTop: '20px' }}>
               <div style={styles.sectionHeading}>Recently Filed Grievances (Click to Track):</div>
               <div style={styles.recentList}>
@@ -524,17 +548,18 @@ Generate a formal response in JSON format with NO markdown formatting, matching 
 
 const styles = {
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(20,83,45,0.48)',
+    position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '16px', zIndex: 60, backdropFilter: 'blur(3px)',
+    padding: '16px', zIndex: 9999, backdropFilter: 'blur(5px)',
   },
   modal: {
-    background: '#ffffff', borderRadius: '16px', padding: '24px',
-    maxWidth: '720px', width: '100%', maxHeight: '92vh', overflowY: 'auto',
-    fontFamily: 'var(--font-body)', boxShadow: '0 20px 50px rgba(0,0,0,0.22)',
+    background: '#ffffff', borderRadius: '18px', padding: '24px',
+    maxWidth: '720px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+    fontFamily: 'var(--font-body)', boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.35)',
+    position: 'relative',
   },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' },
-  headerLeft: { flex: 1, paddingRight: '12px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: '10px' },
+  headerLeft: { flex: 1, minWidth: 0, paddingRight: '12px' },
   badge: {
     display: 'inline-block', fontSize: '11px', fontWeight: 700, color: 'var(--color-forest)',
     background: 'rgba(20,83,45,0.1)', padding: '3px 10px', borderRadius: '999px', marginBottom: '6px',
@@ -583,94 +608,95 @@ const styles = {
     background: 'var(--color-forest)', color: 'var(--color-cream)', fontSize: '14.5px', fontWeight: 700,
     cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
   },
-  petitionResult: { animation: 'ym-rise 0.25s ease-out' },
-  successBar: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px',
-    background: 'var(--color-sage)', borderRadius: '10px', marginBottom: '14px', flexWrap: 'wrap', gap: '8px',
+  resultView: {
+    background: '#fafaf9', padding: '18px', borderRadius: '12px', border: '1px solid #e7e5e4',
   },
-  tokenPill: {
-    background: 'var(--color-forest)', color: '#fff', padding: '4px 9px', borderRadius: '6px',
-    fontSize: '12px', fontWeight: 700, letterSpacing: '0.5px',
+  resultHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap',
+    gap: '8px', borderBottom: '1px solid #e7e5e4', paddingBottom: '12px', marginBottom: '14px',
+  },
+  tokenBadge: {
+    fontSize: '12px', fontWeight: 800, background: 'var(--color-sage)', color: 'var(--color-forest)',
+    padding: '3px 8px', borderRadius: '6px', fontFamily: 'monospace',
+  },
+  urgencyBadge: {
+    fontSize: '11px', fontWeight: 700, background: '#fee2e2', color: '#991b1b',
+    padding: '2px 8px', borderRadius: '999px',
   },
   slaBadge: {
-    background: '#fef3c7', color: '#92400e', padding: '4px 10px', borderRadius: '999px',
-    fontSize: '12px', fontWeight: 700,
+    fontSize: '11px', fontWeight: 700, background: '#fef3c7', color: '#92400e',
+    padding: '2px 8px', borderRadius: '999px',
   },
   classificationGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px',
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px',
     marginBottom: '14px',
   },
-  classItem: { background: '#f8fafc', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0' },
-  classLabel: { fontSize: '11px', color: 'var(--color-charcoal-soft)', fontWeight: 600 },
-  classValue: { fontSize: '13px', color: 'var(--color-forest)', fontWeight: 700, marginTop: '3px' },
-  memoContainer: {
-    border: '1px solid rgba(20,83,45,0.2)', borderRadius: '10px', background: '#fafaf9',
-    overflow: 'hidden', marginBottom: '14px',
+  classItem: {
+    background: '#fff', padding: '8px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
   },
-  memoHeader: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px',
-    background: 'rgba(20,83,45,0.08)', fontSize: '11px', fontWeight: 700, color: 'var(--color-forest)',
+  classLabel: { fontSize: '11px', color: 'var(--color-charcoal-soft)', textTransform: 'uppercase', fontWeight: 600 },
+  classVal: { fontSize: '13px', fontWeight: 700, color: 'var(--color-forest)', marginTop: '2px' },
+  noticeBox: {
+    background: '#fef3c7', color: '#78350f', padding: '10px 14px', borderRadius: '8px',
+    fontSize: '12.5px', lineHeight: 1.45, border: '1px solid #fde68a', marginBottom: '14px',
   },
-  copyBtn: {
-    padding: '4px 10px', borderRadius: '6px', border: '1px solid rgba(20,83,45,0.2)',
-    background: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+  petitionPre: {
+    background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '14px',
+    fontSize: '12.5px', lineHeight: 1.5, fontFamily: 'monospace', whiteSpace: 'pre-wrap',
+    maxHeight: '260px', overflowY: 'auto', color: '#1e293b',
   },
-  memoContent: {
-    padding: '12px', margin: 0, fontSize: '12.5px', lineHeight: 1.5, whiteSpace: 'pre-wrap',
-    fontFamily: 'monospace', color: '#1e293b', maxHeight: '240px', overflowY: 'auto',
+  actionBtnSmall: {
+    padding: '4px 10px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#fff',
+    fontSize: '12px', fontWeight: 600, cursor: 'pointer', color: '#334155',
   },
-  actionNote: {
-    background: '#fef9c3', border: '1px solid #fde047', borderRadius: '8px', padding: '10px 12px',
-    fontSize: '12.5px', color: '#713f12', marginBottom: '14px',
+  resetBtn: {
+    padding: '10px 16px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#fff',
+    color: '#334155', fontSize: '13px', fontWeight: 600, cursor: 'pointer',
   },
-  resultActions: { display: 'flex', gap: '10px', flexWrap: 'wrap' },
-  printBtn: {
-    flex: '1 1 200px', padding: '11px', borderRadius: '8px', border: 'none',
-    background: 'var(--color-forest)', color: '#fff', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer',
-  },
-  newGrievanceBtn: {
-    flex: '1 1 160px', padding: '11px', borderRadius: '8px', border: '1px solid rgba(20,83,45,0.25)',
-    background: '#fff', color: 'var(--color-forest)', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer',
-  },
-  trackSection: { animation: 'ym-rise 0.25s ease-out' },
-  trackSearchRow: { display: 'flex', gap: '8px', marginBottom: '14px' },
+  trackInputRow: { display: 'flex', gap: '8px', marginBottom: '16px' },
   trackInput: {
-    flex: 1, padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(20,83,45,0.22)',
-    fontSize: '14px', fontFamily: 'inherit',
+    flex: 1, padding: '10px 14px', borderRadius: '8px', border: '1px solid rgba(20,83,45,0.22)',
+    fontSize: '13.5px', fontFamily: 'inherit',
   },
   trackBtn: {
     padding: '10px 18px', borderRadius: '8px', border: 'none', background: 'var(--color-forest)',
-    color: '#fff', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer',
+    color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
   },
-  trackError: { color: '#b00020', fontSize: '12.5px', marginBottom: '12px' },
-  trackCard: {
-    border: '1px solid rgba(20,83,45,0.18)', borderRadius: '12px', padding: '16px', background: '#fafaf9',
-    marginBottom: '16px',
+  errorText: { color: '#b91c1c', fontSize: '12.5px', marginBottom: '12px' },
+  statusCard: {
+    background: '#ffffff', borderRadius: '12px', border: '1.5px solid #bbf7d0',
+    padding: '16px', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.08)', marginBottom: '18px',
   },
-  trackCardHead: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' },
-  statusPill: {
-    background: '#dcfce7', color: '#166534', padding: '4px 10px', borderRadius: '999px',
-    fontSize: '12px', fontWeight: 700,
+  statusCardTop: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+    borderBottom: '1px solid #f1f5f9', paddingBottom: '12px', marginBottom: '16px',
+    flexWrap: 'wrap', gap: '10px',
   },
-  trackDetailsGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px 12px', fontSize: '12.5px', color: '#334155' },
-  timelineWrap: {
-    display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '18px',
-    padding: '12px 10px 4px', borderTop: '1px solid #e2e8f0',
+  statusSubject: { margin: '6px 0 2px', fontSize: '16px', color: '#0f172a', fontWeight: 700 },
+  statusSub: { fontSize: '12px', color: '#64748b' },
+  liveStatusPill: {
+    fontSize: '12px', fontWeight: 800, background: '#dcfce7', color: '#15803d',
+    padding: '4px 10px', borderRadius: '999px', display: 'inline-block',
   },
-  timelineStep: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textAlign: 'center', minWidth: '60px' },
+  timeline: {
+    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+    padding: '10px 14px', position: 'relative',
+  },
+  timelineStep: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', zIndex: 2 },
   stepCircle: {
-    width: '26px', height: '26px', borderRadius: '50%', background: '#cbd5e1', color: '#fff',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11.5px', fontWeight: 700,
+    width: '28px', height: '28px', borderRadius: '50%', background: '#e2e8f0', color: '#64748b',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700,
   },
-  stepCircleDone: { background: 'var(--color-forest)' },
-  stepTitle: { fontSize: '10.5px', fontWeight: 600, color: 'var(--color-charcoal)' },
-  stepLine: { flex: 1, height: '3px', background: '#cbd5e1', margin: '0 4px', transform: 'translateY(-10px)' },
+  stepCircleDone: { background: 'var(--color-forest)', color: '#fff' },
+  stepTitle: { fontSize: '11px', color: '#475569', fontWeight: 600, textAlign: 'center' },
+  stepLine: { flex: 1, height: '3px', background: '#e2e8f0', margin: '0 -8px 20px', zIndex: 1 },
   stepLineDone: { background: 'var(--color-forest)' },
   recentList: { display: 'flex', flexDirection: 'column', gap: '6px' },
   recentItem: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px',
-    borderRadius: '8px', border: '1px solid #e2e8f0', background: '#fff', textAlign: 'left',
-    cursor: 'pointer', fontFamily: 'inherit',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0',
+    background: '#ffffff', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+    transition: 'background 0.15s ease',
   },
-  recentStatus: { fontSize: '11px', fontWeight: 700, color: 'var(--color-forest)', background: 'var(--color-sage)', padding: '3px 8px', borderRadius: '999px' },
+  recentStatus: { fontSize: '11px', fontWeight: 700, color: 'var(--color-forest)', background: '#ecfdf5', padding: '3px 8px', borderRadius: '6px' },
 }
