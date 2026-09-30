@@ -535,7 +535,7 @@ export default function App() {
       {/* Left sidebar: brand + primary navigation */}
       <aside className={`ym-shell-left${isMobileNavOpen ? ' ym-open' : ''}`} style={styles.sidebarLeft}>
         <div style={styles.sidebarBrand}>
-          <Logo size={28} />
+          <Logo size={36} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={styles.sidebarBrandTitle}>Jan Seva (जन सेवा)</div>
             <div style={styles.sidebarBrandSub}>AI Citizen Governance</div>
