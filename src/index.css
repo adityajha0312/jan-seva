@@ -405,3 +405,47 @@ body {
     box-shadow: none !important;
   }
 }
+
+/* ---- Accessibility: Large Text Mode ---- */
+html.ym-text-large,
+body.ym-text-large,
+.ym-shell.ym-text-large {
+  font-size: 17.5px !important;
+}
+
+.ym-shell.ym-text-large .ym-bubble {
+  font-size: 17px !important;
+  line-height: 1.65 !important;
+  padding: 14px 18px !important;
+  max-width: 90% !important;
+}
+
+.ym-shell.ym-text-large .ym-chat-input {
+  font-size: 16.5px !important;
+  line-height: 1.5 !important;
+}
+
+.ym-shell.ym-text-large .ym-nav-item {
+  font-size: 14.5px !important;
+  padding: 9px 12px !important;
+}
+
+.ym-shell.ym-text-large .ym-title-text {
+  font-size: 21px !important;
+}
+
+.ym-shell.ym-text-large .ym-subtitle-text {
+  font-size: 13.5px !important;
+}
+
+.ym-text-large .ym-modal-card {
+  font-size: 16px !important;
+}
+
+.ym-text-large .ym-scheme-row,
+.ym-text-large .ym-link-pill,
+.ym-text-large input,
+.ym-text-large select,
+.ym-text-large textarea {
+  font-size: 15px !important;
+}
