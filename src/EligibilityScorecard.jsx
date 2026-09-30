@@ -98,42 +98,41 @@ const MP_SCHEMES_CRITERIA = [
   },
   {
     id: 'ayushman-bharat',
-    name: 'Ayushman Bharat (Niramayam MP)',
+    name: 'Ayushman Bharat (Ayushman Niramayam MP)',
     benefitAmount: 500000,
-    benefitText: '₹5 Lakh / year free cashless medical treatment per family',
+    benefitText: '₹5,00,000 / year cashless hospital health insurance',
     category: 'Healthcare',
     evaluate: (p) => {
       const checks = []
       let score = 0
-      const isLowIncome = ['bpl', 'low', 'mid'].includes(p.income)
-      const hasCard = p.isBpl || p.isSambal
+      const isBplOrSambal = p.isBpl || p.isSambal || p.income === 'bpl' || p.income === 'low'
 
-      if (isLowIncome || hasCard) { checks.push({ text: 'Eligible under BPL / SECC / Sambal cardholder category', ok: true }); score += 60 }
-      else checks.push({ text: 'Requires BPL, NFSA ration card, or Sambal registration', ok: false })
+      if (isBplOrSambal) { checks.push({ text: 'Deprived / BPL / Sambal beneficiary list mapped', ok: true }); score += 60 }
+      else checks.push({ text: 'Must fall under SECC census / Ration card / Sambal category', ok: false })
 
-      checks.push({ text: 'All family members covered under annual cashless pool', ok: true }); score += 40
+      if (p.age >= 18) { checks.push({ text: 'Adult citizen applicant with biometric verification', ok: true }); score += 40 }
 
-      return { score, checks, requiredDocs: ['Ration Card / Samagra Family ID', 'Aadhaar Card of all members'] }
+      return { score, checks, requiredDocs: ['Aadhaar Card', 'Ration Card / Sambal Card', 'Samagra Family ID'] }
     }
   },
   {
     id: 'pm-awas-gramin',
-    name: 'PM Awas Yojana (Gramin/Urban Housing)',
+    name: 'Pradhan Mantri Awas Yojana (PMAY-Gramin)',
     benefitAmount: 120000,
-    benefitText: '₹1.20 Lakh - ₹2.50 Lakh financial grant for pucca house',
-    category: 'Housing',
+    benefitText: '₹1.20 Lakh grant for rural pucca house construction + 90 days MGNREGA wages',
+    category: 'Rural Housing',
     evaluate: (p) => {
       const checks = []
       let score = 0
-      const isLowIncome = ['bpl', 'low'].includes(p.income)
+      const needsHouse = p.isBpl || p.income === 'bpl' || p.income === 'low'
 
-      if (isLowIncome || p.isBpl) { checks.push({ text: 'Identified economically weaker section / BPL category', ok: true }); score += 50 }
-      else checks.push({ text: 'Exclusively for families without a pucca house', ok: false })
+      if (needsHouse) { checks.push({ text: 'Kutcha house / Houseless household in rural registry', ok: true }); score += 60 }
+      else checks.push({ text: 'Only houseless or kutcha house owners qualify', ok: false })
 
-      if (p.land === 'none' || p.land === 'marginal') { checks.push({ text: 'Eligible homestead / landholding status', ok: true }); score += 50 }
-      else checks.push({ text: 'Large landholders may require manual gram sabha verification', ok: false })
+      if (p.land === 'none' || p.land === 'marginal') { checks.push({ text: 'No existing pucca dwelling or commercial property', ok: true }); score += 40 }
+      else checks.push({ text: 'Large landholders or motorized vehicle owners excluded', ok: false })
 
-      return { score, checks, requiredDocs: ['Aadhaar Card', 'Bank Passbook', 'MGNREGA Job Card (for Gramin)', 'Land Ownership / Allotment papers'] }
+      return { score, checks, requiredDocs: ['Gram Panchayat Awas Registry Proof', 'Samagra ID', 'Bank Account Details', 'Aadhaar Card'] }
     }
   }
 ]
@@ -169,21 +168,23 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
     .reduce((acc, s) => acc + s.benefitAmount, 0)
 
   return (
-    <div style={styles.overlay} onClick={onClose}>
-      <div style={styles.modal} onClick={(e) => e.stopPropagation()}>
+    <div className="ym-modal-overlay" style={styles.overlay} onClick={onClose}>
+      <div className="ym-modal-card" style={styles.modal} onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
         <div style={styles.header}>
-          <div>
+          <div style={{ flex: 1, minWidth: 0, paddingRight: '12px' }}>
             <span style={styles.badge}>Predictive AI · Explainable Governance</span>
             <h2 style={styles.title}>Citizen Eligibility Match Scorecard</h2>
             <p style={styles.subtitle}>
               Instant AI eligibility scoring with transparent rule explainability and cumulative benefit calculation.
             </p>
           </div>
-          <button style={styles.closeBtn} onClick={onClose} aria-label="Close">
+          <button className="ym-close-pill-btn" onClick={onClose} aria-label="Close" title="Close">
             <CloseIcon size={18} />
           </button>
         </div>
 
+        {/* Top Summary Banner */}
         <div style={styles.summaryBanner}>
           <div style={styles.summaryItem}>
             <div style={styles.summaryLabel}>Matched Schemes</div>
@@ -209,7 +210,8 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
           </div>
         </div>
 
-        <div style={styles.bodyLayout}>
+        <div className="ym-scorecard-grid">
+          {/* Left Column: Quick Profile Filters */}
           <div style={styles.filterCol}>
             <div style={styles.filterTitle}>Adjust Citizen Profile:</div>
 
@@ -309,6 +311,7 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
             </div>
           </div>
 
+          {/* Right Column: Scorecards with Explainability breakdown */}
           <div style={styles.schemeCol}>
             <div style={styles.schemeListHeading}>
               Ranked Scheme Matches ({results.length} Analyzed)
@@ -332,7 +335,7 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
                       style={styles.cardHeader}
                       onClick={() => setExpandedScheme(isExpanded ? null : scheme.id)}
                     >
-                      <div style={{ flex: 1 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span style={styles.categoryPill}>{scheme.category}</span>
                           <span
@@ -355,6 +358,7 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
 
                     {isExpanded && (
                       <div style={styles.cardExpandedArea}>
+                        {/* Explainability Checklist */}
                         <div style={styles.explainTitle}>Why you qualify (Explainable Rules):</div>
                         <div style={styles.checkList}>
                           {scheme.checks.map((chk, i) => (
@@ -362,12 +366,15 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
                               <span style={{ color: chk.ok ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
                                 {chk.ok ? '✓' : '✕'}
                               </span>
-                              <span style={{ color: chk.ok ? '#1e293b' : '#64748b' }}>{chk.text}</span>
+                              <span style={{ color: chk.ok ? '#1e293b' : '#64748b' }}>
+                                {chk.text}
+                              </span>
                             </div>
                           ))}
                         </div>
 
-                        <div style={{ marginTop: '10px' }}>
+                        {/* Document Verification Pre-check */}
+                        <div style={{ marginTop: '12px' }}>
                           <div style={styles.explainTitle}>Required Verification Documents:</div>
                           <div style={styles.docsList}>
                             {scheme.requiredDocs.map((doc, idx) => (
@@ -376,6 +383,7 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
                           </div>
                         </div>
 
+                        {/* Action CTA */}
                         {isHigh && (
                           <div style={{ marginTop: '14px', display: 'flex', justifyContent: 'flex-end' }}>
                             <button
@@ -405,16 +413,17 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
 
 const styles = {
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(20,83,45,0.48)',
+    position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '16px', zIndex: 60, backdropFilter: 'blur(3px)',
+    padding: '16px', zIndex: 9999, backdropFilter: 'blur(5px)',
   },
   modal: {
-    background: '#ffffff', borderRadius: '16px', padding: '24px',
-    maxWidth: '840px', width: '100%', maxHeight: '92vh', overflowY: 'auto',
-    fontFamily: 'var(--font-body)', boxShadow: '0 20px 50px rgba(0,0,0,0.22)',
+    background: '#ffffff', borderRadius: '18px', padding: '24px',
+    maxWidth: '840px', width: '100%', maxHeight: '90vh', overflowY: 'auto',
+    fontFamily: 'var(--font-body)', boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.35)',
+    position: 'relative',
   },
-  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px' },
+  header: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', gap: '10px' },
   badge: {
     display: 'inline-block', fontSize: '11px', fontWeight: 700, color: 'var(--color-forest)',
     background: 'rgba(20,83,45,0.1)', padding: '3px 10px', borderRadius: '999px', marginBottom: '6px',
@@ -431,7 +440,6 @@ const styles = {
   summaryLabel: { fontSize: '11px', color: 'var(--color-charcoal-soft)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' },
   summaryVal: { marginTop: '2px', fontSize: '14px', color: '#1e293b' },
   summaryDivider: { width: '1px', height: '36px', background: 'rgba(20,83,45,0.15)' },
-  bodyLayout: { display: 'grid', gridTemplateColumns: '260px minmax(0, 1fr)', gap: '20px' },
   filterCol: {
     background: '#fafaf9', padding: '14px', borderRadius: '12px', border: '1px solid #e7e5e4',
     display: 'flex', flexDirection: 'column', gap: '12px',
@@ -459,7 +467,7 @@ const styles = {
   },
   cardHeader: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '14px',
-    cursor: 'pointer',
+    cursor: 'pointer', gap: '8px',
   },
   categoryPill: {
     fontSize: '10.5px', fontWeight: 700, color: 'var(--color-charcoal-soft)',
