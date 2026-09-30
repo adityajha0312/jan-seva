@@ -86,7 +86,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
       <header style={styles.navWrap}>
         <nav style={styles.nav}>
           <div style={styles.navBrand}>
-            <Logo size={38} />
+            <Logo size={52} />
             <div>
               <div style={styles.brandTitleRow}>
                 <span style={styles.navTitle}>Jan Seva</span>
@@ -332,7 +332,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
         <div style={styles.footerInner}>
           <div style={styles.footerColBrand}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Logo size={32} />
+              <Logo size={42} />
               <strong style={{ fontSize: '18px', color: '#0f172a' }}>Jan Seva (जन सेवा)</strong>
             </div>
             <p style={styles.footerTagline}>
