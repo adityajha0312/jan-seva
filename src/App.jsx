@@ -30,14 +30,16 @@ const VOICE_LANGUAGES = [
 const QUICK_LINKS = [
   { label: 'PM-KISAN', url: 'https://pmkisan.gov.in' },
   { label: 'Ayushman Bharat', url: 'https://beneficiary.nha.gov.in' },
-  { label: 'MP Scholarship Portal', url: 'https://hescholarship.mp.gov.in' },
+  { label: 'MP State Scholarship', url: 'https://scholarshipportal.mp.nic.in' },
   { label: 'MP Social Security', url: 'https://socialsecurity.mp.gov.in' },
-  { label: 'PM Awas Yojana (Gramin)', url: 'https://pmayg.nic.in' },
-  { label: 'National Scholarship Portal', url: 'https://scholarships.gov.in' },
+  { label: 'PM Awas Yojana', url: 'https://pmaymis.gov.in' },
+  { label: 'National Scholarship', url: 'https://scholarships.gov.in' },
   { label: 'Ujjwala Yojana', url: 'https://www.pmuy.gov.in' },
-  { label: 'e-Shram (Unorganized Workers)', url: 'https://eshram.gov.in' },
-  { label: 'Jan Dhan Yojana', url: 'https://www.pmjdy.gov.in' },
-  { label: 'Common Service Centre', url: 'https://csc.gov.in' },
+  { label: 'e-Shram (Workers)', url: 'https://eshram.gov.in' },
+  { label: 'Jan Dhan Yojana', url: 'https://pmjdy.gov.in' },
+  { label: 'MPOnline Citizen Portal', url: 'https://mponline.gov.in' },
+  { label: 'CM Helpline 181', url: 'https://cmhelpline.mp.gov.in' },
+  { label: 'Samagra Portal MP', url: 'https://samagra.gov.in' },
 ]
 
 function renderInline(text, keyPrefix) {
@@ -478,6 +480,12 @@ export default function App() {
   useEffect(() => {
     return () => stopSpeaking()
   }, [])
+
+    useEffect(() => {
+    const isLarge = settings.textSize === 'large'
+    document.documentElement.classList.toggle('ym-text-large', isLarge)
+    document.body.classList.toggle('ym-text-large', isLarge)
+  }, [settings.textSize])
 
   if (!started) {
     return (
