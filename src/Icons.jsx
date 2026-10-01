@@ -113,14 +113,29 @@ export function UserCircleIcon({ size = 17, color = 'currentColor' }) {
 
 export function SettingsGearIcon({ size = 17, color = 'currentColor' }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="1.7" />
-      <path
-        d="M12 3.5 V6 M12 18 V20.5 M20.5 12 H18 M6 12 H3.5 M17.6 6.4 L15.8 8.2 M8.2 15.8 L6.4 17.6 M17.6 17.6 L15.8 15.8 M8.2 8.2 L6.4 6.4"
-        stroke={color}
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      />
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  )
+}
+
+export function FemaleIcon({ size = 15, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="8.5" r="5" />
+      <line x1="12" y1="13.5" x2="12" y2="21" />
+      <line x1="8.5" y1="17.5" x2="15.5" y2="17.5" />
+    </svg>
+  )
+}
+
+export function MaleIcon({ size = 15, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="10" cy="14" r="5" />
+      <line x1="13.5" y1="10.5" x2="19.5" y2="4.5" />
+      <polyline points="14.5 4.5 19.5 4.5 19.5 9.5" />
     </svg>
   )
 }
