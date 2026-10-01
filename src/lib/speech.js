@@ -1,8 +1,6 @@
 // Wraps the browser's built-in Web Speech API.
 // Voice input (SpeechRecognition) and voice output (SpeechSynthesis) are
-// both free and built into Chrome/Edge - no API key needed. Support varies
-// by browser (works best in Chrome-based browsers; not supported in Firefox,
-// limited in Safari), so we detect availability and fail gracefully.
+// both free and built into Chrome/Edge - no API key needed.
 
 const SpeechRecognitionAPI =
   typeof window !== 'undefined'
@@ -13,9 +11,8 @@ export const isVoiceInputSupported = !!SpeechRecognitionAPI
 export const isVoiceOutputSupported =
   typeof window !== 'undefined' && !!window.speechSynthesis
 
-// Starts listening for speech and returns a controller object with a
-// stop() method. Callbacks receive the transcript as it's recognized.
-export function startListening({ lang = 'en-IN', onResult, onEnd, onError }) {
+// Starts listening for speech and returns a controller object with a stop() method.
+export function startListening({ lang = 'hi-IN', onResult, onEnd, onError }) {
   if (!SpeechRecognitionAPI) {
     onError?.('Voice input is not supported in this browser. Try Chrome or Edge.')
     return { stop: () => {} }
@@ -24,43 +21,69 @@ export function startListening({ lang = 'en-IN', onResult, onEnd, onError }) {
   const recognition = new SpeechRecognitionAPI()
   recognition.lang = lang
   recognition.interimResults = true
-  recognition.continuous = false
+  recognition.continuous = true // Continuous listening prevents premature cutoff when citizen pauses
+  let manualStop = false
 
   recognition.onresult = (event) => {
-    let transcript = ''
+    let finalTranscript = ''
+    let interimTranscript = ''
+
     for (let i = 0; i < event.results.length; i++) {
-      transcript += event.results[i][0].transcript
+      const result = event.results[i]
+      if (result.isFinal) {
+        finalTranscript += result[0].transcript + ' '
+      } else {
+        interimTranscript += result[0].transcript
+      }
     }
-    const isFinal = event.results[event.results.length - 1].isFinal
-    onResult?.(transcript, isFinal)
+
+    const combined = (finalTranscript + interimTranscript).trim()
+    const isLastFinal = event.results[event.results.length - 1]?.isFinal || false
+    onResult?.(combined, isLastFinal)
   }
 
   recognition.onerror = (event) => {
+    if (event.error === 'no-speech' || event.error === 'aborted') {
+      return
+    }
     onError?.(event.error)
   }
 
   recognition.onend = () => {
-    onEnd?.()
+    onEnd?.(manualStop)
   }
 
-  recognition.start()
-  return { stop: () => recognition.stop() }
+  try {
+    recognition.start()
+  } catch (e) {
+    onError?.(e.message)
+  }
+
+  return {
+    stop: () => {
+      manualStop = true
+      try {
+        recognition.stop()
+      } catch (e) {}
+    },
+  }
 }
 
-// Strips markdown symbols (**, *, bullet dashes) so spoken text sounds
-// natural instead of reading out "asterisk asterisk".
+// Strips markdown symbols, asterisks, URLs, and emojis so spoken text sounds natural
 function cleanTextForSpeech(text) {
+  if (!text) return ''
   return text
+    .replace(/#{1,6}\s+/g, '')
     .replace(/\*\*/g, '')
-    .replace(/^[*\-]\s+/gm, '')
+    .replace(/\*/g, '')
+    .replace(/^[*\-•]\s+/gm, '')
+    .replace(/[👉⚠️✅ℹ️📌🔹🔸•]/g, '')
+    .replace(/https?:\/\/\S+/g, 'वेबसाइट')
     .replace(/\n+/g, '. ')
 }
 
 let voicesReadyPromise = null
 
-// On first use, voice list may not be loaded yet in some browsers, which
-// can cause the very first speak() call to fail silently. This waits for
-// voices to be ready (or times out after 1s) before we speak.
 function waitForVoices() {
   if (!isVoiceOutputSupported) return Promise.resolve()
   if (voicesReadyPromise) return voicesReadyPromise
@@ -79,15 +102,10 @@ function waitForVoices() {
   return voicesReadyPromise
 }
 
-// Splits text into sentence-sized chunks. Chrome has a well-known bug where
-// a single long utterance (roughly 15+ seconds of speech) can silently stop
-// partway through. Speaking shorter sentences as a queue of separate
-// utterances - rather than one long one - avoids that bug entirely, and is
-// more reliable than trying to keep one long utterance alive with pause/resume
-// tricks.
+// Splits text into sentence-sized chunks including Hindi danda (।) and newlines.
 function splitIntoSentences(text) {
   const cleaned = cleanTextForSpeech(text)
-  const sentences = cleaned.match(/[^.!?]+[.!?]+|\s*[^.!?]+$/g)
+  const sentences = cleaned.match(/[^.!?।\n]+[.!?।\n]+|\s*[^.!?।\n]+$/g)
   return (sentences || [cleaned]).map((s) => s.trim()).filter(Boolean)
 }
 
@@ -104,12 +122,29 @@ function speakNextInQueue(lang) {
   const utterance = new SpeechSynthesisUtterance(sentence)
   utterance.lang = lang
   utterance.rate = 0.95
+
+  // Pick an authentic native voice for the selected language if available
+  try {
+    const voices = window.speechSynthesis.getVoices()
+    if (voices && voices.length > 0) {
+      const langPrefix = lang.split('-')[0].toLowerCase()
+      const matched = voices.find(
+        (v) =>
+          v.lang.toLowerCase() === lang.toLowerCase() ||
+          v.lang.toLowerCase().replace('_', '-').startsWith(langPrefix)
+      )
+      if (matched) {
+        utterance.voice = matched
+      }
+    }
+  } catch (e) {}
+
   utterance.onend = () => speakNextInQueue(lang)
   utterance.onerror = () => speakNextInQueue(lang)
   window.speechSynthesis.speak(utterance)
 }
 
-export function speakText(text, lang = 'en-IN') {
+export function speakText(text, lang = 'hi-IN') {
   if (!isVoiceOutputSupported) return
   window.speechSynthesis.cancel()
   speechQueue = []
