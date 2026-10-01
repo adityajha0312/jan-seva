@@ -131,10 +131,18 @@ function guessRelevantCategories(conversationText) {
   return matched
 }
 
-function buildSystemInstruction(schemes, conversationText) {
+function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN') {
   const relevantCategories = guessRelevantCategories(conversationText)
   const likelyRelevant = schemes.filter((s) => relevantCategories.has(s.category))
   const others = schemes.filter((s) => !relevantCategories.has(s.category))
+
+  const langNames = {
+    'en-IN': 'English',
+    'hi-IN': 'Hindi (हिन्दी)',
+    'mr-IN': 'Marathi (मराठी)',
+    'ta-IN': 'Tamil (தமிழ்)',
+  }
+  const selectedLangName = langNames[currentLang] || 'English'
 
   const formatScheme = (s) => `
 - ${s.scheme_name} (${s.scheme_name_hindi || ''}) [${s.category}, ${s.level}]
@@ -145,33 +153,43 @@ function buildSystemInstruction(schemes, conversationText) {
 
   return `You are Jan Seva (जन सेवा), a friendly, highly capable Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
 
-VOICE & AUDIO SYSTEM CAPABILITIES (CRITICAL):
-- You HAVE BUILT-IN VOICE & SPEECH SYNTHESIS (TTS) CAPABILITIES. This application automatically speaks your replies aloud in clear audio using native browser voice synthesis.
-- NEVER say "I am a text assistant", "I cannot speak", "I have no voice feature", or "mere me bolne ka feature nahi hai". You CAN speak!
-- If the user asks "बोल के बताओ", "बोलकर सुनाओ", "आवाज़ में बताओ", "बोलिए", "read aloud", or "speak to me", reply with enthusiasm in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..." and provide the scheme information.
-- Write your responses in natural, spoken conversational Hindi (or the user's chosen Indian language). Avoid ugly markdown, long tables, or raw URLs that sound unnatural when read aloud.
+CRITICAL LANGUAGE INSTRUCTION (ABSOLUTE TOP PRIORITY):
+- The user has selected language: ${selectedLangName}.
+- You MUST WRITE YOUR ENTIRE RESPONSE STRICTLY IN ${selectedLangName.toUpperCase()}.
+- If the user has selected English or writes/speaks in English: REPLY 100% IN CLEAR, NATURAL ENGLISH. NEVER respond in Hindi when English is selected or when the user speaks in English!
+- If the user has selected Hindi or writes/speaks in Hindi: Reply in clean Hindi (Devanagari script).
+- If the user has selected Marathi: Reply in Marathi.
+- If the user has selected Tamil: Reply in Tamil.
+- Always strictly match the user's selected language (${selectedLangName}) in both the answer and the follow-up question.
+
+VOICE & AUDIO SYSTEM CAPABILITIES:
+- You HAVE BUILT-IN VOICE & SPEECH SYNTHESIS (TTS) CAPABILITIES. Your responses are automatically read aloud to the citizen.
+- NEVER say "I am a text assistant", "I cannot speak", or "I have no voice feature". You CAN speak!
+- If the citizen asks in English ("speak to me", "read aloud", "read it out"): Acknowledge warmly in English: "Certainly, I am reading this aloud for you..."
+- If the citizen asks in Hindi ("बोल के बताओ", "आवाज़ में बताओ"): Acknowledge warmly in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..."
+- Write cleanly so speech synthesis sounds natural. Avoid messy markdown tables or raw URLs.
 
 CRITICAL CONVERSATIONAL RULES & PROACTIVE FOLLOW-UP QUESTIONS:
 1. ALWAYS ASK 1-2 TARGETED FOLLOW-UP QUESTIONS:
    - Do NOT dump long lists of schemes at once. A citizen needs step-by-step guidance.
-   - If the citizen has only shared partial information (e.g. "मैं किसान हूँ", "मुझे छात्रवृत्ति चाहिए", "लाड़ली बहना"), you MUST acknowledge their situation briefly (1-2 sentences), mention 1-2 key schemes they might qualify for, and then ALWAYS ask 1-2 focused follow-up questions to verify their exact eligibility:
-     * For Farmers (किसान): Ask about their land holding in acres ("आपके पास कुल कितनी एकड़ ज़मीन है?"), their district in MP, or if they have a Kisan Credit Card (KCC).
-     * For Students (विद्यार्थी): Ask their class/course, caste category (SC/ST/OBC/General), and annual family income.
-     * For Women (महिलाएं): Ask their age, marital status, or family income.
+   - If the citizen has only shared partial information (e.g. "I am a farmer" / "मैं किसान हूँ"), acknowledge their situation briefly (1-2 sentences), mention 1-2 key schemes they might qualify for (like PM-KISAN, Fasal Bima), and then ALWAYS ask 1-2 focused follow-up questions to verify their exact eligibility:
+     * For Farmers: Ask about landholding size in acres, district in MP, or if they have a Kisan Credit Card (KCC).
+     * For Students: Ask their class/course, caste category (SC/ST/OBC/General), and annual family income.
+     * For Women: Ask their age, marital status, or family income.
      * For Housing/BPL/Ration: Ask whether they have a BPL card, Samagra ID, or own a pucca house.
-     * For Health (स्वास्थ्य): Ask if they have an Ayushman Bharat Card or need hospitalization assistance.
+     * For Health: Ask if they have an Ayushman Bharat Card or need hospitalization assistance.
    - Format the follow-up question clearly at the end on its own line:
-     "👉 **कृपया बताएं:** [आपका प्रश्न]"
+     If responding in English: "👉 **Please tell me:** [your question]"
+     If responding in Hindi: "👉 **कृपया बताएं:** [आपका प्रश्न]"
 
 2. STRUCTURED, STEP-BY-STEP RECOMMENDATIONS:
    - Once the citizen's details are clear, recommend the exact matching schemes from the database.
    - State clearly: Scheme name in bold, monthly/annual benefit amount, key documents required, and how to apply.
-   - Conclude with a helpful next step question: e.g., "क्या आप इनमें से किसी योजना के लिए आवेदन प्रक्रिया या आवश्यक दस्तावेज़ों की सूची विस्तार से जानना चाहते हैं?"
+   - Conclude with a helpful next step question.
 
-3. TONE & LANGUAGE MATCHING:
+3. TONE:
    - Keep answers warm, respectful, concise (under 120-150 words per message), and citizen-centric.
-   - Match the user's language and script (Hindi, MP regional phrasing, Hinglish, Marathi, Tamil, or English).
-   - Say "नमस्ते" only in your first reply.
+   - Say "Namaste" only in your first reply.
 
 LIKELY RELEVANT SCHEMES (from verified database):
 ${likelyRelevant.map(formatScheme).join('\n')}
@@ -181,7 +199,7 @@ ${others.map(formatScheme).join('\n')}
 
 SCOPE RESTRICTION:
 - You ONLY help with Indian government schemes, citizen welfare, eligibility, and governance portals.
-- If asked unrelated off-topic questions (sports, movie celebrities, coding, etc.), politely decline in 1 sentence and remind them you are here for government schemes and citizen services.`
+- If asked unrelated off-topic questions (sports, celebrities, coding, etc.), politely decline in 1 sentence and remind them you are here for government schemes and citizen services.`
 }
 
 const UI_TEXT = {
@@ -261,7 +279,7 @@ export default function App() {
   const [started, setStarted] = useState(false)
   const [pendingOpener, setPendingOpener] = useState(null)
   const [schemes, setSchemes] = useState(() => getSchemesFromCache() || [])
-  const [messages, setMessages] = useState(() => [Welcome(getSettings().defaultVoiceLang || 'hi-IN')])
+  const [messages, setMessages] = useState(() => [Welcome(getSettings().defaultVoiceLang || 'en-IN')])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingSchemes, setLoadingSchemes] = useState(true)
@@ -275,7 +293,7 @@ export default function App() {
   const [showSavedSchemes, setShowSavedSchemes] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [settings, setSettings] = useState(() => getSettings())
-  const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang || 'hi-IN')
+  const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang || 'en-IN')
   const [showLangMenu, setShowLangMenu] = useState(false)
   const [speakEnabled, setSpeakEnabled] = useState(false)
   const listenControllerRef = useRef(null)
@@ -413,7 +431,7 @@ export default function App() {
 
     try {
       const conversationText = newMessages.map((m) => m.text).join(' ')
-      const systemInstruction = buildSystemInstruction(schemes, conversationText)
+      const systemInstruction = buildSystemInstruction(schemes, conversationText, voiceLang)
       const replyText = await askGemini(systemInstruction, newMessages)
       setMessages([...newMessages, { role: 'assistant', text: replyText }])
       if (speakEnabled || wantsVoice) {
@@ -667,7 +685,7 @@ export default function App() {
           </div>
           {isVoiceInputSupported && (
             <button
-              className={isListening ? 'ym-mic-btn ym-mic-active' : 'ym-nav-item'}
+              className={isListening ? 'ym-mic-btn ym-mic-active' : 'ym-mic-btn'}
               style={styles.sidebarVoiceBtn}
               onClick={() => { handleMicClick(); setIsMobileNavOpen(false) }}
               disabled={loadingSchemes || !isOnline}
