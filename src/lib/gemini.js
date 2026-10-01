@@ -1,21 +1,15 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
-// Using Flash-Lite for speed - a clearer, more direct prompt (rather than
-// a slower/more expensive model) is what actually fixed the scheme-matching
-// reliability, so there's no need to trade away speed for it.
-const MODEL = 'gemini-3.5-flash-lite'
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
-// Google's newer "Auth key" format (starts with AQ.) must be sent as the
-// x-goog-api-key header rather than a ?key= URL parameter, unlike the old
-// AIzaSy-format keys. This works for both formats.
+// Primary model: gemini-1.5-flash is stable, ultra-fast, and highly accurate in Hindi.
+// Fallback model: gemini-2.0-flash ensures failover availability.
+const PRIMARY_MODEL = 'gemini-1.5-flash'
+const FALLBACK_MODEL = 'gemini-2.0-flash'
 
-// Waits `ms` milliseconds before continuing.
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// Calls the Gemini API with automatic retry if we hit a rate limit (HTTP 429).
-// Retries up to 3 times with increasing wait times (1s, 2s, 4s) before giving up.
+// Calls Gemini API with automatic exponential retry on HTTP 429 rate limits
 export async function askGemini(systemInstruction, conversationHistory, jsonMode = false) {
   const body = {
     systemInstruction: {
@@ -30,54 +24,59 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
     body.generationConfig = { responseMimeType: 'application/json', temperature: 0.2 }
   }
 
+  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL]
   let lastError = null
 
-  for (let attempt = 0; attempt < 4; attempt++) {
-    try {
-      const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': GEMINI_API_KEY,
-        },
-        body: JSON.stringify(body),
-      })
+  for (const model of modelsToTry) {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
 
-      if (response.status === 429) {
-        // Rate limited - wait and retry with exponential backoff
-        lastError = 'Rate limited'
-        await wait(1000 * Math.pow(2, attempt))
-        continue
-      }
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_API_KEY,
+          },
+          body: JSON.stringify(body),
+        })
 
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(`Gemini API error (${response.status}): ${errText}`)
-      }
+        if (response.status === 429) {
+          lastError = 'Rate limited'
+          await wait(1500 * Math.pow(2, attempt) + Math.random() * 400)
+          continue
+        }
 
-      const data = await response.json()
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-      if (!text) {
-        throw new Error('No response text from Gemini')
+        if (!response.ok) {
+          const errText = await response.text()
+          if (response.status === 404 || response.status === 400) {
+            lastError = `Model ${model} issue (${response.status})`
+            break
+          }
+          throw new Error(`Gemini API error (${response.status}): ${errText}`)
+        }
+
+        const data = await response.json()
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+        if (!text) {
+          throw new Error('No response text from Gemini')
+        }
+        return text
+      } catch (err) {
+        lastError = err.message
+        if (attempt === 2) break
+        await wait(1200 * Math.pow(2, attempt))
       }
-      return text
-    } catch (err) {
-      lastError = err.message
-      if (attempt === 3) {
-        throw new Error(
-          `Could not get a response after several tries. Last error: ${lastError}`
-        )
-      }
-      await wait(1000 * Math.pow(2, attempt))
     }
   }
 
-  throw new Error(lastError || 'Unknown error calling Gemini')
+  if (lastError && lastError.toLowerCase().includes('rate')) {
+    throw new Error('सर्वर पर अभी अधिक लोड है (Rate limit)। कृपया 5-10 सेकंड बाद पुनः संदेश भेजें।')
+  }
+
+  throw new Error(lastError || 'AI सेवा से संपर्क नहीं हो सका। कृपया पुनः प्रयास करें।')
 }
 
-// Extracts fields from photos of documents (Aadhaar, land records, etc.)
-// using Gemini's native image understanding - no separate OCR library
-// needed. Used to pre-fill a scheme application review form.
 export async function extractDocumentFields(images, schemeName, requiredDocs) {
   const docsText = Array.isArray(requiredDocs) ? requiredDocs.join(', ') : requiredDocs
 
@@ -87,7 +86,7 @@ Look carefully at the attached image(s) and extract any of these fields you can 
 
 Respond with ONLY a raw JSON object (no markdown, no code fences), exactly this shape:
 {
-  "extracted": { "Full Name": "value or null", "Date of Birth": "value or null", ... (include every field listed above as a key) },
+  "extracted": { "Full Name": "value or null", "Date of Birth": "value or null", ... },
   "notes": "brief note on image quality or anything unclear, or null if nothing to flag"
 }
 
@@ -103,7 +102,9 @@ CRITICAL: If a field is not clearly visible or not present in the image(s), use 
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }
 
-  const response = await fetch(API_URL, {
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${PRIMARY_MODEL}:generateContent`
+
+  const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
