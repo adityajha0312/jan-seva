@@ -145,23 +145,46 @@ function buildSystemInstruction(schemes, conversationText) {
   Documents: ${JSON.stringify(s.documents_required)}
   How to apply: ${s.how_to_apply}`
 
-  return `You are Jan Seva (जन सेवा), an advanced AI Citizen Welfare & Governance Assistant for citizens of Madhya Pradesh and India.
+  return `You are Jan Seva (जन सेवा), a friendly, highly capable Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
 
-LIKELY RELEVANT SCHEMES based on the conversation so far - check these carefully first, they are probably what this person needs:
+VOICE & AUDIO SYSTEM CAPABILITIES (CRITICAL):
+- You HAVE BUILT-IN VOICE & SPEECH SYNTHESIS (TTS) CAPABILITIES. This application automatically speaks your replies aloud in clear audio using native browser voice synthesis.
+- NEVER say "I am a text assistant", "I cannot speak", "I have no voice feature", or "mere me bolne ka feature nahi hai". You CAN speak!
+- If the user asks "बोल के बताओ", "बोलकर सुनाओ", "आवाज़ में बताओ", "बोलिए", "read aloud", or "speak to me", reply with enthusiasm in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..." and provide the scheme information.
+- Write your responses in natural, spoken conversational Hindi (or the user's chosen Indian language). Avoid ugly markdown, long tables, or raw URLs that sound unnatural when read aloud.
+
+CRITICAL CONVERSATIONAL RULES & PROACTIVE FOLLOW-UP QUESTIONS:
+1. ALWAYS ASK 1-2 TARGETED FOLLOW-UP QUESTIONS:
+   - Do NOT dump long lists of schemes at once. A citizen needs step-by-step guidance.
+   - If the citizen has only shared partial information (e.g. "मैं किसान हूँ", "मुझे छात्रवृत्ति चाहिए", "लाड़ली बहना"), you MUST acknowledge their situation briefly (1-2 sentences), mention 1-2 key schemes they might qualify for, and then ALWAYS ask 1-2 focused follow-up questions to verify their exact eligibility:
+     * For Farmers (किसान): Ask about their land holding in acres ("आपके पास कुल कितनी एकड़ ज़मीन है?"), their district in MP, or if they have a Kisan Credit Card (KCC).
+     * For Students (विद्यार्थी): Ask their class/course, caste category (SC/ST/OBC/General), and annual family income.
+     * For Women (महिलाएं): Ask their age, marital status, or family income.
+     * For Housing/BPL/Ration: Ask whether they have a BPL card, Samagra ID, or own a pucca house.
+     * For Health (स्वास्थ्य): Ask if they have an Ayushman Bharat Card or need hospitalization assistance.
+   - Format the follow-up question clearly at the end on its own line:
+     "👉 **कृपया बताएं:** [आपका प्रश्न]"
+
+2. STRUCTURED, STEP-BY-STEP RECOMMENDATIONS:
+   - Once the citizen's details are clear, recommend the exact matching schemes from the database.
+   - State clearly: Scheme name in bold, monthly/annual benefit amount, key documents required, and how to apply.
+   - Conclude with a helpful next step question: e.g., "क्या आप इनमें से किसी योजना के लिए आवेदन प्रक्रिया या आवश्यक दस्तावेज़ों की सूची विस्तार से जानना चाहते हैं?"
+
+3. TONE & LANGUAGE MATCHING:
+   - Keep answers warm, respectful, concise (under 120-150 words per message), and citizen-centric.
+   - Match the user's language and script (Hindi, MP regional phrasing, Hinglish, Marathi, Tamil, or English).
+   - Say "नमस्ते" only in your first reply.
+
+LIKELY RELEVANT SCHEMES (from verified database):
 ${likelyRelevant.map(formatScheme).join('\n')}
 
-OTHER SCHEMES in the database (less likely to apply here, but check if the person's situation shifts):
+OTHER SCHEMES in database:
 ${others.map(formatScheme).join('\n')}
 
-HOW TO RESPOND:
-1. If you don't yet have enough details to check eligibility, ask 1-2 short friendly clarifying questions (occupation, age, land, income, gender, etc.).
-2. Once you have enough details, recommend the schemes above that clearly match - explain briefly why they qualify, the benefit amount, documents needed, and how to apply, all taken from the details given above. Be confident, not hesitant - a farmer with small landholding, for example, normally qualifies for multiple schemes on this list at once.
-3. You may also mention a real Indian government scheme you know about that is NOT in the list above, if it genuinely seems relevant - but you MUST clearly label it as unverified, for example: "Note: [Scheme Name] is not in my verified database, so please confirm the current details with an official source before relying on it." Never state facts about an unlisted scheme (amounts, eligibility, documents) with the same confidence as a listed one - always flag it as unverified information, separate from your verified recommendations.
-4. Only say "I don't have a verified scheme for your situation" if you've genuinely checked the list and nothing fits - not by default. If you know of an unverified scheme per rule 3, mention it there instead; otherwise suggest the National Scholarship Portal, nearest Common Service Centre (CSC), or relevant district office.
-5. Say "Namaste" only in your first reply. Keep replies concise, warm, and easy to read on a phone. Bold only scheme names and key numbers. Match the user's language and script exactly - English, Hindi, Marathi, Tamil, Hinglish, or any other Indian language they use - rather than defaulting to English.
-6. Stay strictly in scope: you only help with Indian government schemes and the person's eligibility for them. If asked something unrelated (celebrities, general trivia, coding help, other countries, etc.), do NOT answer it - politely say that's outside what you help with, briefly state your actual purpose, and ask if they'd like help finding a scheme instead. Never answer the off-topic question itself, even partially.`
+SCOPE RESTRICTION:
+- You ONLY help with Indian government schemes, citizen welfare, eligibility, and governance portals.
+- If asked unrelated off-topic questions (sports, movie celebrities, coding, etc.), politely decline in 1 sentence and remind them you are here for government schemes and citizen services.`
 }
-
 const UI_TEXT = {
   'en-IN': {
     welcome: "Namaste! I am Jan Seva (जन सेवा). Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes and benefits you qualify for.",
@@ -255,8 +278,11 @@ export default function App() {
   const [settings, setSettings] = useState(() => getSettings())
   const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang)
   const [showLangMenu, setShowLangMenu] = useState(false)
-  const [speakEnabled, setSpeakEnabled] = useState(false)
+    const [speakEnabled, setSpeakEnabled] = useState(false)
   const listenControllerRef = useRef(null)
+  const silenceTimerRef = useRef(null)
+  const latestVoiceTextRef = useRef('')
+  const lastSentTextRef = useRef('')
   const [isOnline, setIsOnline] = useState(isCurrentlyOnline())
   const [usingCachedSchemes, setUsingCachedSchemes] = useState(false)
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
@@ -364,20 +390,36 @@ export default function App() {
     showToast('Saved schemes cleared')
   }
 
-  async function handleSend(explicitText) {
-    const textToSend = (explicitText !== undefined ? explicitText : input).trim()
+    async function handleSend(overrideText, fromVoice = false) {
+    if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+    if (isListening) {
+      listenControllerRef.current?.stop()
+      setIsListening(false)
+    }
+
+    const textToSend = (overrideText ?? input).trim()
     if (!textToSend || loading) return
 
-    if (isListening && listenControllerRef.current) {
-      listenControllerRef.current.stop()
-      listenControllerRef.current = null
-      setIsListening(false)
+    lastSentTextRef.current = textToSend
+
+    if (!isOnline) {
+      setError("You're offline right now, so I can't think through scheme matches - that needs an internet connection. You can still browse the saved scheme list below. I'll be ready to chat again as soon as you're back online.")
+      return
+    }
+
+    // Detect if citizen requested voice output or sent via mic
+    const voiceTriggers = /बोल\s*(?:के|कर|के बताओ|कर बताओ|िए|ो)|सुनाओ|आवाज़|आवाज|audio|voice|speak|read\s*aloud/i
+    const wantsVoice = fromVoice || voiceTriggers.test(textToSend)
+
+    if (wantsVoice && !speakEnabled) {
+      setSpeakEnabled(true)
     }
 
     const userMessage = { role: 'user', text: textToSend }
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')
+    latestVoiceTextRef.current = ''
     setLoading(true)
     setError(null)
 
@@ -386,7 +428,7 @@ export default function App() {
       const systemInstruction = buildSystemInstruction(schemes, conversationText)
       const replyText = await askGemini(systemInstruction, newMessages)
       setMessages([...newMessages, { role: 'assistant', text: replyText }])
-      if (speakEnabled) {
+      if (speakEnabled || wantsVoice) {
         speakText(replyText, voiceLang)
       }
     } catch (err) {
@@ -443,37 +485,60 @@ export default function App() {
     showToast('Offline scheme cache cleared')
   }
 
-  function handleMicClick() {
+    function handleMicClick() {
     if (isListening) {
-      if (listenControllerRef.current) {
-        listenControllerRef.current.stop()
-        listenControllerRef.current = null
-      }
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+      listenControllerRef.current?.stop()
       setIsListening(false)
+      const speechToSend = latestVoiceTextRef.current.trim() || input.trim()
+      if (speechToSend) {
+        handleSend(speechToSend, true)
+      }
       return
     }
 
-    if (speakEnabled) {
-      stopSpeaking()
-    }
+    stopSpeaking()
+    setInput('')
+    latestVoiceTextRef.current = ''
+    setIsListening(true)
+    setError(null)
 
     listenControllerRef.current = startListening({
       lang: voiceLang,
-      onResult: (transcript) => {
-        setIsListening(false)
-        listenControllerRef.current = null
-        if (transcript && transcript.trim()) {
-          handleSend(transcript.trim())
+      onResult: (transcript, isFinal) => {
+        latestVoiceTextRef.current = transcript
+        setInput(transcript)
+
+        // Clear pending silence timer whenever new speech or word chunk arrives
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current)
+        }
+
+        // Wait for 2.2 seconds of silence after citizen stops speaking before auto-submitting
+        if (transcript.trim()) {
+          silenceTimerRef.current = setTimeout(() => {
+            listenControllerRef.current?.stop()
+            setIsListening(false)
+            const text = latestVoiceTextRef.current.trim()
+            if (text) {
+              handleSend(text, true)
+            }
+          }, 2200)
         }
       },
-      onError: (err) => {
+      onEnd: () => {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
         setIsListening(false)
-        listenControllerRef.current = null
-        if (err !== 'no-speech') {
+      },
+      onError: (err) => {
+        if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+        setIsListening(false)
+        if (err !== 'no-speech' && err !== 'aborted') {
           setError(`Voice input error: ${err}`)
         }
       },
     })
+  }
     setIsListening(true)
   }
 
@@ -732,7 +797,31 @@ export default function App() {
               </div>
             </div>
           )}
-          {error && <div style={styles.errorNote}>{error}</div>}
+                    {error && (
+            <div style={styles.errorNote}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                <span>⚠️ {error}</span>
+                {lastSentTextRef.current && (
+                  <button
+                    type="button"
+                    style={{
+                      background: '#059669',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '4px 10px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => handleSend(lastSentTextRef.current)}
+                  >
+                    पुनः प्रयास करें (Retry)
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 
