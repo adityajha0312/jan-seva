@@ -314,6 +314,8 @@ export default function App() {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false)
   const [applySchemeId, setApplySchemeId] = useState(null)
   const bottomRef = useRef(null)
+  const userPromptRef = useRef(null)
+  const latestAssistantRef = useRef(null)
 
   function showToast(message) {
     setToast(message)
@@ -365,9 +367,28 @@ export default function App() {
     return unsubscribe
   }, [])
 
+  // Smart scrolling: When the assistant replies, scroll to the start of the interaction
+  // so the citizen can read naturally from line 1 without scrolling up!
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading, isOnline])
+    if (messages.length <= 1) return
+
+    const lastMsg = messages[messages.length - 1]
+    if (lastMsg.role === 'assistant') {
+      if (userPromptRef.current) {
+        userPromptRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      } else if (latestAssistantRef.current) {
+        latestAssistantRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    } else {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages])
+
+  useEffect(() => {
+    if (loading) {
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [loading])
 
   useEffect(() => {
     if (!showLangMenu) return
@@ -524,6 +545,7 @@ export default function App() {
       setIsListening(false)
       const speechToSend = latestVoiceTextRef.current.trim() || input.trim()
       if (speechToSend) {
+        latestVoiceTextRef.current = ''
         handleSend(speechToSend, true)
       }
       return
@@ -541,26 +563,33 @@ export default function App() {
         latestVoiceTextRef.current = transcript
         setInput(transcript)
 
-        // Clear pending silence timer whenever new speech or word chunk arrives
+        // Clear pending silence timer whenever new speech arrives
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current)
         }
 
-        // Wait for 2.2 seconds of silence after citizen stops speaking before auto-submitting
+        // Fast auto-send: 800ms after user pauses speaking, or 1200ms during interim
         if (transcript.trim()) {
+          const delay = isFinal ? 800 : 1200
           silenceTimerRef.current = setTimeout(() => {
             listenControllerRef.current?.stop()
             setIsListening(false)
             const text = latestVoiceTextRef.current.trim()
             if (text) {
+              latestVoiceTextRef.current = ''
               handleSend(text, true)
             }
-          }, 2200)
+          }, delay)
         }
       },
       onEnd: () => {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
         setIsListening(false)
+        const text = latestVoiceTextRef.current.trim()
+        if (text) {
+          latestVoiceTextRef.current = ''
+          handleSend(text, true)
+        }
       },
       onError: (err) => {
         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
@@ -807,18 +836,23 @@ export default function App() {
           {loadingSchemes ? (
             <p style={styles.systemNote}>Loading scheme database...</p>
           ) : (
-            messages.map((msg, i) => (
-              <div
-                key={i}
-                className="ym-bubble"
-                style={{
-                  ...styles.bubble,
-                  ...(msg.role === 'user' ? styles.userBubble : styles.assistantBubble),
-                }}
-              >
-                {msg.role === 'assistant' ? <MessageContent text={msg.text} /> : msg.text}
-              </div>
-            ))
+            messages.map((msg, i) => {
+              const isSecondLast = i === messages.length - 2
+              const isLast = i === messages.length - 1
+              return (
+                <div
+                  key={i}
+                  ref={isSecondLast ? userPromptRef : isLast && msg.role === 'assistant' ? latestAssistantRef : null}
+                  className="ym-bubble"
+                  style={{
+                    ...styles.bubble,
+                    ...(msg.role === 'user' ? styles.userBubble : styles.assistantBubble),
+                  }}
+                >
+                  {msg.role === 'assistant' ? <MessageContent text={msg.text} /> : msg.text}
+                </div>
+              )
+            })
           )}
           {loading && (
             <div style={{ ...styles.bubble, ...styles.assistantBubble }} className="ym-bubble">
