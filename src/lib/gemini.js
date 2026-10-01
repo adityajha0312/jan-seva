@@ -1,15 +1,15 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
-// Primary model: gemini-1.5-flash is stable, ultra-fast, and highly accurate in Hindi.
-// Fallback model: gemini-2.0-flash ensures failover availability.
-const PRIMARY_MODEL = 'gemini-1.5-flash'
-const FALLBACK_MODEL = 'gemini-2.0-flash'
+// Primary model: gemini-3.5-flash-lite is the active official model in Google AI Studio.
+// Fallback model: gemini-2.5-flash ensures redundancy.
+const PRIMARY_MODEL = 'gemini-3.5-flash-lite'
+const FALLBACK_MODEL = 'gemini-2.5-flash'
 
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// Calls Gemini API with automatic exponential retry on HTTP 429 rate limits
+// Calls Gemini API with automatic exponential retry on rate limits (HTTP 429)
 export async function askGemini(systemInstruction, conversationHistory, jsonMode = false) {
   const body = {
     systemInstruction: {
@@ -28,7 +28,8 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
   let lastError = null
 
   for (const model of modelsToTry) {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    const apiUrl = GEMINI_API_KEY ? `${baseUrl}?key=${encodeURIComponent(GEMINI_API_KEY)}` : baseUrl
 
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
@@ -36,7 +37,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': GEMINI_API_KEY,
+            ...(GEMINI_API_KEY ? { 'x-goog-api-key': GEMINI_API_KEY } : {}),
           },
           body: JSON.stringify(body),
         })
@@ -50,7 +51,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
         if (!response.ok) {
           const errText = await response.text()
           if (response.status === 404 || response.status === 400) {
-            lastError = `Model ${model} issue (${response.status})`
+            lastError = `Model ${model} unavailable (${response.status})`
             break
           }
           throw new Error(`Gemini API error (${response.status}): ${errText}`)
@@ -59,7 +60,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
         const data = await response.json()
         const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
         if (!text) {
-          throw new Error('No response text from Gemini')
+          throw new Error('No response text received from Gemini')
         }
         return text
       } catch (err) {
@@ -102,13 +103,14 @@ CRITICAL: If a field is not clearly visible or not present in the image(s), use 
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }
 
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${PRIMARY_MODEL}:generateContent`
+  const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${PRIMARY_MODEL}:generateContent`
+  const apiUrl = GEMINI_API_KEY ? `${baseUrl}?key=${encodeURIComponent(GEMINI_API_KEY)}` : baseUrl
 
   const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-goog-api-key': GEMINI_API_KEY,
+      ...(GEMINI_API_KEY ? { 'x-goog-api-key': GEMINI_API_KEY } : {}),
     },
     body: JSON.stringify(body),
   })
