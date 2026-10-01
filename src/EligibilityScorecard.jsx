@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { CloseIcon, ArrowRightIcon, DocumentIcon } from './Icons'
+import { CloseIcon, ArrowRightIcon, DocumentIcon, FemaleIcon, MaleIcon } from './Icons'
 
 const MP_SCHEMES_CRITERIA = [
   {
@@ -98,41 +98,42 @@ const MP_SCHEMES_CRITERIA = [
   },
   {
     id: 'ayushman-bharat',
-    name: 'Ayushman Bharat (Ayushman Niramayam MP)',
+    name: 'Ayushman Bharat (Niramayam MP)',
     benefitAmount: 500000,
-    benefitText: '₹5,00,000 / year cashless hospital health insurance',
+    benefitText: '₹5 Lakh / year free cashless medical treatment per family',
     category: 'Healthcare',
     evaluate: (p) => {
       const checks = []
       let score = 0
-      const isBplOrSambal = p.isBpl || p.isSambal || p.income === 'bpl' || p.income === 'low'
+      const isLowIncome = ['bpl', 'low', 'mid'].includes(p.income)
+      const hasCard = p.isBpl || p.isSambal
 
-      if (isBplOrSambal) { checks.push({ text: 'Deprived / BPL / Sambal beneficiary list mapped', ok: true }); score += 60 }
-      else checks.push({ text: 'Must fall under SECC census / Ration card / Sambal category', ok: false })
+      if (isLowIncome || hasCard) { checks.push({ text: 'Eligible under BPL / SECC / Sambal cardholder category', ok: true }); score += 60 }
+      else checks.push({ text: 'Requires BPL, NFSA ration card, or Sambal registration', ok: false })
 
-      if (p.age >= 18) { checks.push({ text: 'Adult citizen applicant with biometric verification', ok: true }); score += 40 }
+      checks.push({ text: 'All family members covered under annual cashless pool', ok: true }); score += 40
 
-      return { score, checks, requiredDocs: ['Aadhaar Card', 'Ration Card / Sambal Card', 'Samagra Family ID'] }
+      return { score, checks, requiredDocs: ['Ration Card / Samagra Family ID', 'Aadhaar Card of all members'] }
     }
   },
   {
     id: 'pm-awas-gramin',
-    name: 'Pradhan Mantri Awas Yojana (PMAY-Gramin)',
+    name: 'PM Awas Yojana (Gramin/Urban Housing)',
     benefitAmount: 120000,
-    benefitText: '₹1.20 Lakh grant for rural pucca house construction + 90 days MGNREGA wages',
-    category: 'Rural Housing',
+    benefitText: '₹1.20 Lakh - ₹2.50 Lakh financial grant for pucca house',
+    category: 'Housing',
     evaluate: (p) => {
       const checks = []
       let score = 0
-      const needsHouse = p.isBpl || p.income === 'bpl' || p.income === 'low'
+      const isLowIncome = ['bpl', 'low'].includes(p.income)
 
-      if (needsHouse) { checks.push({ text: 'Kutcha house / Houseless household in rural registry', ok: true }); score += 60 }
-      else checks.push({ text: 'Only houseless or kutcha house owners qualify', ok: false })
+      if (isLowIncome || p.isBpl) { checks.push({ text: 'Identified economically weaker section / BPL category', ok: true }); score += 50 }
+      else checks.push({ text: 'Exclusively for families without a pucca house', ok: false })
 
-      if (p.land === 'none' || p.land === 'marginal') { checks.push({ text: 'No existing pucca dwelling or commercial property', ok: true }); score += 40 }
-      else checks.push({ text: 'Large landholders or motorized vehicle owners excluded', ok: false })
+      if (p.land === 'none' || p.land === 'marginal') { checks.push({ text: 'Eligible homestead / landholding status', ok: true }); score += 50 }
+      else checks.push({ text: 'Large landholders may require manual gram sabha verification', ok: false })
 
-      return { score, checks, requiredDocs: ['Gram Panchayat Awas Registry Proof', 'Samagra ID', 'Bank Account Details', 'Aadhaar Card'] }
+      return { score, checks, requiredDocs: ['Aadhaar Card', 'Bank Passbook', 'MGNREGA Job Card (for Gramin)', 'Land Ownership / Allotment papers'] }
     }
   }
 ]
@@ -143,8 +144,8 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
     age: defaultProfile?.age ? parseInt(defaultProfile.age) : 32,
     gender: 'female',
     occupation: defaultProfile?.occupation?.toLowerCase().includes('farm') ? 'farmer' : 'homemaker',
-    income: 'low',
-    land: 'marginal',
+    income: 'low', // 'bpl' | 'low' (<2.5L) | 'mid' (2.5L-5L) | 'high' (>5L)
+    land: 'marginal', // 'none' | 'marginal' (<2.5 acre) | 'small' (2.5-5 acre) | 'large' (>5 acre)
     category: 'OBC',
     isBpl: false,
     isSambal: true
@@ -152,6 +153,7 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
 
   const [expandedScheme, setExpandedScheme] = useState('ladli-behna')
 
+  // Calculate results for all schemes
   const results = useMemo(() => {
     return MP_SCHEMES_CRITERIA.map((scheme) => {
       const evaluation = scheme.evaluate(profile)
@@ -164,7 +166,7 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
 
   const highMatchSchemes = results.filter((r) => r.score >= 70)
   const totalAnnualCash = highMatchSchemes
-    .filter((s) => s.id !== 'ayushman-bharat')
+    .filter((s) => s.id !== 'ayushman-bharat') // keep insurance separate from direct cash
     .reduce((acc, s) => acc + s.benefitAmount, 0)
 
   return (
@@ -224,7 +226,17 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
                     style={{ ...styles.pillBtn, ...(profile.gender === g ? styles.pillBtnActive : {}) }}
                     onClick={() => setProfile((p) => ({ ...p, gender: g }))}
                   >
-                    {g === 'female' ? '👩 Female' : '👨 Male'}
+                    {g === 'female' ? (
+                      <>
+                        <FemaleIcon size={14} color="currentColor" />
+                        <span>Female</span>
+                      </>
+                    ) : (
+                      <>
+                        <MaleIcon size={14} color="currentColor" />
+                        <span>Male</span>
+                      </>
+                    )}
                   </button>
                 ))}
               </div>
@@ -366,15 +378,13 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
                               <span style={{ color: chk.ok ? '#16a34a' : '#dc2626', fontWeight: 700 }}>
                                 {chk.ok ? '✓' : '✕'}
                               </span>
-                              <span style={{ color: chk.ok ? '#1e293b' : '#64748b' }}>
-                                {chk.text}
-                              </span>
+                              <span style={{ color: chk.ok ? '#1e293b' : '#64748b' }}>{chk.text}</span>
                             </div>
                           ))}
                         </div>
 
-                        {/* Document Verification Pre-check */}
-                        <div style={{ marginTop: '12px' }}>
+                        {/* Documents needed */}
+                        <div style={{ marginTop: '10px' }}>
                           <div style={styles.explainTitle}>Required Verification Documents:</div>
                           <div style={styles.docsList}>
                             {scheme.requiredDocs.map((doc, idx) => (
@@ -440,6 +450,7 @@ const styles = {
   summaryLabel: { fontSize: '11px', color: 'var(--color-charcoal-soft)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' },
   summaryVal: { marginTop: '2px', fontSize: '14px', color: '#1e293b' },
   summaryDivider: { width: '1px', height: '36px', background: 'rgba(20,83,45,0.15)' },
+  bodyLayout: { display: 'grid', gridTemplateColumns: '260px minmax(0, 1fr)', gap: '20px' },
   filterCol: {
     background: '#fafaf9', padding: '14px', borderRadius: '12px', border: '1px solid #e7e5e4',
     display: 'flex', flexDirection: 'column', gap: '12px',
@@ -451,6 +462,8 @@ const styles = {
   pillBtn: {
     flex: 1, padding: '7px 10px', borderRadius: '8px', border: '1px solid #cbd5e1',
     background: '#fff', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+    transition: 'all 0.15s ease',
   },
   pillBtnActive: { background: 'var(--color-forest)', color: '#fff', borderColor: 'var(--color-forest)' },
   select: {
