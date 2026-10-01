@@ -17,12 +17,10 @@ import GrievanceRedressal from './GrievanceRedressal'
 import EligibilityScorecard from './EligibilityScorecard'
 import AdminDashboard from './AdminDashboard'
 
-// Voice input/output languages. Web Speech API support for Marathi and
-// Tamil depends on the browser/OS having those voices installed, but the
-// language codes themselves are standard BCP-47 tags it understands.
+// Voice input/output languages supported
 const VOICE_LANGUAGES = [
-  { code: 'en-IN', label: 'English' },
   { code: 'hi-IN', label: 'हिन्दी' },
+  { code: 'en-IN', label: 'English' },
   { code: 'mr-IN', label: 'मराठी' },
   { code: 'ta-IN', label: 'தமிழ்' },
 ]
@@ -185,15 +183,8 @@ SCOPE RESTRICTION:
 - You ONLY help with Indian government schemes, citizen welfare, eligibility, and governance portals.
 - If asked unrelated off-topic questions (sports, movie celebrities, coding, etc.), politely decline in 1 sentence and remind them you are here for government schemes and citizen services.`
 }
+
 const UI_TEXT = {
-  'en-IN': {
-    welcome: "Namaste! I am Jan Seva (जन सेवा). Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes and benefits you qualify for.",
-    online: 'Online',
-    offline: 'Offline',
-    placeholderIdle: "Ask Jan Seva... (e.g. 'I am a farmer with 2 acres of land in MP')",
-    placeholderOffline: 'Reconnect to internet to keep chatting...',
-    placeholderListening: 'Listening... speak now',
-  },
   'hi-IN': {
     welcome: 'नमस्ते! मैं जन सेवा (Jan Seva) हूँ। मुझे अपने बारे में थोड़ा बताएं — आपका व्यवसाय, उम्र, या स्थिति — और मैं आपको उन सरकारी योजनाओं को खोजने में मदद करूंगा जिनके लिए आप पात्र हैं।',
     online: 'ऑनलाइन',
@@ -201,6 +192,14 @@ const UI_TEXT = {
     placeholderIdle: "जन सेवा से पूछें... (उदा: 'मैं 2 एकड़ जमीन वाला किसान हूं')",
     placeholderOffline: 'बातचीत जारी रखने के लिए इंटरनेट से दोबारा जुड़ें...',
     placeholderListening: 'सुन रहा हूं... अब बोलें',
+  },
+  'en-IN': {
+    welcome: "Namaste! I am Jan Seva (जन सेवा). Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes and benefits you qualify for.",
+    online: 'Online',
+    offline: 'Offline',
+    placeholderIdle: "Ask Jan Seva... (e.g. 'I am a farmer with 2 acres of land in MP')",
+    placeholderOffline: 'Reconnect to internet to keep chatting...',
+    placeholderListening: 'Listening... speak now',
   },
   'mr-IN': {
     welcome: 'नमस्कार! मी जन सेवा (Jan Seva) आहे. मला तुमच्याबद्दल थोडं सांगा — तुमचा व्यवसाय, वय किंवा परिस्थिती — आणि मी तुम्हाला पात्र असलेल्या सरकारी योजना शोधण्यात मदत करेन.',
@@ -221,7 +220,7 @@ const UI_TEXT = {
 }
 
 function t(lang, key) {
-  return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT['en-IN'][key]
+  return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT['hi-IN'][key] || UI_TEXT['en-IN'][key]
 }
 
 function Welcome(lang) {
@@ -262,7 +261,7 @@ export default function App() {
   const [started, setStarted] = useState(false)
   const [pendingOpener, setPendingOpener] = useState(null)
   const [schemes, setSchemes] = useState(() => getSchemesFromCache() || [])
-  const [messages, setMessages] = useState(() => [Welcome(getSettings().defaultVoiceLang)])
+  const [messages, setMessages] = useState(() => [Welcome(getSettings().defaultVoiceLang || 'hi-IN')])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingSchemes, setLoadingSchemes] = useState(true)
@@ -276,9 +275,9 @@ export default function App() {
   const [showSavedSchemes, setShowSavedSchemes] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [settings, setSettings] = useState(() => getSettings())
-  const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang)
+  const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang || 'hi-IN')
   const [showLangMenu, setShowLangMenu] = useState(false)
-    const [speakEnabled, setSpeakEnabled] = useState(false)
+  const [speakEnabled, setSpeakEnabled] = useState(false)
   const listenControllerRef = useRef(null)
   const silenceTimerRef = useRef(null)
   const latestVoiceTextRef = useRef('')
@@ -376,21 +375,10 @@ export default function App() {
       setPendingOpener(null)
       handleSend(opener)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started, pendingOpener, loadingSchemes])
 
-  function handleToggleSave(schemeId) {
-    const next = toggleSavedScheme(schemeId)
-    setSavedSchemeIds(next)
-    showToast(next.includes(schemeId) ? 'Scheme saved' : 'Scheme removed')
-  }
-
-  function handleClearSaved() {
-    clearSavedSchemes()
-    setSavedSchemeIds([])
-    showToast('Saved schemes cleared')
-  }
-
-    async function handleSend(overrideText, fromVoice = false) {
+  async function handleSend(overrideText, fromVoice = false) {
     if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
     if (isListening) {
       listenControllerRef.current?.stop()
@@ -485,7 +473,33 @@ export default function App() {
     showToast('Offline scheme cache cleared')
   }
 
-    function handleMicClick() {
+  function handleClearSaved() {
+    clearSavedSchemes()
+    setSavedSchemeIds([])
+    showToast('Saved schemes cleared')
+  }
+
+  function handleAskAboutScheme(scheme) {
+    setShowBrowseSchemes(false)
+    setViewingScheme(null)
+    setIsMobileNavOpen(false)
+    handleSend(`Tell me more about ${scheme.scheme_name} and whether I might be eligible.`)
+  }
+
+  function openSchemeDetail(scheme) {
+    setShowBrowseSchemes(false)
+    setShowSavedSchemes(false)
+    setIsMobileNavOpen(false)
+    setViewingScheme(scheme)
+  }
+
+  function handleToggleSaved(scheme) {
+    const nowSaved = toggleSavedScheme(scheme.id)
+    setSavedSchemeIds(getSavedSchemeIds())
+    showToast(nowSaved ? 'Saved for later' : 'Removed from saved')
+  }
+
+  function handleMicClick() {
     if (isListening) {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
       listenControllerRef.current?.stop()
@@ -539,14 +553,12 @@ export default function App() {
       },
     })
   }
-    setIsListening(true)
-  }
 
   useEffect(() => {
     return () => stopSpeaking()
   }, [])
 
-    useEffect(() => {
+  useEffect(() => {
     const isLarge = settings.textSize === 'large'
     document.documentElement.classList.toggle('ym-text-large', isLarge)
     document.body.classList.toggle('ym-text-large', isLarge)
@@ -647,7 +659,7 @@ export default function App() {
 
         <div style={styles.sidebarHelp}>
           <div style={styles.sidebarHelpRow}>
-            <div style={styles.sidebarHelpAvatar}><Logo size={18} /></div>
+            <div style={styles.sidebarHelpAvatar}><Logo size={24} /></div>
             <div>
               <div style={styles.sidebarHelpTitle}>Voice Assistant</div>
               <div style={styles.sidebarHelpText}>Speak in your mother tongue</div>
@@ -773,31 +785,31 @@ export default function App() {
           </div>
         )}
 
-        {/* Message scroll container */}
         <div style={styles.chatArea}>
-          {messages.map((m, idx) => (
-            <div
-              key={idx}
-              className="ym-bubble"
-              style={{
-                ...styles.bubble,
-                ...(m.role === 'user' ? styles.userBubble : styles.assistantBubble),
-              }}
-            >
-              <MessageContent text={m.text} />
-            </div>
-          ))}
-          {loading && (
-            <div
-              className="ym-bubble"
-              style={{ ...styles.bubble, ...styles.assistantBubble }}
-            >
-              <div className="ym-typing">
-                <span /><span /><span />
+          {loadingSchemes ? (
+            <p style={styles.systemNote}>Loading scheme database...</p>
+          ) : (
+            messages.map((msg, i) => (
+              <div
+                key={i}
+                className="ym-bubble"
+                style={{
+                  ...styles.bubble,
+                  ...(msg.role === 'user' ? styles.userBubble : styles.assistantBubble),
+                }}
+              >
+                {msg.role === 'assistant' ? <MessageContent text={msg.text} /> : msg.text}
               </div>
+            ))
+          )}
+          {loading && (
+            <div style={{ ...styles.bubble, ...styles.assistantBubble }} className="ym-bubble">
+              <span className="ym-typing">
+                <span></span><span></span><span></span>
+              </span>
             </div>
           )}
-                    {error && (
+          {error && (
             <div style={styles.errorNote}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span>⚠️ {error}</span>
@@ -822,212 +834,92 @@ export default function App() {
               </div>
             </div>
           )}
+          {!isOnline && schemes.length > 0 && (
+            <div style={styles.offlineSchemeList}>
+              <p style={styles.offlineListTitle}>Saved schemes you can browse offline — tap one for eligibility & how to apply:</p>
+              {schemes.map((s) => (
+                <button key={s.id} className="ym-scheme-row" style={styles.offlineSchemeItem} onClick={() => openSchemeDetail(s)}>
+                  <span style={{ display: 'block' }}>
+                    <strong>{s.scheme_name}</strong>
+                    <div style={styles.offlineSchemeCategory}>{s.category} · {s.level}</div>
+                    <div>{s.description}</div>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           <div ref={bottomRef} />
         </div>
 
-        {/* Text and Voice Input */}
         <div style={styles.inputArea}>
-          <input
+          {isVoiceInputSupported && (
+            <button
+              className={isListening ? 'ym-mic-btn ym-mic-active' : 'ym-mic-btn'}
+              onClick={handleMicClick}
+              disabled={loadingSchemes || !isOnline}
+              title={isListening ? 'Stop listening' : 'Speak your message'}
+              type="button"
+            >
+              {isListening ? <StopIcon size={17} color="white" /> : <MicIcon size={18} />}
+            </button>
+          )}
+          <textarea
+            className="ym-chat-input"
             style={styles.textInput}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={
-              !isOnline
-                ? t(voiceLang, 'placeholderOffline')
-                : isListening
-                ? t(voiceLang, 'placeholderListening')
-                : t(voiceLang, 'placeholderIdle')
-            }
-            disabled={loading || !isOnline}
+            placeholder={!isOnline ? t(voiceLang, 'placeholderOffline') : isListening ? t(voiceLang, 'placeholderListening') : t(voiceLang, 'placeholderIdle')}
+            rows={2}
+            disabled={loadingSchemes || !isOnline}
           />
-          {isVoiceInputSupported && (
-            <button
-              className={`ym-mic-btn${isListening ? ' ym-mic-active' : ''}`}
-              onClick={handleMicClick}
-              disabled={loading || !isOnline}
-              title={isListening ? 'Stop listening' : 'Speak your question'}
-            >
-              {isListening ? <StopIcon size={18} color="white" /> : <MicIcon size={18} />}
-            </button>
-          )}
           <button
             className="ym-send-btn"
             style={styles.sendButton}
             onClick={() => handleSend()}
-            disabled={loading || !isOnline || !input.trim()}
-            title="Send message"
+            disabled={loading || loadingSchemes || !input.trim() || !isOnline}
+            aria-label="Send"
           >
-            <SendIcon size={17} color="#ffffff" />
+            <SendIcon size={16} color="var(--color-cream)" />
           </button>
         </div>
       </div>
 
-      {/* Right sidebar: quick schemes + promo */}
+      {/* Right sidebar: popular schemes drawn from live data */}
       <aside className="ym-shell-right" style={styles.sidebarRight}>
         <div style={styles.rightCard}>
           <div style={styles.rightCardHeader}>
-            <span>Popular MP Schemes</span>
-            <button style={styles.viewAllBtn} onClick={() => setShowBrowseSchemes(true)}>View all</button>
+            <span>Popular Schemes</span>
+            <button style={styles.viewAllBtn} onClick={() => setShowBrowseSchemes(true)}>View All</button>
           </div>
-          <div>
-            {popularSchemes.map((s) => (
-              <button
-                key={s.id}
-                className="ym-scheme-row"
-                onClick={() => setViewingScheme(s)}
-              >
-                <div style={styles.schemeRowDot} />
-                <div style={{ flex: 1, minWidth: 0 }}>
+          {loadingSchemes ? (
+            <p style={styles.systemNote}>Loading...</p>
+          ) : popularSchemes.length === 0 ? (
+            <p style={{ fontSize: '12.5px', color: 'var(--color-charcoal-soft)' }}>No schemes loaded yet.</p>
+          ) : (
+            popularSchemes.map((s) => (
+              <button key={s.id} className="ym-scheme-row" onClick={() => openSchemeDetail(s)}>
+                <span style={styles.schemeRowDot} />
+                <span>
                   <span style={styles.schemeRowName}>{s.scheme_name}</span>
-                  <span style={styles.schemeRowCategory}>{s.category} · {s.level}</span>
-                </div>
+                  <span style={styles.schemeRowCategory}>{s.category}</span>
+                </span>
               </button>
-            ))}
-          </div>
+            ))
+          )}
         </div>
-
         <div style={styles.promoCard}>
-          <div style={{ fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>MPOnline Hackathon 2026</div>
-          <div style={{ fontSize: '12px', opacity: 0.9, lineHeight: 1.45 }}>
-            Jan Seva (जन सेवा) addresses Challenge 5 with multi-lingual voice intelligence, offline access, and 1-click citizen applications.
-          </div>
+          <strong style={{ fontSize: '13.5px' }}>Jan Seva · Sovereign AI</strong>
+          <p style={{ fontSize: '12px', margin: '6px 0 0', opacity: 0.9 }}>AI-Powered Governance for Every Citizen</p>
         </div>
       </aside>
-
-      {/* Modals */}
-      {showBrowseSchemes && (
-        <div style={styles.overlay} onClick={() => setShowBrowseSchemes(false)}>
-          <div style={styles.browseModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.browseHeader}>
-              <h2 style={styles.browseTitle}>All Government Schemes</h2>
-              <button style={styles.browseCloseBtn} onClick={() => setShowBrowseSchemes(false)}><CloseIcon size={20} /></button>
-            </div>
-            <div style={styles.browseSearchRow}>
-              <SearchIcon size={16} color="var(--color-charcoal-soft)" />
-              <input
-                style={styles.browseSearchInput}
-                placeholder="Search schemes by name..."
-                value={schemeSearch}
-                onChange={(e) => setSchemeSearch(e.target.value)}
-              />
-            </div>
-            <div style={styles.browseList}>
-              {filteredSchemes.map((s) => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <button
-                    className="ym-scheme-row"
-                    style={{ ...styles.browseRow, flex: 1 }}
-                    onClick={() => { setViewingScheme(s); setShowBrowseSchemes(false) }}
-                  >
-                    <div>
-                      <span style={styles.schemeRowName}>{s.scheme_name}</span>
-                      <span style={styles.schemeRowCategory}>{s.category} · {s.level}</span>
-                      {s.benefits && <span style={styles.browseRowBenefit}>{s.benefits}</span>}
-                    </div>
-                  </button>
-                  <button
-                    style={styles.saveIconBtn}
-                    onClick={() => handleToggleSave(s.id)}
-                    title={savedSchemeIds.includes(s.id) ? 'Remove from saved' : 'Save scheme'}
-                  >
-                    <BookmarkIcon size={18} color={savedSchemeIds.includes(s.id) ? 'var(--color-marigold-dark)' : 'var(--color-charcoal-soft)'} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showSavedSchemes && (
-        <div style={styles.overlay} onClick={() => setShowSavedSchemes(false)}>
-          <div style={styles.browseModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.browseHeader}>
-              <h2 style={styles.browseTitle}>Saved Schemes ({savedSchemesList.length})</h2>
-              <button style={styles.browseCloseBtn} onClick={() => setShowSavedSchemes(false)}><CloseIcon size={20} /></button>
-            </div>
-            <div style={styles.browseList}>
-              {savedSchemesList.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px 10px', color: 'var(--color-charcoal-soft)' }}>
-                  No schemes saved yet. Use the bookmark icon on any scheme to save it for quick offline viewing.
-                </div>
-              ) : (
-                savedSchemesList.map((s) => (
-                  <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button
-                      className="ym-scheme-row"
-                      style={{ ...styles.browseRow, flex: 1 }}
-                      onClick={() => { setViewingScheme(s); setShowSavedSchemes(false) }}
-                    >
-                      <div>
-                        <span style={styles.schemeRowName}>{s.scheme_name}</span>
-                        <span style={styles.schemeRowCategory}>{s.category} · {s.level}</span>
-                      </div>
-                    </button>
-                    <button
-                      style={styles.saveIconBtn}
-                      onClick={() => handleToggleSave(s.id)}
-                      title="Remove from saved"
-                    >
-                      <BookmarkIcon size={18} color="var(--color-marigold-dark)" />
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {viewingScheme && (
-        <div style={styles.overlay} onClick={() => setViewingScheme(null)}>
-          <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
-            <div style={styles.browseHeader}>
-              <h2 style={styles.browseTitle}>{viewingScheme.scheme_name}</h2>
-              <button style={styles.browseCloseBtn} onClick={() => setViewingScheme(null)}><CloseIcon size={20} /></button>
-            </div>
-            <div style={styles.detailBody}>
-              <div style={styles.detailMeta}>{viewingScheme.category} · {viewingScheme.level} level</div>
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Benefits</div>
-                <div style={styles.detailParagraph}>{viewingScheme.benefits || 'No specific benefit description available.'}</div>
-              </div>
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Eligibility Criteria</div>
-                <FormattedField value={viewingScheme.eligibility_criteria} />
-              </div>
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Required Documents</div>
-                <FormattedField value={viewingScheme.documents_required} />
-              </div>
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>How to Apply</div>
-                <div style={styles.detailParagraph}>{viewingScheme.how_to_apply || 'Follow official state portal instructions.'}</div>
-              </div>
-              <button
-                style={styles.detailAskBtn}
-                onClick={() => {
-                  const s = viewingScheme
-                  setViewingScheme(null)
-                  handleSend(`Tell me more about ${s.scheme_name} and whether I might qualify.`)
-                }}
-              >
-                Ask Jan Seva about this scheme
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {showApplyForm && (
         <ApplicationForm
           schemes={schemes}
-          preselectedSchemeId={applySchemeId}
-          onClose={() => {
-            setShowApplyForm(false)
-            setApplySchemeId(null)
-          }}
+          initialSchemeId={applySchemeId}
+          onClose={() => { setShowApplyForm(false); setApplySchemeId(null) }}
+          onRetryLoadSchemes={retryLoadSchemes}
         />
       )}
 
@@ -1055,61 +947,211 @@ export default function App() {
         />
       )}
 
+      {showBrowseSchemes && (
+        <div style={styles.overlay} onClick={() => setShowBrowseSchemes(false)}>
+          <div style={styles.browseModal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.browseHeader}>
+              <h2 style={styles.browseTitle}>All Schemes</h2>
+              <button style={styles.browseCloseBtn} onClick={() => setShowBrowseSchemes(false)}>
+                <CloseIcon size={17} />
+              </button>
+            </div>
+            <div style={styles.browseSearchRow}>
+              <SearchIcon size={16} color="var(--color-forest)" />
+              <input
+                style={styles.browseSearchInput}
+                placeholder="Search schemes by name or keyword..."
+                value={schemeSearch}
+                onChange={(e) => setSchemeSearch(e.target.value)}
+              />
+            </div>
+            <div style={styles.browseList}>
+              {filteredSchemes.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--color-charcoal-soft)', padding: '12px 0' }}>
+                  No schemes match your search.
+                </p>
+              ) : (
+                filteredSchemes.map((s) => (
+                  <button key={s.id} className="ym-scheme-row" style={styles.browseRow} onClick={() => openSchemeDetail(s)}>
+                    <span style={styles.schemeRowDot} />
+                    <span>
+                      <span style={styles.schemeRowName}>{s.scheme_name}</span>
+                      <span style={styles.schemeRowCategory}>{s.category} · {s.level}</span>
+                      {s.benefits && <span style={styles.browseRowBenefit}>{s.benefits}</span>}
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSavedSchemes && (
+        <div style={styles.overlay} onClick={() => setShowSavedSchemes(false)}>
+          <div style={styles.browseModal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.browseHeader}>
+              <h2 style={styles.browseTitle}>Saved Schemes</h2>
+              <button style={styles.browseCloseBtn} onClick={() => setShowSavedSchemes(false)}>
+                <CloseIcon size={17} />
+              </button>
+            </div>
+            <div style={styles.browseList}>
+              {savedSchemesList.length === 0 ? (
+                <p style={{ fontSize: '13px', color: 'var(--color-charcoal-soft)', padding: '12px 0' }}>
+                  Nothing saved yet — open any scheme and tap "Save" to keep it here for later, even offline.
+                </p>
+              ) : (
+                savedSchemesList.map((s) => (
+                  <button key={s.id} className="ym-scheme-row" style={styles.browseRow} onClick={() => openSchemeDetail(s)}>
+                    <span style={styles.schemeRowDot} />
+                    <span>
+                      <span style={styles.schemeRowName}>{s.scheme_name}</span>
+                      <span style={styles.schemeRowCategory}>{s.category} · {s.level}</span>
+                    </span>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {viewingScheme && (
+        <div style={styles.overlay} onClick={() => setViewingScheme(null)}>
+          <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.browseHeader}>
+              <h2 style={styles.browseTitle}>{viewingScheme.scheme_name}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <button
+                  style={styles.saveIconBtn}
+                  onClick={() => handleToggleSaved(viewingScheme)}
+                  title={savedSchemeIds.includes(viewingScheme.id) ? 'Remove from saved' : 'Save for later'}
+                >
+                  <BookmarkIcon size={18} color="var(--color-forest)" filled={savedSchemeIds.includes(viewingScheme.id)} />
+                </button>
+                <button style={styles.browseCloseBtn} onClick={() => setViewingScheme(null)}>
+                  <CloseIcon size={17} />
+                </button>
+              </div>
+            </div>
+            <div style={styles.detailBody}>
+              {!isOnline && (
+                <div style={styles.detailOfflineNote}>
+                  Showing details saved on your device. Reconnect to ask Jan Seva follow-up questions in chat.
+                </div>
+              )}
+              <div style={styles.detailMeta}>
+                {viewingScheme.category} · {viewingScheme.level}
+                {viewingScheme.scheme_name_hindi ? ` · ${viewingScheme.scheme_name_hindi}` : ''}
+              </div>
+
+              {viewingScheme.description && (
+                <p style={styles.detailParagraph}>{viewingScheme.description}</p>
+              )}
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Benefits</div>
+                <FormattedField value={viewingScheme.benefits} />
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Who's eligible</div>
+                <FormattedField value={viewingScheme.eligibility_criteria} />
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Documents needed</div>
+                <FormattedField value={viewingScheme.documents_required} />
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>How to apply</div>
+                <FormattedField value={viewingScheme.how_to_apply} />
+              </div>
+            </div>
+            {isOnline && (
+              <button className="ym-cta" style={styles.detailAskBtn} onClick={() => handleAskAboutScheme(viewingScheme)}>
+                Ask Jan Seva about this in chat
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {showProfile && (
         <div style={styles.overlay} onClick={() => setShowProfile(false)}>
           <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.browseHeader}>
-              <h2 style={styles.browseTitle}>Citizen Profile</h2>
-              <button style={styles.browseCloseBtn} onClick={() => setShowProfile(false)}><CloseIcon size={20} /></button>
+              <h2 style={styles.browseTitle}>Profile</h2>
+              <button style={styles.browseCloseBtn} onClick={() => setShowProfile(false)}>
+                <CloseIcon size={17} />
+              </button>
             </div>
-            <div style={{ padding: '6px 0' }}>
+            <div style={styles.detailBody}>
+              <p style={{ fontSize: '12.5px', color: 'var(--color-charcoal-soft)', margin: '0 0 14px', lineHeight: 1.5 }}>
+                Saved only on this device. Fill this in once and reuse it to skip the intro questions in chat.
+              </p>
               <label style={styles.formLabel}>
-                Full Name
+                Name
                 <input
                   style={styles.formInput}
                   value={profileForm.name}
                   onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
-                  placeholder="e.g. Ramesh Patel"
+                  placeholder="e.g. Radha Devi"
                 />
               </label>
               <label style={styles.formLabel}>
                 Age
                 <input
                   style={styles.formInput}
-                  type="number"
                   value={profileForm.age}
                   onChange={(e) => setProfileForm({ ...profileForm, age: e.target.value })}
-                  placeholder="e.g. 42"
+                  placeholder="e.g. 45"
+                  inputMode="numeric"
                 />
               </label>
               <label style={styles.formLabel}>
                 Occupation
-                <input
+                <select
                   style={styles.formInput}
                   value={profileForm.occupation}
                   onChange={(e) => setProfileForm({ ...profileForm, occupation: e.target.value })}
-                  placeholder="e.g. Small Farmer, Student, Homemaker"
-                />
+                >
+                  <option value="">Select...</option>
+                  <option>Farmer</option>
+                  <option>Student</option>
+                  <option>Small Business / Self-Employed</option>
+                  <option>Daily-Wage / Construction Worker</option>
+                  <option>Homemaker</option>
+                  <option>Unemployed / Jobseeker</option>
+                  <option>Retired</option>
+                  <option>Other</option>
+                </select>
               </label>
               <label style={styles.formLabel}>
-                District / Location in MP
+                Location (District / State)
                 <input
                   style={styles.formInput}
                   value={profileForm.location}
                   onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })}
-                  placeholder="e.g. Sehore, Bhopal, Ujjain"
+                  placeholder="e.g. Sehore, MP"
                 />
               </label>
-              <div style={{ display: 'flex', gap: '8px', marginTop: '14px' }}>
-                <button style={{ ...styles.detailAskBtn, marginTop: 0, flex: 1 }} onClick={handleSaveProfile}>Save Profile</button>
-                {profile && (
-                  <button style={styles.formSecondaryBtn} onClick={handleClearProfile}>Clear</button>
-                )}
-              </div>
-              {profile && (
-                <button style={styles.formLinkBtn} onClick={handleUseProfileInChat}>Start chat using this profile</button>
-              )}
             </div>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+              {profile && (
+                <button style={styles.formSecondaryBtn} onClick={handleClearProfile}>Clear</button>
+              )}
+              <button className="ym-cta" style={{ ...styles.detailAskBtn, marginTop: 0 }} onClick={handleSaveProfile}>
+                Save Profile
+              </button>
+            </div>
+            {profile && isOnline && (
+              <button style={styles.formLinkBtn} onClick={handleUseProfileInChat}>
+                Use my profile in chat now
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -1119,12 +1161,32 @@ export default function App() {
           <div style={styles.detailModal} onClick={(e) => e.stopPropagation()}>
             <div style={styles.browseHeader}>
               <h2 style={styles.browseTitle}>Settings</h2>
-              <button style={styles.browseCloseBtn} onClick={() => setShowSettings(false)}><CloseIcon size={20} /></button>
+              <button style={styles.browseCloseBtn} onClick={() => setShowSettings(false)}>
+                <CloseIcon size={17} />
+              </button>
             </div>
-            <div style={{ padding: '6px 0' }}>
-              <div style={styles.formLabel}>
-                Default Language
+            <div style={styles.detailBody}>
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Text size</div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
+                  {['normal', 'large'].map((size) => (
+                    <button
+                      key={size}
+                      style={{
+                        ...styles.formToggleBtn,
+                        ...(settings.textSize === size ? styles.formToggleBtnActive : {}),
+                      }}
+                      onClick={() => handleChangeSetting('textSize', size)}
+                    >
+                      {size === 'normal' ? 'Normal' : 'Large'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Default voice language</div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap' }}>
                   {VOICE_LANGUAGES.map((l) => (
                     <button
                       key={l.code}
@@ -1139,26 +1201,16 @@ export default function App() {
                   ))}
                 </div>
               </div>
-              <div style={{ ...styles.formLabel, marginTop: '16px' }}>
-                Text Size
-                <div style={{ display: 'flex', gap: '8px', marginTop: '6px' }}>
-                  {['normal', 'large'].map((size) => (
-                    <button
-                      key={size}
-                      style={{
-                        ...styles.formToggleBtn,
-                        ...(settings.textSize === size ? styles.formToggleBtnActive : {}),
-                      }}
-                      onClick={() => handleChangeSetting('textSize', size)}
-                    >
-                      {size.charAt(0).toUpperCase() + size.slice(1)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={{ marginTop: '24px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-                <div style={styles.detailSectionTitle}>Storage & Cache</div>
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Offline data</div>
+                <p style={{ fontSize: '12.5px', color: 'var(--color-charcoal-soft)', margin: '4px 0 10px' }}>
+                  {schemes.length > 0
+                    ? `${schemes.length} schemes cached${getCacheAge() !== null ? ` · updated ${getCacheAge()} min ago` : ''}`
+                    : 'No schemes cached yet'}
+                  {' · '}{savedSchemeIds.length} saved
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                   <button style={styles.formSecondaryBtn} onClick={handleClearCache}>Clear offline cache</button>
                   <button style={styles.formSecondaryBtn} onClick={handleClearSaved}>Clear saved schemes</button>
                 </div>
@@ -1195,28 +1247,53 @@ const styles = {
     position: 'relative',
   },
   sidebarBrandTitle: { fontSize: '14px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap' },
-  sidebarBrandSub: { fontSize: '10px', color: '#059669', fontWeight: 700, marginTop: '1px', whiteSpace: 'nowrap' },
+  sidebarBrandSub: { fontSize: '10.5px', color: '#059669', fontWeight: 600, whiteSpace: 'nowrap' },
   mobileCloseBtn: {
-    display: 'none', marginLeft: 'auto', background: '#dcfce7', border: 'none', borderRadius: '6px', padding: '4px', cursor: 'pointer',
+    display: 'none',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    background: '#f1f5f9',
+    border: '1px solid #cbd5e1',
+    cursor: 'pointer',
+    color: '#0f172a',
   },
   sidebarSectionLabel: {
-    fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800,
-    color: '#047857', margin: '5px 6px 2px',
+    fontSize: '9.5px',
+    fontWeight: 800,
+    textTransform: 'uppercase',
+    letterSpacing: '0.08em',
+    color: '#059669',
+    padding: '6px 6px 2px',
   },
   sidebarHelp: {
-    marginTop: 'auto', background: '#ffffff', borderRadius: '10px',
-    padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '6px',
-    border: '1px solid #bbf7d0', boxShadow: '0 2px 8px rgba(5, 150, 105, 0.06)',
+    marginTop: 'auto',
+    background: '#ecfdf5',
+    border: '1px solid #a7f3d0',
+    borderRadius: '10px',
+    padding: '8px 10px',
   },
-  sidebarHelpRow: { display: 'flex', alignItems: 'center', gap: '6px' },
-  sidebarHelpAvatar: { width: '24px', height: '24px', borderRadius: '6px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  sidebarHelpTitle: { fontSize: '12px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 },
-  sidebarHelpText: { fontSize: '10.5px', color: '#64748b', lineHeight: 1.2 },
+  sidebarHelpRow: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' },
+  sidebarHelpAvatar: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
+  sidebarHelpTitle: { fontSize: '11.5px', fontWeight: 800, color: '#065f46' },
+  sidebarHelpText: { fontSize: '10px', color: '#047857' },
   sidebarVoiceBtn: {
-    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: 'none', borderRadius: '8px',
-    padding: '6px 10px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#ffffff',
-    fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%',
-    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.2)',
+    width: '100%',
+    padding: '6px 10px',
+    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    fontWeight: 700,
+    fontSize: '11.5px',
+    cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
   },
   mainCol: {
     display: 'flex',
@@ -1309,8 +1386,9 @@ const styles = {
     color: '#ffffff', borderRadius: '14px', padding: '16px', boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
   },
   overlay: {
-    position: 'fixed', inset: 0, background: 'rgba(20,83,45,0.45)',
-    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 70,
+    position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.65)',
+    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', zIndex: 9999,
+    backdropFilter: 'blur(5px)',
   },
   browseModal: {
     background: 'var(--color-cream)', borderRadius: '16px', padding: '18px', maxWidth: '480px', width: '100%',
@@ -1318,7 +1396,18 @@ const styles = {
   },
   browseHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
   browseTitle: { margin: 0, fontSize: '18px', color: 'var(--color-forest)', fontWeight: 700 },
-  browseCloseBtn: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-charcoal-soft)' },
+  browseCloseBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '32px',
+    height: '32px',
+    borderRadius: '50%',
+    background: '#f1f5f9',
+    border: '1px solid #cbd5e1',
+    cursor: 'pointer',
+    color: '#0f172a',
+  },
   saveIconBtn: {
     background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex',
     alignItems: 'center', justifyContent: 'center', padding: '4px',
