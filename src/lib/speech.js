@@ -78,7 +78,7 @@ function cleanTextForSpeech(text) {
     .replace(/\*/g, '')
     .replace(/^[*\-•]\s+/gm, '')
     .replace(/[👉⚠️✅ℹ️📌🔹🔸•]/g, '')
-    .replace(/https?:\/\/\S+/g, 'वेबसाइट')
+    .replace(/https?:\/\/\S+/g, 'website')
     .replace(/\n+/g, '. ')
 }
 
@@ -109,6 +109,20 @@ function splitIntoSentences(text) {
   return (sentences || [cleaned]).map((s) => s.trim()).filter(Boolean)
 }
 
+// Automatically detect the script/language of the sentence so the browser picks the correct voice engine
+function detectScriptLanguage(text, fallbackLang = 'en-IN') {
+  // Check for Devanagari script (Hindi / Marathi)
+  if (/[\u0900-\u097F]/.test(text)) {
+    return 'hi-IN'
+  }
+  // Check for Tamil script
+  if (/[\u0B80-\u0BFF]/.test(text)) {
+    return 'ta-IN'
+  }
+  // Default to the user's selected fallback language or English
+  return fallbackLang || 'en-IN'
+}
+
 let speechQueue = []
 let isSpeakingQueue = false
 
@@ -119,20 +133,35 @@ function speakNextInQueue(lang) {
   }
   isSpeakingQueue = true
   const sentence = speechQueue.shift()
+  const targetLang = detectScriptLanguage(sentence, lang)
+
   const utterance = new SpeechSynthesisUtterance(sentence)
-  utterance.lang = lang
+  utterance.lang = targetLang
   utterance.rate = 0.95
 
-  // Pick an authentic native voice for the selected language if available
+  // Pick an authentic native voice matching the sentence's actual script/language
   try {
     const voices = window.speechSynthesis.getVoices()
     if (voices && voices.length > 0) {
-      const langPrefix = lang.split('-')[0].toLowerCase()
-      const matched = voices.find(
-        (v) =>
-          v.lang.toLowerCase() === lang.toLowerCase() ||
-          v.lang.toLowerCase().replace('_', '-').startsWith(langPrefix)
+      const langPrefix = targetLang.split('-')[0].toLowerCase()
+
+      // 1. Try exact language match (e.g. 'hi-IN', 'en-IN')
+      let matched = voices.find(
+        (v) => v.lang.toLowerCase() === targetLang.toLowerCase()
       )
+
+      // 2. Try language prefix match (e.g. 'hi', 'en')
+      if (!matched) {
+        matched = voices.find(
+          (v) => v.lang.toLowerCase().replace('_', '-').startsWith(langPrefix)
+        )
+      }
+
+      // 3. Fallback check for voice names (e.g. "Google हिन्दी", "Microsoft Kalpana", "Microsoft Hemant")
+      if (!matched && langPrefix === 'hi') {
+        matched = voices.find((v) => /hindi|kalpana|hemant|hi[-_]in/i.test(v.name))
+      }
+
       if (matched) {
         utterance.voice = matched
       }
