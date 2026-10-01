@@ -1,13 +1,13 @@
-const SETTINGS_KEY = 'yojana_mitra_settings'
+const SETTINGS_KEY = 'jan_seva_settings'
 
 export const DEFAULT_SETTINGS = {
   textSize: 'normal', // 'normal' | 'large'
-  defaultVoiceLang: 'en-IN',
+  defaultVoiceLang: 'hi-IN', // Defaults to Hindi for MP citizen governance
 }
 
 export function getSettings() {
   try {
-    const raw = localStorage.getItem(SETTINGS_KEY)
+    const raw = localStorage.getItem(SETTINGS_KEY) || localStorage.getItem('yojana_mitra_settings')
     return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : { ...DEFAULT_SETTINGS }
   } catch (e) {
     return { ...DEFAULT_SETTINGS }
