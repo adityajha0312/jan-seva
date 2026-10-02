@@ -123,7 +123,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
         <div style={styles.heroTextCol}>
           <div style={styles.govTagPill}>
             <span style={styles.pulseDot} />
-            <span>MPOnline Hackathon · Challenge 5 Official Entry</span>
+            <span>Government of Madhya Pradesh · Citizen Welfare Portal</span>
           </div>
 
           <h1 style={styles.heroHeadline}>
@@ -217,7 +217,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
         <div style={styles.sectionHeaderWrap}>
           <span style={styles.sectionBadge}>ENTERPRISE GOVTECH</span>
           <h2 style={styles.sectionHeading}>Engineered for Citizen-Centric Governance</h2>
-          <p style={styles.sectionDesc}>Hitting every benchmark of the MPOnline Hackathon Challenge with production-grade AI.</p>
+          <p style={styles.sectionDesc}>Empowering citizens across Madhya Pradesh with accessible, production-grade AI public services.</p>
         </div>
 
         <div style={styles.capabilitiesGrid}>
@@ -336,7 +336,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
               <strong style={{ fontSize: '18px', color: '#0f172a' }}>Jan Seva (जन सेवा)</strong>
             </div>
             <p style={styles.footerTagline}>
-              Sovereign AI initiative for MPOnline Hackathon 2026. Transforming citizen welfare delivery through intelligent GovTech innovation.
+              Sovereign AI initiative for citizen empowerment. Transforming public welfare delivery through intelligent GovTech innovation.
             </p>
           </div>
 
@@ -356,7 +356,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
         </div>
 
         <div style={styles.footerBottom}>
-          <span>Government of Madhya Pradesh · MPOnline Challenge 5</span>
+          <span>Government of Madhya Pradesh · Department of Public Services</span>
           <span>Aligned with MP Public Services Guarantee Act 2010</span>
         </div>
       </footer>
@@ -418,83 +418,80 @@ const styles = {
     transition: 'all 0.2s',
   },
   launchChatBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
-    borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-    color: '#ffffff', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.3)',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 18px',
+    borderRadius: '10px', border: 'none', background: '#059669', color: '#ffffff',
+    fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
   },
   hero: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: '48px clamp(20px, 5vw, 60px) 60px',
-    maxWidth: '1380px',
-    margin: '0 auto',
-    gap: 'clamp(30px, 5vw, 64px)',
-    flexWrap: 'wrap',
+    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+    gap: '40px', padding: '60px clamp(20px, 5vw, 60px) 40px', maxWidth: '1380px',
+    margin: '0 auto', width: '100%', alignItems: 'center',
   },
-  heroTextCol: { flex: '1 1 540px', minWidth: '320px' },
+  heroTextCol: { display: 'flex', flexDirection: 'column', gap: '18px' },
   govTagPill: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px',
-    borderRadius: '999px', background: 'rgba(5, 150, 105, 0.08)', border: '1px solid rgba(5, 150, 105, 0.2)',
-    color: '#059669', fontSize: '12px', fontWeight: 700, marginBottom: '20px',
+    borderRadius: '999px', background: 'rgba(5, 150, 105, 0.08)',
+    border: '1px solid rgba(5, 150, 105, 0.2)', color: '#047857',
+    fontSize: '12.5px', fontWeight: 700, width: 'fit-content',
   },
   pulseDot: {
-    width: '7px', height: '7px', borderRadius: '50%', background: '#059669',
-    boxShadow: '0 0 0 4px rgba(5, 150, 105, 0.2)',
+    width: '8px', height: '8px', borderRadius: '50%', background: '#10b981',
+    boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25)',
   },
   heroHeadline: {
-    fontSize: 'clamp(36px, 5.5vw, 56px)', fontWeight: 800, color: '#0f172a',
-    lineHeight: 1.1, margin: '0 0 20px', letterSpacing: '-1px', fontFamily: 'var(--font-display)',
+    fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, color: '#0f172a',
+    lineHeight: 1.15, margin: 0, letterSpacing: '-0.8px', fontFamily: 'var(--font-display)',
   },
   gradientText: {
-    background: 'linear-gradient(135deg, #059669 0%, #0284c7 50%, #f59e0b 100%)',
+    background: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)',
     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
   },
   heroSubtitle: {
-    fontSize: '16.5px', lineHeight: 1.65, color: '#475569', margin: '0 0 32px',
-    maxWidth: '560px',
+    fontSize: 'clamp(14px, 1.8vw, 16px)', color: '#475569', lineHeight: 1.6, margin: 0,
   },
-  ctaButtonGroup: { display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '40px' },
+  ctaButtonGroup: { display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' },
   primaryCta: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 26px',
-    borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-    color: '#ffffff', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 10px 25px -4px rgba(5, 150, 105, 0.4)',
+    display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '13px 24px',
+    borderRadius: '12px', border: 'none', background: '#059669', color: '#ffffff',
+    fontSize: '14.5px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+    boxShadow: '0 6px 20px rgba(5, 150, 105, 0.3)',
   },
   scorecardBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 22px',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '13px 20px',
     borderRadius: '12px', border: '1.5px solid #cbd5e1', background: '#ffffff',
-    color: '#0f172a', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer',
-    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+    color: '#0f172a', fontSize: '14px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
   },
   grievanceBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 20px',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '13px 18px',
     borderRadius: '12px', border: '1.5px solid #fecdd3', background: '#fff1f2',
-    color: '#e11d48', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer',
+    color: '#e11d48', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
   },
   statsRow: {
-    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px',
-    paddingTop: '24px', borderTop: '1px solid #e2e8f0', maxWidth: '580px',
+    display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px',
+    marginTop: '12px', paddingTop: '20px', borderTop: '1px solid #e2e8f0',
   },
-  statBox: {},
-  statVal: { fontSize: '22px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px' },
-  statLabel: { fontSize: '11.5px', color: '#64748b', fontWeight: 600, marginTop: '2px' },
-  heroVisualCol: { flex: '1 1 420px', minWidth: '320px', display: 'flex', justifyContent: 'center' },
+  statBox: { display: 'flex', flexDirection: 'column' },
+  statVal: { fontSize: '20px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.4px' },
+  statLabel: { fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' },
+  heroVisualCol: { display: 'flex', justifyContent: 'center' },
   showcaseCard: {
-    width: '100%', maxWidth: '440px', background: '#ffffff', borderRadius: '20px',
-    padding: '24px', boxShadow: '0 25px 60px -15px rgba(15, 23, 42, 0.15)',
-    border: '1px solid rgba(226, 232, 240, 0.9)',
+    background: '#ffffff', borderRadius: '24px', padding: '24px',
+    border: '1px solid #e2e8f0', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.08)',
+    width: '100%', maxWidth: '480px',
   },
-  showcaseHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' },
+  showcaseHeader: {
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+    paddingBottom: '14px', borderBottom: '1px solid #f1f5f9', marginBottom: '14px',
+  },
   liveBadge: {
-    fontSize: '10px', fontWeight: 800, color: '#059669', background: '#ecfdf5',
-    padding: '3px 8px', borderRadius: '999px', letterSpacing: '0.4px',
+    fontSize: '10px', fontWeight: 800, background: '#dcfce7', color: '#15803d',
+    padding: '3px 8px', borderRadius: '999px', letterSpacing: '0.5px',
   },
-  mockChat: { display: 'flex', flexDirection: 'column', gap: '14px' },
+  mockChat: { display: 'flex', flexDirection: 'column', gap: '12px' },
   mockUserBubble: {
-    background: '#f1f5f9', padding: '12px 14px', borderRadius: '14px', fontSize: '13.5px',
-    color: '#1e293b', lineHeight: 1.4, alignSelf: 'flex-start', border: '1px solid #e2e8f0',
+    background: '#f8fafc', padding: '12px 14px', borderRadius: '12px',
+    fontSize: '13px', color: '#1e293b', border: '1px solid #e2e8f0',
   },
   mockAiBubble: {
     background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
