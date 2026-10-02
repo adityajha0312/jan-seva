@@ -2,6 +2,7 @@ import Logo from './Logo'
 import {
   ArrowRightIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon, SearchIcon,
   AgricultureIcon, WomenEmpowermentIcon, EducationIcon, BriefcaseJobIcon, WorkerToolsIcon, SeniorPensionIcon,
+  CitizenAvatarIcon,
 } from './Icons'
 
 const POPULAR_SCHEMES = [
@@ -188,7 +189,9 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
 
             <div style={styles.mockChat}>
               <div style={styles.chatMessageRow}>
-                <div style={styles.chatAvatarCitizen}>👨‍🌾</div>
+                <div style={styles.chatAvatarCitizen}>
+                  <CitizenAvatarIcon size={18} color="#0284c7" />
+                </div>
                 <div style={styles.mockUserBubble}>
                   <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Citizen (Voice Hindi) · Sehore</span>
                   "मैं सीहोर का किसान हूँ, 2 एकड़ ज़मीन है, मुझे कौन सी योजना मिल सकती है?"
@@ -546,9 +549,9 @@ const styles = {
     display: 'flex', gap: '12px', alignItems: 'flex-start', width: '100%',
   },
   chatAvatarCitizen: {
-    width: '34px', height: '34px', borderRadius: '50%', background: '#f1f5f9',
-    border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: '17px', flexShrink: 0, boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+    width: '34px', height: '34px', borderRadius: '50%', background: '#f0f9ff',
+    border: '1.5px solid #bae6fd', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: '#0284c7', flexShrink: 0, boxShadow: '0 2px 8px rgba(2, 132, 199, 0.12)',
   },
   mockUserBubble: {
     background: '#f8fafc', padding: '12px 14px', borderRadius: '16px', borderTopLeftRadius: '4px',
