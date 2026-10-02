@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import Logo from './Logo'
-import { ArrowRightIcon, GlobeIcon, HelpCircleIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon } from './Icons'
+import {
+  ArrowRightIcon, GlobeIcon, HelpCircleIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon, SearchIcon,
+  AgricultureIcon, WomenEmpowermentIcon, EducationIcon, BriefcaseJobIcon, WorkerToolsIcon, SeniorPensionIcon,
+} from './Icons'
 
 const POPULAR_SCHEMES = [
   { name: 'PM-KISAN & Kisan Kalyan', blurb: '₹12,000/yr direct income support (Central + MP Govt)', tag: 'Farmers', color: '#059669', benefit: '₹12,000/yr' },
@@ -23,7 +26,7 @@ const CATEGORIES = [
     color: '#059669',
     tag: 'Krishi',
     opener: "I'm a farmer in MP, help me find eligible agricultural schemes.",
-    icon: '🌾',
+    Icon: AgricultureIcon,
   },
   {
     label: 'Women Empowerment',
@@ -31,7 +34,7 @@ const CATEGORIES = [
     color: '#e11d48',
     tag: 'Mahila Kalyan',
     opener: 'I want to discover government schemes for women in Madhya Pradesh.',
-    icon: '👩',
+    Icon: WomenEmpowermentIcon,
   },
   {
     label: 'Students & Scholarships',
@@ -39,7 +42,7 @@ const CATEGORIES = [
     color: '#0284c7',
     tag: 'Shiksha',
     opener: "I'm a student looking for MP scholarship and higher education schemes.",
-    icon: '🎓',
+    Icon: EducationIcon,
   },
   {
     label: 'Youth & Employment',
@@ -47,7 +50,7 @@ const CATEGORIES = [
     color: '#d97706',
     tag: 'Rojgar',
     opener: "I'm looking for youth employment, skill development, and stipend schemes.",
-    icon: '💼',
+    Icon: BriefcaseJobIcon,
   },
   {
     label: 'Unorganized Workers',
@@ -55,7 +58,7 @@ const CATEGORIES = [
     color: '#7c3aed',
     tag: 'Shramik',
     opener: 'My family needs help with Sambal 2.0 or unorganized labor welfare.',
-    icon: '🔨',
+    Icon: WorkerToolsIcon,
   },
   {
     label: 'Senior Citizens & Pensions',
@@ -63,7 +66,7 @@ const CATEGORIES = [
     color: '#475569',
     tag: 'Social Security',
     opener: "I'm a senior citizen looking for pension and healthcare benefits.",
-    icon: '👴',
+    Icon: SeniorPensionIcon,
   },
 ]
 
@@ -245,7 +248,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
 
           <div style={styles.capCard}>
             <div style={{ ...styles.capIconWrap, background: '#f0f9ff', color: '#0284c7' }}>
-              <span style={{ fontSize: '20px' }}>🔍</span>
+              <SearchIcon size={22} color="#0284c7" />
             </div>
             <h3 style={styles.capTitle}>Computer Vision OCR & Verification</h3>
             <p style={styles.capDesc}>
@@ -284,8 +287,24 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
               onClick={() => onStart(cat.opener)}
             >
               <div style={styles.categoryCardTop}>
-                <span style={styles.categoryEmoji}>{cat.icon}</span>
-                <span style={{ ...styles.categoryPillTag, color: cat.color }}>{cat.tag}</span>
+                <div
+                  style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '12px',
+                    background: `${cat.color}15`,
+                    border: `1.5px solid ${cat.color}30`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: cat.color,
+                  }}
+                >
+                  <cat.Icon size={22} color={cat.color} />
+                </div>
+                <span style={{ ...styles.categoryPillTag, color: cat.color, borderColor: `${cat.color}30` }}>
+                  {cat.tag}
+                </span>
               </div>
               <h4 style={styles.catCardTitle}>{cat.label}</h4>
               <p style={styles.catCardSub}>{cat.sub}</p>
@@ -556,7 +575,6 @@ const styles = {
     fontFamily: 'inherit', display: 'flex', flexDirection: 'column',
   },
   categoryCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' },
-  categoryEmoji: { fontSize: '28px' },
   categoryPillTag: {
     fontSize: '11px', fontWeight: 700, background: '#f8fafc', padding: '3px 8px', borderRadius: '999px',
     border: '1px solid #e2e8f0',
