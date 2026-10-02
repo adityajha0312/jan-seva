@@ -1,7 +1,6 @@
-import { useState } from 'react'
 import Logo from './Logo'
 import {
-  ArrowRightIcon, GlobeIcon, HelpCircleIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon, SearchIcon,
+  ArrowRightIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon, SearchIcon,
   AgricultureIcon, WomenEmpowermentIcon, EducationIcon, BriefcaseJobIcon, WorkerToolsIcon, SeniorPensionIcon,
 } from './Icons'
 
@@ -71,15 +70,13 @@ const CATEGORIES = [
 ]
 
 const KEY_METRICS = [
-  { label: 'Verified Schemes', val: '500+' },
-  { label: 'MP Districts Covered', val: '52' },
-  { label: 'Avg. Annual Benefit', val: '₹24,000+' },
-  { label: 'Grievance SLA Target', val: '7 Days' },
+  { label: 'Verified Schemes', val: '500+', badge: '100% Verified', color: '#059669' },
+  { label: 'MP Districts Covered', val: '52', badge: 'Statewide', color: '#0284c7' },
+  { label: 'Avg. Annual Benefit', val: '₹24,000+', badge: 'Direct DBT', color: '#f59e0b' },
+  { label: 'Grievance SLA Target', val: '7 Days', badge: 'Fast Track', color: '#e11d48' },
 ]
 
 export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance, onOpenAdmin }) {
-  const [helpOpen, setHelpOpen] = useState(false)
-
   return (
     <div style={styles.page} id="top">
       {/* Top Government Tri-color subtle band */}
@@ -165,8 +162,13 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
           {/* Stats Bar */}
           <div style={styles.statsRow}>
             {KEY_METRICS.map((m, idx) => (
-              <div key={idx} style={styles.statBox}>
-                <div style={styles.statVal}>{m.val}</div>
+              <div key={idx} style={{ ...styles.statBox, borderTop: `3px solid ${m.color}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '4px' }}>
+                  <div style={styles.statVal}>{m.val}</div>
+                  <span style={{ fontSize: '10px', fontWeight: 800, color: m.color, background: `${m.color}15`, padding: '2px 6px', borderRadius: '5px' }}>
+                    {m.badge}
+                  </span>
+                </div>
                 <div style={styles.statLabel}>{m.label}</div>
               </div>
             ))}
@@ -178,32 +180,48 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
           <div style={styles.showcaseCard}>
             <div style={styles.showcaseHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981' }} />
-                <span style={{ fontSize: '12px', fontWeight: 700, color: '#0f172a' }}>Jan Seva Sovereign AI Engine</span>
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25)' }} />
+                <span style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>Jan Seva Sovereign AI Engine</span>
               </div>
-              <span style={styles.liveBadge}>LIVE MATCHING</span>
+              <span style={styles.liveBadge}>● LIVE MATCHING</span>
             </div>
 
             <div style={styles.mockChat}>
-              <div style={styles.mockUserBubble}>
-                <span style={{ fontSize: '11px', color: '#64748b', display: 'block', marginBottom: '2px' }}>Citizen (Voice Hindi):</span>
-                "मैं सीहोर का किसान हूँ, 2 एकड़ ज़मीन है, मुझे कौन सी योजना मिल सकती है?"
+              <div style={styles.chatMessageRow}>
+                <div style={styles.chatAvatarCitizen}>👨‍🌾</div>
+                <div style={styles.mockUserBubble}>
+                  <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, display: 'block', marginBottom: '2px' }}>Citizen (Voice Hindi) · Sehore</span>
+                  "मैं सीहोर का किसान हूँ, 2 एकड़ ज़मीन है, मुझे कौन सी योजना मिल सकती है?"
+                </div>
               </div>
 
-              <div style={styles.mockAiBubble}>
-                <div style={styles.aiResultPill}>✅ 2 High-Match Schemes Identified (100% Eligible)</div>
-                <div style={styles.schemeMiniRow}>
-                  <strong>1. PM-KISAN + MP Kisan Kalyan</strong>
-                  <div style={{ color: '#059669', fontSize: '12px', fontWeight: 700 }}>₹12,000 / year direct bank transfer</div>
+              <div style={styles.chatMessageRow}>
+                <div style={styles.chatAvatarAi}>
+                  <Logo size={20} />
                 </div>
-                <div style={styles.schemeMiniRow}>
-                  <strong>2. Ayushman Bharat (Niramayam MP)</strong>
-                  <div style={{ color: '#0284c7', fontSize: '12px', fontWeight: 700 }}>₹5,00,000 Cashless Family Health Cover</div>
-                </div>
-                <div style={styles.mockActionRow}>
-                  <button style={styles.mockActionBtn} onClick={() => onStart("I am a farmer in Sehore with 2 acres. Tell me more.")}>
-                    Pre-fill MPOnline Kiosk Slip →
-                  </button>
+                <div style={styles.mockAiBubble}>
+                  <div style={styles.aiResultPill}>
+                    <span style={{ fontSize: '12px' }}>✓</span> 2 High-Match Schemes (100% Eligible)
+                  </div>
+                  <div style={styles.schemeMiniRow}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ color: '#0f172a' }}>1. PM-KISAN + MP Kisan Kalyan</strong>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#059669', background: '#ecfdf5', padding: '2px 7px', borderRadius: '6px' }}>₹12,000 / yr</span>
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px' }}>Direct bank transfer (Central + MP Govt)</div>
+                  </div>
+                  <div style={{ ...styles.schemeMiniRow, borderBottom: 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <strong style={{ color: '#0f172a' }}>2. Ayushman Bharat (Niramayam MP)</strong>
+                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#0284c7', background: '#f0f9ff', padding: '2px 7px', borderRadius: '6px' }}>₹5,00,000</span>
+                    </div>
+                    <div style={{ color: '#64748b', fontSize: '11.5px', marginTop: '2px' }}>Cashless family hospitalization coverage</div>
+                  </div>
+                  <div style={styles.mockActionRow}>
+                    <button style={styles.mockActionBtn} onClick={() => onStart("I am a farmer in Sehore with 2 acres. Tell me more.")}>
+                      Pre-fill MPOnline Kiosk Slip →
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -389,9 +407,10 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     fontFamily: 'var(--font-body)',
-    background: '#f8fafc',
+    background: 'radial-gradient(1100px circle at 85% 12%, rgba(16, 185, 129, 0.12) 0%, rgba(240, 253, 244, 0.5) 35%, transparent 70%), radial-gradient(900px circle at 10% 45%, rgba(2, 132, 199, 0.04) 0%, transparent 60%), #f8fafc',
     color: '#0f172a',
     position: 'relative',
+    overflowX: 'hidden',
   },
   tricolorBand: {
     height: '4px',
@@ -404,9 +423,11 @@ const styles = {
     position: 'sticky',
     top: '4px',
     zIndex: 50,
-    background: 'rgba(255, 255, 255, 0.94)',
-    backdropFilter: 'blur(16px)',
-    borderBottom: '1px solid rgba(226, 232, 240, 0.8)',
+    background: 'rgba(255, 255, 255, 0.92)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    borderBottom: '1px solid rgba(226, 232, 240, 0.85)',
+    boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.03)',
   },
   nav: {
     display: 'flex',
@@ -432,105 +453,133 @@ const styles = {
   navActions: { display: 'flex', alignItems: 'center', gap: '10px' },
   adminNavBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
-    borderRadius: '10px', border: '1px solid #cbd5e1', background: '#ffffff',
+    borderRadius: '10px', border: '1.5px solid #e2e8f0', background: '#ffffff',
     color: '#334155', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer',
-    transition: 'all 0.2s',
+    transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
   },
   launchChatBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '9px 18px',
-    borderRadius: '10px', border: 'none', background: '#059669', color: '#ffffff',
-    fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
-    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.25)',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
+    borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#ffffff', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(5, 150, 105, 0.35)',
   },
   hero: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-    gap: '40px', padding: '60px clamp(20px, 5vw, 60px) 40px', maxWidth: '1380px',
-    margin: '0 auto', width: '100%', alignItems: 'center',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '52px clamp(20px, 5vw, 60px) 68px',
+    maxWidth: '1380px',
+    margin: '0 auto',
+    gap: 'clamp(32px, 5vw, 64px)',
+    flexWrap: 'wrap',
   },
-  heroTextCol: { display: 'flex', flexDirection: 'column', gap: '18px' },
+  heroTextCol: { flex: '1 1 540px', minWidth: '320px' },
   govTagPill: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '6px 14px',
-    borderRadius: '999px', background: 'rgba(5, 150, 105, 0.08)',
-    border: '1px solid rgba(5, 150, 105, 0.2)', color: '#047857',
-    fontSize: '12.5px', fontWeight: 700, width: 'fit-content',
+    borderRadius: '999px', background: 'rgba(5, 150, 105, 0.08)', border: '1px solid rgba(5, 150, 105, 0.25)',
+    color: '#059669', fontSize: '12px', fontWeight: 700, marginBottom: '20px',
+    boxShadow: '0 2px 8px rgba(5, 150, 105, 0.06)',
   },
   pulseDot: {
-    width: '8px', height: '8px', borderRadius: '50%', background: '#10b981',
-    boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25)',
+    width: '7px', height: '7px', borderRadius: '50%', background: '#059669',
+    boxShadow: '0 0 0 4px rgba(5, 150, 105, 0.2)',
   },
   heroHeadline: {
-    fontSize: 'clamp(32px, 5vw, 48px)', fontWeight: 800, color: '#0f172a',
-    lineHeight: 1.15, margin: 0, letterSpacing: '-0.8px', fontFamily: 'var(--font-display)',
+    fontSize: 'clamp(36px, 5.5vw, 56px)', fontWeight: 800, color: '#0f172a',
+    lineHeight: 1.12, margin: '0 0 20px', letterSpacing: '-1.2px', fontFamily: 'var(--font-display)',
   },
   gradientText: {
-    background: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)',
+    background: 'linear-gradient(135deg, #047857 0%, #059669 45%, #0284c7 100%)',
     WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
   },
   heroSubtitle: {
-    fontSize: 'clamp(14px, 1.8vw, 16px)', color: '#475569', lineHeight: 1.6, margin: 0,
+    fontSize: '16.5px', lineHeight: 1.68, color: '#475569', margin: '0 0 34px',
+    maxWidth: '560px',
   },
-  ctaButtonGroup: { display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' },
+  ctaButtonGroup: { display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '40px' },
   primaryCta: {
-    display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '13px 24px',
-    borderRadius: '12px', border: 'none', background: '#059669', color: '#ffffff',
-    fontSize: '14.5px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
-    boxShadow: '0 6px 20px rgba(5, 150, 105, 0.3)',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 26px',
+    borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#ffffff', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 10px 24px -4px rgba(5, 150, 105, 0.42)',
   },
   scorecardBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '13px 20px',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 22px',
     borderRadius: '12px', border: '1.5px solid #cbd5e1', background: '#ffffff',
-    color: '#0f172a', fontSize: '14px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+    color: '#0f172a', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
   },
   grievanceBtn: {
-    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '13px 18px',
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 20px',
     borderRadius: '12px', border: '1.5px solid #fecdd3', background: '#fff1f2',
-    color: '#e11d48', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s',
+    color: '#e11d48', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(225, 29, 72, 0.06)',
   },
   statsRow: {
     display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px',
-    marginTop: '12px', paddingTop: '20px', borderTop: '1px solid #e2e8f0',
+    paddingTop: '28px', borderTop: '1px solid #e2e8f0', maxWidth: '620px',
   },
-  statBox: { display: 'flex', flexDirection: 'column' },
-  statVal: { fontSize: '20px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.4px' },
-  statLabel: { fontSize: '11px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.3px' },
-  heroVisualCol: { display: 'flex', justifyContent: 'center' },
+  statBox: {
+    background: '#ffffff', padding: '12px 14px', borderRadius: '12px',
+    boxShadow: '0 4px 12px rgba(15, 23, 42, 0.03)', border: '1px solid #f1f5f9',
+    display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
+  },
+  statVal: { fontSize: '22px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.6px', fontFamily: 'var(--font-display)' },
+  statLabel: { fontSize: '11px', color: '#64748b', fontWeight: 600, marginTop: '4px', lineHeight: 1.3 },
+  heroVisualCol: { flex: '1 1 420px', minWidth: '320px', display: 'flex', justifyContent: 'center' },
   showcaseCard: {
-    background: '#ffffff', borderRadius: '24px', padding: '24px',
-    border: '1px solid #e2e8f0', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.08)',
-    width: '100%', maxWidth: '480px',
+    width: '100%', maxWidth: '460px', background: '#ffffff', borderRadius: '24px',
+    padding: '26px', boxShadow: '0 25px 60px -12px rgba(15, 23, 42, 0.16), 0 10px 25px -5px rgba(5, 150, 105, 0.10)',
+    border: '1px solid rgba(226, 232, 240, 0.85)', position: 'relative',
   },
   showcaseHeader: {
-    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    paddingBottom: '14px', borderBottom: '1px solid #f1f5f9', marginBottom: '14px',
+    display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px',
+    paddingBottom: '14px', borderBottom: '1px solid #f1f5f9',
   },
   liveBadge: {
-    fontSize: '10px', fontWeight: 800, background: '#dcfce7', color: '#15803d',
-    padding: '3px 8px', borderRadius: '999px', letterSpacing: '0.5px',
+    fontSize: '10.5px', fontWeight: 800, color: '#059669', background: 'rgba(5, 150, 105, 0.1)',
+    padding: '3px 9px', borderRadius: '999px', letterSpacing: '0.4px',
+    border: '1px solid rgba(5, 150, 105, 0.2)',
   },
-  mockChat: { display: 'flex', flexDirection: 'column', gap: '12px' },
+  mockChat: { display: 'flex', flexDirection: 'column', gap: '16px' },
+  chatMessageRow: {
+    display: 'flex', gap: '12px', alignItems: 'flex-start', width: '100%',
+  },
+  chatAvatarCitizen: {
+    width: '34px', height: '34px', borderRadius: '50%', background: '#f1f5f9',
+    border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center',
+    fontSize: '17px', flexShrink: 0, boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)',
+  },
   mockUserBubble: {
-    background: '#f8fafc', padding: '12px 14px', borderRadius: '12px',
-    fontSize: '13px', color: '#1e293b', border: '1px solid #e2e8f0',
+    background: '#f8fafc', padding: '12px 14px', borderRadius: '16px', borderTopLeftRadius: '4px',
+    fontSize: '13px', color: '#1e293b', lineHeight: 1.45, border: '1px solid #e2e8f0', flex: 1,
+  },
+  chatAvatarAi: {
+    width: '34px', height: '34px', borderRadius: '50%', background: '#ecfdf5',
+    border: '1.5px solid rgba(5, 150, 105, 0.25)', display: 'flex', alignItems: 'center',
+    justifyContent: 'center', flexShrink: 0, boxShadow: '0 2px 8px rgba(5, 150, 105, 0.15)',
   },
   mockAiBubble: {
-    background: 'linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%)',
-    padding: '16px', borderRadius: '16px', border: '1.5px solid rgba(5, 150, 105, 0.25)',
+    background: 'linear-gradient(145deg, #f0fdf4 0%, #ffffff 100%)', padding: '16px',
+    borderRadius: '18px', borderTopLeftRadius: '4px', border: '1.5px solid rgba(5, 150, 105, 0.25)',
+    flex: 1, boxShadow: '0 4px 16px rgba(5, 150, 105, 0.06)',
   },
   aiResultPill: {
     fontSize: '11px', fontWeight: 700, color: '#047857', background: '#dcfce7',
-    padding: '3px 8px', borderRadius: '999px', display: 'inline-block', marginBottom: '10px',
+    padding: '3px 9px', borderRadius: '999px', display: 'inline-block', marginBottom: '12px',
   },
   schemeMiniRow: {
-    padding: '8px 0', borderBottom: '1px solid #e2e8f0', fontSize: '13px',
+    padding: '10px 0', borderBottom: '1px solid rgba(226, 232, 240, 0.8)', fontSize: '13px',
   },
-  mockActionRow: { marginTop: '12px' },
+  mockActionRow: { marginTop: '14px' },
   mockActionBtn: {
-    width: '100%', padding: '10px', borderRadius: '8px', border: 'none',
+    width: '100%', padding: '10px 14px', borderRadius: '10px', border: 'none',
     background: '#059669', color: '#ffffff', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+    transition: 'all 0.2s ease', boxShadow: '0 4px 12px rgba(5, 150, 105, 0.25)',
   },
   showcaseFooter: {
     fontSize: '11px', color: '#64748b', textAlign: 'center', marginTop: '16px',
-    paddingTop: '12px', borderTop: '1px solid #f1f5f9',
+    paddingTop: '12px', borderTop: '1px solid #f1f5f9', fontWeight: 500,
   },
   featuresSection: {
     padding: '60px clamp(20px, 5vw, 60px)', maxWidth: '1380px', margin: '0 auto', width: '100%',
@@ -549,19 +598,20 @@ const styles = {
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px',
   },
   capCard: {
-    background: '#ffffff', borderRadius: '16px', padding: '24px',
-    border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+    background: '#ffffff', borderRadius: '18px', padding: '26px',
+    border: '1px solid #e2e8f0', boxShadow: '0 4px 18px rgba(15, 23, 42, 0.04)',
     display: 'flex', flexDirection: 'column',
   },
   capIconWrap: {
-    width: '46px', height: '46px', borderRadius: '12px', display: 'flex',
-    alignItems: 'center', justifyContent: 'center', marginBottom: '16px',
+    width: '48px', height: '48px', borderRadius: '14px', display: 'flex',
+    alignItems: 'center', justifyContent: 'center', marginBottom: '18px',
   },
-  capTitle: { fontSize: '16.5px', fontWeight: 700, color: '#0f172a', margin: '0 0 8px' },
-  capDesc: { fontSize: '13px', color: '#64748b', lineHeight: 1.5, margin: '0 0 16px', flex: 1 },
+  capTitle: { fontSize: '17px', fontWeight: 700, color: '#0f172a', margin: '0 0 10px', fontFamily: 'var(--font-display)' },
+  capDesc: { fontSize: '13.5px', color: '#64748b', lineHeight: 1.55, margin: '0 0 18px', flex: 1 },
   capLink: {
     background: 'none', border: 'none', padding: 0, textAlign: 'left',
     color: '#059669', fontSize: '13px', fontWeight: 700, cursor: 'pointer',
+    display: 'inline-flex', alignItems: 'center', gap: '4px',
   },
   categoriesSection: {
     padding: '20px clamp(20px, 5vw, 60px) 60px', maxWidth: '1380px', margin: '0 auto', width: '100%',
@@ -570,17 +620,18 @@ const styles = {
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px',
   },
   categoryCard: {
-    background: '#ffffff', borderRadius: '16px', padding: '20px',
+    background: '#ffffff', borderRadius: '18px', padding: '22px',
     border: '1px solid #e2e8f0', textAlign: 'left', cursor: 'pointer',
     fontFamily: 'inherit', display: 'flex', flexDirection: 'column',
+    boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)',
   },
-  categoryCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' },
+  categoryCardTop: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' },
   categoryPillTag: {
     fontSize: '11px', fontWeight: 700, background: '#f8fafc', padding: '3px 8px', borderRadius: '999px',
     border: '1px solid #e2e8f0',
   },
-  catCardTitle: { fontSize: '15px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px' },
-  catCardSub: { fontSize: '12.5px', color: '#64748b', lineHeight: 1.4, margin: '0 0 16px', flex: 1 },
+  catCardTitle: { fontSize: '15.5px', fontWeight: 700, color: '#0f172a', margin: '0 0 6px', fontFamily: 'var(--font-display)' },
+  catCardSub: { fontSize: '12.5px', color: '#64748b', lineHeight: 1.45, margin: '0 0 18px', flex: 1 },
   catCardArrow: {
     display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12.5px',
     fontWeight: 700, color: '#059669',
@@ -592,30 +643,31 @@ const styles = {
     display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px',
   },
   popularCard: {
-    background: '#ffffff', borderRadius: '16px', padding: '20px',
+    background: '#ffffff', borderRadius: '18px', padding: '22px',
     border: '1px solid #e2e8f0', textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit',
+    boxShadow: '0 2px 10px rgba(15, 23, 42, 0.03)', display: 'flex', flexDirection: 'column',
   },
-  popCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
+  popCardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' },
   popTag: { fontSize: '10.5px', fontWeight: 700, padding: '3px 8px', borderRadius: '999px' },
-  popBenefit: { fontSize: '11.5px', fontWeight: 700, color: '#059669' },
-  popName: { fontSize: '15.5px', fontWeight: 700, color: '#0f172a', margin: '6px 0 4px' },
-  popBlurb: { fontSize: '12.5px', color: '#64748b', lineHeight: 1.4, margin: '0 0 14px' },
+  popBenefit: { fontSize: '12px', fontWeight: 800, color: '#059669', background: '#ecfdf5', padding: '2px 8px', borderRadius: '6px' },
+  popName: { fontSize: '15.5px', fontWeight: 700, color: '#0f172a', margin: '6px 0 4px', fontFamily: 'var(--font-display)' },
+  popBlurb: { fontSize: '12.5px', color: '#64748b', lineHeight: 1.45, margin: '0 0 16px', flex: 1 },
   popAction: { fontSize: '12.5px', fontWeight: 700, color: '#059669' },
   footer: {
     borderTop: '1px solid #e2e8f0', background: '#ffffff',
-    padding: '50px clamp(20px, 5vw, 60px) 30px', marginTop: 'auto',
+    padding: '56px clamp(20px, 5vw, 60px) 32px', marginTop: 'auto',
   },
   footerInner: {
-    display: 'flex', justifyContent: 'space-between', gap: '40px', flexWrap: 'wrap',
-    maxWidth: '1380px', margin: '0 auto 40px',
+    display: 'flex', justifyContent: 'space-between', gap: '48px', flexWrap: 'wrap',
+    maxWidth: '1380px', margin: '0 auto 48px',
   },
-  footerColBrand: { flex: '1 1 360px', maxWidth: '420px' },
-  footerTagline: { fontSize: '13px', color: '#64748b', lineHeight: 1.5, marginTop: '10px' },
+  footerColBrand: { flex: '1 1 360px', maxWidth: '440px' },
+  footerTagline: { fontSize: '13px', color: '#64748b', lineHeight: 1.6, marginTop: '12px' },
   footerColLinks: {
-    display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px', color: '#475569',
+    display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '13px', color: '#475569',
   },
   footerBottom: {
     display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#94a3b8',
-    borderTop: '1px solid #f1f5f9', paddingTop: '20px', maxWidth: '1380px', margin: '0 auto', flexWrap: 'wrap', gap: '10px',
+    borderTop: '1px solid #f1f5f9', paddingTop: '24px', maxWidth: '1380px', margin: '0 auto', flexWrap: 'wrap', gap: '12px',
   },
 }
