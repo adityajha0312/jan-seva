@@ -18,7 +18,7 @@ import EligibilityScorecard from './EligibilityScorecard'
 import AdminDashboard from './AdminDashboard'
 import RojgarScholarshipRadar from './RojgarScholarshipRadar'
 import DocumentVerification from './DocumentVerification'
-import PanchayatVoiceTokenModal from './PanchayatVoiceTokenModal'
+
 
 // Voice input/output languages. Web Speech API support for Marathi and
 // Tamil depends on the browser/OS having those voices installed, but the
@@ -1014,7 +1014,7 @@ export default function App() {
                   {msg.role === 'assistant' ? (
                     <div>
                       <MessageContent text={msg.text} />
-                      <div style={styles.bubbleActionRow}>
+                                            <div style={styles.bubbleActionRow}>
                         <button
                           type="button"
                           style={{
@@ -1036,21 +1036,6 @@ export default function App() {
                             </>
                           )}
                         </button>
-                                                {i > 0 &&
-                          (msg.text.includes('₹') ||
-                            msg.text.includes('योजना') ||
-                            /scheme|benefit|eligible|पात्र|दस्तावेज़|documents|pm-|pm /i.test(msg.text)) &&
-                          msg.text.length > 80 && (
-                            <button
-                              type="button"
-                              style={styles.bubbleTokenBtn}
-                              onClick={() => handleOpenVoiceToken(msg.text)}
-                              title="Generate Gram Panchayat Audio Verification Slip"
-                            >
-                              <span>🎫</span>
-                              <span>पंचायत पर्ची (Voice Token)</span>
-                            </button>
-                          )}
                       </div>
                     </div>
                   ) : (
@@ -1501,13 +1486,7 @@ export default function App() {
 
       {toast && <div className="ym-toast">{toast}</div>}
 
-      {showVoiceTokenModal && (
-        <PanchayatVoiceTokenModal
-          messageText={selectedTokenMessage}
-          voiceLang={voiceLang}
-          onClose={() => setShowVoiceTokenModal(false)}
-        />
-      )}
+     
 
       {/* Embedded CSS for pulsing audio waveform */}
       <style>{`
