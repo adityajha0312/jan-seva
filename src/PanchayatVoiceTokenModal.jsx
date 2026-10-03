@@ -16,7 +16,9 @@ export default function PanchayatVoiceTokenModal({ messageText, onClose, voiceLa
   const lines = (messageText || '').split('\n').filter((l) => l.trim().length > 0)
   const schemeBullets = lines.filter((l) => /^[*\-•#]|\b(yojana|योजना|kalyan|कल्याण|scholarship|पेंशन|ladli|pm|cm)\b/i.test(l)).slice(0, 5)
 
-  const summaryToSpeak = `नमस्ते। यह आपका मध्य प्रदेश सरकार जन सेवा आवाज टोकन है। टोकन नंबर है ${tokenNumber}। इस पर्ची को अपने ग्राम पंचायत सचिव, पटवारी या सीएससी कियोस्क संचालक को दिखाकर तुरंत योजना का लाभ प्राप्त करें।`
+  const summaryToSpeak = voiceLang === 'en-IN'
+    ? `Namaste. This is your Government of Madhya Pradesh Jan Seva Voice Token. Your Token ID is ${tokenNumber}. Present this slip to your Gram Panchayat Secretary or CSC Kiosk operator to claim your welfare benefits.`
+    : `नमस्ते। यह आपका मध्य प्रदेश शासन जन सेवा आवाज टोकन है। टोकन नंबर है ${tokenNumber}। इस पर्ची को अपने ग्राम पंचायत सचिव, पटवारी या सीएससी कियोस्क संचालक को दिखाकर तुरंत योजना का लाभ प्राप्त करें।`
 
   function handleSpeakSlip() {
     if (isSpeakingToken) {
