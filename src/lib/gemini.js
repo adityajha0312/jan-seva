@@ -1,17 +1,35 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
-// Standard models in Google AI Studio
-const PRIMARY_MODEL = 'gemini-2.0-flash'
-const FALLBACK_MODEL = 'gemini-1.5-flash'
-const TERTIARY_MODEL = 'gemini-1.5-flash-8b'
+// Primary, fallback, and tertiary models supported across all Google AI Studio tiers
+const PRIMARY_MODEL = 'gemini-1.5-flash'
+const FALLBACK_MODEL = 'gemini-2.0-flash'
+const TERTIARY_MODEL = 'gemini-1.5-pro'
 
 // Waits `ms` milliseconds before continuing.
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// Calls the Gemini API with automatic retry and exponential backoff on HTTP 429.
+// Parses JSON or plain text error from Google Gemini API response
+function parseGoogleError(status, errText) {
+  try {
+    const parsed = JSON.parse(errText)
+    if (parsed?.error?.message) {
+      return parsed.error.message
+    }
+  } catch (_) {}
+  return errText ? errText.slice(0, 200) : `HTTP ${status}`
+}
+
+// Calls the Gemini API with automatic model fallbacks, clear diagnostics, and exponential backoff
 export async function askGemini(systemInstruction, conversationHistory, jsonMode = false) {
+  // 1. Guard against missing environment variable (common in Vercel deployments)
+  if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '' || GEMINI_API_KEY.includes('your_')) {
+    throw new Error(
+      'VITE_GEMINI_API_KEY is missing! Please go to Vercel Project Settings → Environment Variables, add VITE_GEMINI_API_KEY with your Google AI Studio API key, and Redeploy.'
+    )
+  }
+
   const body = {
     systemInstruction: {
       parts: [{ text: systemInstruction }],
@@ -29,53 +47,75 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
   let lastError = null
 
   for (const model of modelsToTry) {
-    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
-    // Support both header and query param authentication for maximum compatibility
-    const apiUrl = GEMINI_API_KEY ? `${baseUrl}?key=${encodeURIComponent(GEMINI_API_KEY)}` : baseUrl
+    // Try v1beta first, fallback to v1 if 404
+    const apiVersions = ['v1beta', 'v1']
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(GEMINI_API_KEY ? { 'x-goog-api-key': GEMINI_API_KEY } : {}),
-          },
-          body: JSON.stringify(body),
-        })
+    for (const apiVersion of apiVersions) {
+      const apiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
 
-        if (response.status === 429) {
-          // Rate limited on Google API - retry with exponential backoff + jitter
-          lastError = 'Rate limited'
-          await wait(1500 * Math.pow(2, attempt) + Math.random() * 400)
-          continue
-        }
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': GEMINI_API_KEY,
+            },
+            body: JSON.stringify(body),
+          })
 
-        if (!response.ok) {
-          const errText = await response.text()
-          if (response.status === 404 || response.status === 400) {
-            lastError = `Model ${model} unavailable (${response.status})`
-            break // try fallback model
+          if (response.status === 429) {
+            lastError = 'Rate limited'
+            await wait(1500 * Math.pow(2, attempt) + Math.random() * 400)
+            continue
           }
-          throw new Error(`Gemini API error (${response.status}): ${errText}`)
-        }
 
-        const data = await response.json()
-        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-        if (!text) {
-          throw new Error('No response text received from Gemini')
+          if (!response.ok) {
+            const errText = await response.text()
+            const detail = parseGoogleError(response.status, errText)
+
+            // If the API key is rejected or invalid, halt immediately with the true error
+            if (
+              response.status === 400 &&
+              (detail.toLowerCase().includes('api key') || detail.toLowerCase().includes('invalid_argument'))
+            ) {
+              throw new Error(`Google API Key Invalid: ${detail}. Please check your VITE_GEMINI_API_KEY.`)
+            }
+
+            if (response.status === 403) {
+              throw new Error(`Google Gemini Access Forbidden: ${detail}. Please enable Generative Language API in Google Cloud / AI Studio.`)
+            }
+
+            if (response.status === 404) {
+              lastError = `Model ${model} (${apiVersion}) not found: ${detail}`
+              break // try next version or next model
+            }
+
+            lastError = `Gemini API error (${response.status}): ${detail}`
+            break
+          }
+
+          const data = await response.json()
+          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+          if (!text) {
+            throw new Error('No response text received from Gemini')
+          }
+          return text
+        } catch (err) {
+          lastError = err.message
+          // If it's a fatal API key error, propagate immediately
+          if (err.message.includes('Google API Key') || err.message.includes('Forbidden')) {
+            throw err
+          }
+          if (attempt === 1) break
+          await wait(1000)
         }
-        return text
-      } catch (err) {
-        lastError = err.message
-        if (attempt === 2) break
-        await wait(1200 * Math.pow(2, attempt))
       }
     }
   }
 
   if (lastError && lastError.toLowerCase().includes('rate')) {
-    throw new Error('सर्वर पर अभी अधिक लोड है (Rate limit)। कृपया 5-10 सेकंड बाद पुनः संदेश भेजें।')
+    throw new Error('सर्वर पर अभी अधिक लोड है (Rate limit)। कृपया 5-10 सेकंड बाद पुनः प्रयास करें।')
   }
 
   throw new Error(lastError || 'AI सेवा से संपर्क नहीं हो सका। कृपया पुनः प्रयास करें।')
@@ -84,6 +124,12 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
 // Extracts fields from photos of documents (Aadhaar, land records, etc.)
 // using Gemini's native image understanding - no separate OCR library needed.
 export async function extractDocumentFields(images, schemeName, requiredDocs) {
+  if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '' || GEMINI_API_KEY.includes('your_')) {
+    throw new Error(
+      'VITE_GEMINI_API_KEY is missing! Please configure VITE_GEMINI_API_KEY in your environment variables.'
+    )
+  }
+
   const docsText = Array.isArray(requiredDocs) ? requiredDocs.join(', ') : requiredDocs
 
   const promptText = `You are extracting information from photos of Indian government documents, to help pre-fill an application for the scheme "${schemeName}". The documents typically needed for this scheme are: ${docsText}.
@@ -108,21 +154,21 @@ CRITICAL: If a field is not clearly visible or not present in the image(s), use 
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }
 
-  const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${PRIMARY_MODEL}:generateContent`
-  const apiUrl = GEMINI_API_KEY ? `${baseUrl}?key=${encodeURIComponent(GEMINI_API_KEY)}` : baseUrl
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${PRIMARY_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
 
   const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      ...(GEMINI_API_KEY ? { 'x-goog-api-key': GEMINI_API_KEY } : {}),
+      'x-goog-api-key': GEMINI_API_KEY,
     },
     body: JSON.stringify(body),
   })
 
   if (!response.ok) {
     const errText = await response.text()
-    throw new Error(`Document extraction failed (${response.status}): ${errText}`)
+    const detail = parseGoogleError(response.status, errText)
+    throw new Error(`Document extraction failed (${response.status}): ${detail}`)
   }
 
   const data = await response.json()
