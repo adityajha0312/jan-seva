@@ -18,6 +18,7 @@ import EligibilityScorecard from './EligibilityScorecard'
 import AdminDashboard from './AdminDashboard'
 import RojgarScholarshipRadar from './RojgarScholarshipRadar'
 import DocumentVerification from './DocumentVerification'
+import PanchayatVoiceTokenModal from './PanchayatVoiceTokenModal'
 
 // Voice input/output languages. Web Speech API support for Marathi and
 // Tamil depends on the browser/OS having those voices installed, but the
@@ -27,6 +28,50 @@ const VOICE_LANGUAGES = [
   { code: 'hi-IN', label: 'हिन्दी' },
   { code: 'mr-IN', label: 'मराठी' },
   { code: 'ta-IN', label: 'தமிழ்' },
+]
+
+// 1-Tap Audio Prompts for Chaupal & Non-Literate Citizen Consultation
+const CHAUPAL_VOICE_CARDS = [
+  {
+    id: 'kisan',
+    icon: '🚜',
+    title: 'किसान कल्याण',
+    sub: 'Farmer Aid',
+    color: '#059669',
+    query: 'मैं मध्य प्रदेश का 2 एकड़ ज़मीन वाला छोटा किसान हूँ, मुझे कृषि उपकरण, सोलर पंप और आर्थिक सहायता की योजना बताएं।',
+  },
+  {
+    id: 'mahila',
+    icon: '👩',
+    title: 'लाड़ली बहना',
+    sub: 'Women Welfare',
+    color: '#e11d48',
+    query: 'मैं गृहणी हूँ, लाड़ली बहना योजना ₹1,250 और महिलाओं के लिए स्वयं सहायता समूह ऋण की जानकारी दीजिए।',
+  },
+  {
+    id: 'shramik',
+    icon: '🏗️',
+    title: 'संबल मजदूर',
+    sub: 'Worker Security',
+    color: '#7c3aed',
+    query: 'हम असंगठित मजदूर परिवार हैं, संबल कार्ड 2.0, दुर्घटना सहायता और बच्चों की फीस माफी योजना कैसे मिलेगी?',
+  },
+  {
+    id: 'yuva',
+    icon: '🎓',
+    title: 'छात्रवृत्ति व रोजगार',
+    sub: 'Student & Youth',
+    color: '#d97706',
+    query: 'मैं 12वीं पास छात्र हूँ, मुझे MP पोस्ट-मैट्रिक स्कॉलरशिप और मुख्यमंत्री सीखो-कमाओ योजना स्टाइपेंड चाहिए।',
+  },
+  {
+    id: 'vridha',
+    icon: '👴',
+    title: 'वृद्धावस्था पेंशन',
+    sub: 'Senior Citizen',
+    color: '#475569',
+    query: 'मेरी उम्र 60 वर्ष से अधिक है, मुझे वृद्धावस्था सामाजिक सुरक्षा पेंशन और 5 लाख आयुष्मान कार्ड का लाभ कैसे मिलेगा?',
+  },
 ]
 
 const QUICK_LINKS = [
@@ -138,7 +183,7 @@ function guessRelevantCategories(conversationText) {
   return matched
 }
 
-function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN') {
+function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN', isAwaazMode = false) {
   const relevantCategories = guessRelevantCategories(conversationText)
   const likelyRelevant = schemes.filter((s) => relevantCategories.has(s.category))
   const others = schemes.filter((s) => !relevantCategories.has(s.category))
@@ -175,6 +220,13 @@ VOICE & AUDIO SYSTEM CAPABILITIES:
 - If the citizen asks in English ("speak to me", "read aloud", "read it out"): Acknowledge warmly in English: "Certainly, I am reading this aloud for you..."
 - If the citizen asks in Hindi ("बोल के बताओ", "आवाज़ में बताओ"): Acknowledge warmly in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..."
 - Write cleanly so speech synthesis sounds natural. Avoid messy markdown tables or raw URLs.
+${isAwaazMode ? `
+RURAL AWAAZ KIOSK & SPOKEN AUDIO MODE ACTIVE:
+- The citizen is listening via voice audio at a Gram Panchayat Kiosk or mobile helpline. They might not be reading text on a screen.
+- Keep sentences concise, conversational, and direct so speech synthesis sounds natural and warm.
+- Clearly speak the exact cash amounts (e.g. ₹1,250 per month, ₹12,000 per year).
+- Avoid long nested bullet points or complex punctuation that trips up screen readers.
+- In Hindi, address the citizen respectfully as "आप" with a friendly, reassuring tone.` : ''}
 
 CRITICAL CONVERSATIONAL RULES & PROACTIVE FOLLOW-UP QUESTIONS:
 1. ALWAYS ASK 1-2 TARGETED FOLLOW-UP QUESTIONS:
@@ -305,6 +357,11 @@ export default function App() {
   const [savedSchemeIds, setSavedSchemeIds] = useState(() => getSavedSchemeIds())
   const [showSavedSchemes, setShowSavedSchemes] = useState(false)
   const [isListening, setIsListening] = useState(false)
+  const [isAwaazMode, setIsAwaazMode] = useState(false)
+  const [isSpeaking, setIsSpeaking] = useState(false)
+  const [currentlySpeakingIndex, setCurrentlySpeakingIndex] = useState(null)
+  const [showVoiceTokenModal, setShowVoiceTokenModal] = useState(false)
+  const [selectedTokenMessage, setSelectedTokenMessage] = useState('')
   const [settings, setSettings] = useState(() => getSettings())
   const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang)
   const [showLangMenu, setShowLangMenu] = useState(false)
@@ -459,9 +516,9 @@ export default function App() {
       return
     }
 
-    // Detect if citizen requested voice output or sent via mic
+    // Detect if citizen requested voice output or sent via mic or if Awaaz mode is active
     const voiceTriggers = /बोल\s*(?:के|कर|के बताओ|कर बताओ|िए|ो)|सुनाओ|आवाज़|आवाज|audio|voice|speak|read\s*aloud/i
-    const wantsVoice = fromVoice || voiceTriggers.test(textToSend)
+    const wantsVoice = isAwaazMode || fromVoice || voiceTriggers.test(textToSend)
 
     if (wantsVoice && !speakEnabled) {
       setSpeakEnabled(true)
@@ -474,14 +531,26 @@ export default function App() {
     latestVoiceTextRef.current = ''
     setLoading(true)
     setError(null)
+    stopSpeaking()
+    setIsSpeaking(false)
+    setCurrentlySpeakingIndex(null)
 
     try {
       const conversationText = newMessages.map((m) => m.text).join(' ')
-      const systemInstruction = buildSystemInstruction(schemes, conversationText, voiceLang)
+      const systemInstruction = buildSystemInstruction(schemes, conversationText, voiceLang, isAwaazMode)
       const replyText = await askGemini(systemInstruction, newMessages)
-      setMessages([...newMessages, { role: 'assistant', text: replyText }])
+      const updatedMessages = [...newMessages, { role: 'assistant', text: replyText }]
+      setMessages(updatedMessages)
       if (speakEnabled || wantsVoice) {
-        speakText(replyText, voiceLang)
+        const assistantIdx = updatedMessages.length - 1
+        setCurrentlySpeakingIndex(assistantIdx)
+        speakText(replyText, voiceLang, {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => {
+            setIsSpeaking(false)
+            setCurrentlySpeakingIndex(null)
+          },
+        })
       }
     } catch (err) {
       setError(err.message)
@@ -503,6 +572,69 @@ export default function App() {
     setShowLinks(false)
     setIsMobileNavOpen(false)
     stopSpeaking()
+    setIsSpeaking(false)
+    setCurrentlySpeakingIndex(null)
+  }
+
+  function handleStartVoice() {
+    setStarted(true)
+    setIsAwaazMode(true)
+    setSpeakEnabled(true)
+    setVoiceLang('hi-IN')
+    showToast('आवाज सेवा सक्रिय (Awaaz Kiosk Active)')
+    setTimeout(() => {
+      const hiWelcome = t('hi-IN', 'welcome')
+      speakText(hiWelcome, 'hi-IN', {
+        onStart: () => setIsSpeaking(true),
+        onEnd: () => setIsSpeaking(false),
+      })
+    }, 450)
+  }
+
+  function handleToggleAwaazMode() {
+    const nextMode = !isAwaazMode
+    setIsAwaazMode(nextMode)
+    if (nextMode) {
+      setSpeakEnabled(true)
+      setVoiceLang('hi-IN')
+      showToast('आवाज सेवा सक्रिय (Awaaz Kiosk Mode On)')
+      if (messages.length === 1 && messages[0].role === 'assistant') {
+        const hiWelcome = t('hi-IN', 'welcome')
+        speakText(hiWelcome, 'hi-IN', {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => setIsSpeaking(false),
+        })
+      }
+    } else {
+      stopSpeaking()
+      setIsSpeaking(false)
+      setCurrentlySpeakingIndex(null)
+      showToast('Standard Text Mode Active')
+    }
+  }
+
+  function handleToggleSpeakMessage(text, index) {
+    if (isSpeaking && currentlySpeakingIndex === index) {
+      stopSpeaking()
+      setIsSpeaking(false)
+      setCurrentlySpeakingIndex(null)
+      return
+    }
+    stopSpeaking()
+    setCurrentlySpeakingIndex(index)
+    setIsSpeaking(true)
+    speakText(text, voiceLang, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => {
+        setIsSpeaking(false)
+        setCurrentlySpeakingIndex(null)
+      },
+    })
+  }
+
+  function handleOpenVoiceToken(messageText) {
+    setSelectedTokenMessage(messageText)
+    setShowVoiceTokenModal(true)
   }
 
   function handleSaveProfile() {
@@ -576,6 +708,8 @@ export default function App() {
     }
 
     stopSpeaking()
+    setIsSpeaking(false)
+    setCurrentlySpeakingIndex(null)
     setInput('')
     latestVoiceTextRef.current = ''
     setIsListening(true)
@@ -640,6 +774,7 @@ export default function App() {
       <>
         <LandingPage
           onStart={handleStart}
+          onStartVoice={handleStartVoice}
           onOpenScorecard={() => setShowScorecard(true)}
           onOpenRojgarRadar={() => setShowRojgarRadar(true)}
           onOpenDocVerification={() => setShowDocVerification(true)}
@@ -812,6 +947,20 @@ export default function App() {
             >
               <BarChartIcon size={14} color="#7c3aed" /> GovTech
             </button>
+            <button
+              className="ym-icon-btn"
+              style={{
+                background: isAwaazMode ? '#ecfdf5' : 'transparent',
+                borderColor: isAwaazMode ? '#059669' : '#cbd5e1',
+                color: isAwaazMode ? '#047857' : '#334155',
+                fontWeight: isAwaazMode ? 800 : 600,
+              }}
+              onClick={handleToggleAwaazMode}
+              title="Awaaz Kiosk Mode for Spoken / Audio Assistance"
+            >
+              <span style={{ fontSize: '13px' }}>🎙️</span>
+              <span className="ym-header-desktop-only">{isAwaazMode ? 'आवाज सेवा (On)' : 'आवाज सेवा'}</span>
+            </button>
             {isVoiceInputSupported && (
               <div style={styles.langMenuWrap} onClick={(e) => e.stopPropagation()}>
                 <button
@@ -847,7 +996,11 @@ export default function App() {
               <button
                 className="ym-icon-btn"
                 onClick={() => {
-                  if (speakEnabled) stopSpeaking()
+                  if (speakEnabled) {
+                    stopSpeaking()
+                    setIsSpeaking(false)
+                    setCurrentlySpeakingIndex(null)
+                  }
                   setSpeakEnabled((s) => !s)
                 }}
                 title="Read replies aloud"
@@ -881,8 +1034,7 @@ export default function App() {
             ))}
           </div>
         )}
-
-        <div style={styles.chatArea}>
+                <div style={styles.chatArea}>
           {loadingSchemes ? (
             <p style={styles.systemNote}>Loading scheme database...</p>
           ) : (
@@ -899,7 +1051,47 @@ export default function App() {
                     ...(msg.role === 'user' ? styles.userBubble : styles.assistantBubble),
                   }}
                 >
-                  {msg.role === 'assistant' ? <MessageContent text={msg.text} /> : msg.text}
+                  {msg.role === 'assistant' ? (
+                    <div>
+                      <MessageContent text={msg.text} />
+                      <div style={styles.bubbleActionRow}>
+                        <button
+                          type="button"
+                          style={{
+                            ...styles.bubbleVoiceBtn,
+                            ...(currentlySpeakingIndex === i ? styles.bubbleVoiceBtnActive : {}),
+                          }}
+                          onClick={() => handleToggleSpeakMessage(msg.text, i)}
+                          title="Listen to this message"
+                        >
+                          {currentlySpeakingIndex === i ? (
+                            <>
+                              <StopIcon size={12} color="#ffffff" />
+                              <span>रोकें (Stop Audio)</span>
+                            </>
+                          ) : (
+                            <>
+                              <SpeakerOnIcon size={13} color="#059669" />
+                              <span>सुनें (Listen)</span>
+                            </>
+                          )}
+                        </button>
+                        {i > 0 && (
+                          <button
+                            type="button"
+                            style={styles.bubbleTokenBtn}
+                            onClick={() => handleOpenVoiceToken(msg.text)}
+                            title="Generate Gram Panchayat Audio Verification Slip"
+                          >
+                            <span>🎫</span>
+                            <span>पंचायत पर्ची (Voice Token)</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    msg.text
+                  )}
                 </div>
               )
             })
@@ -953,6 +1145,69 @@ export default function App() {
           <div ref={bottomRef} />
         </div>
 
+        {/* Audio Waveform Banner when listening, loading, or speaking */}
+        {(isListening || isSpeaking || loading) && (
+          <div style={styles.audioWaveformBanner}>
+            <div style={styles.waveformAnimation}>
+              <span style={{ ...styles.waveBar, animationDelay: '0.1s' }} />
+              <span style={{ ...styles.waveBar, animationDelay: '0.3s' }} />
+              <span style={{ ...styles.waveBar, animationDelay: '0.2s' }} />
+              <span style={{ ...styles.waveBar, animationDelay: '0.5s' }} />
+              <span style={{ ...styles.waveBar, animationDelay: '0.15s' }} />
+              <span style={{ ...styles.waveBar, animationDelay: '0.4s' }} />
+              <span style={{ ...styles.waveBar, animationDelay: '0.25s' }} />
+            </div>
+            <div style={styles.waveformStatusText}>
+              {isListening && (
+                <span style={{ color: '#dc2626', fontWeight: 700 }}>
+                  🔴 आपकी आवाज सुन रहे हैं... बोलिए (Listening to your voice...)
+                </span>
+              )}
+              {loading && (
+                <span style={{ color: '#0284c7', fontWeight: 700 }}>
+                  ⚡ जन सेवा AI योजनाएं खोज रहा है... (Matching welfare schemes...)
+                </span>
+              )}
+              {isSpeaking && !loading && !isListening && (
+                <span style={{ color: '#059669', fontWeight: 700 }}>
+                  🔊 योजना मित्र आवाज में समझा रहे हैं... (Speaking aloud...)
+                </span>
+              )}
+            </div>
+            {isSpeaking && (
+              <button
+                type="button"
+                style={styles.stopAudioBtn}
+                onClick={() => {
+                  stopSpeaking()
+                  setIsSpeaking(false)
+                  setCurrentlySpeakingIndex(null)
+                }}
+              >
+                <StopIcon size={12} color="#ffffff" />
+                <span>रोकें (Stop)</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Chaupal 1-Tap Voice Consultation Strip */}
+        <div style={styles.chaupalBar}>
+          <span style={styles.chaupalLabel}>चौपाल 1-टैप आवाज:</span>
+          {CHAUPAL_VOICE_CARDS.map((card) => (
+            <button
+              key={card.id}
+              type="button"
+              style={styles.chaupalCard}
+              onClick={() => handleSend(card.query, true)}
+              title={card.sub}
+            >
+              <span style={{ fontSize: '13px' }}>{card.icon}</span>
+              <span>{card.title}</span>
+            </button>
+          ))}
+        </div>
+
         <div style={styles.inputArea}>
           {isVoiceInputSupported && (
             <button
@@ -971,7 +1226,7 @@ export default function App() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={!isOnline ? t(voiceLang, 'placeholderOffline') : isListening ? t(voiceLang, 'placeholderListening') : t(voiceLang, 'placeholderIdle')}
+            placeholder={!isOnline ? t(voiceLang, 'placeholderOffline') : isListening ? t(voiceLang, 'placeholderListening') : isAwaazMode ? 'बोलने के लिए माइक दबाएं या यहां टाइप करें... (Tap mic to speak)' : t(voiceLang, 'placeholderIdle')}
             rows={2}
             disabled={loadingSchemes || !isOnline}
           />
@@ -1343,6 +1598,26 @@ export default function App() {
       )}
 
       {toast && <div className="ym-toast">{toast}</div>}
+
+      {showVoiceTokenModal && (
+        <PanchayatVoiceTokenModal
+          messageText={selectedTokenMessage}
+          voiceLang={voiceLang}
+          onClose={() => setShowVoiceTokenModal(false)}
+        />
+      )}
+
+      {/* Embedded CSS for pulsing audio waveform */}
+      <style>{`
+        @keyframes wavePulse {
+          0% { height: 4px; }
+          50% { height: 20px; }
+          100% { height: 4px; }
+        }
+        @media print {
+          .no-print { display: none !important; }
+        }
+      `}</style>
     </div>
   )
 }
@@ -1646,6 +1921,130 @@ const styles = {
     borderBottomLeftRadius: '4px',
     boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
     border: '1px solid #e2e8f0',
+  },
+  bubbleActionRow: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    marginTop: '10px',
+    paddingTop: '6px',
+    borderTop: '1px solid #f1f5f9',
+    flexWrap: 'wrap',
+  },
+  bubbleVoiceBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '4px 10px',
+    borderRadius: '8px',
+    border: '1px solid #a7f3d0',
+    background: '#ecfdf5',
+    color: '#047857',
+    fontSize: '11.5px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    transition: 'all 0.15s ease',
+  },
+  bubbleVoiceBtnActive: {
+    background: '#dc2626',
+    borderColor: '#ef4444',
+    color: '#ffffff',
+  },
+  bubbleTokenBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '4px 10px',
+    borderRadius: '8px',
+    border: '1px solid #fde68a',
+    background: '#fffbeb',
+    color: '#b45309',
+    fontSize: '11.5px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+  },
+  audioWaveformBanner: {
+    background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+    borderTop: '1px solid #a7f3d0',
+    borderBottom: '1px solid #a7f3d0',
+    padding: '8px 14px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: '12px',
+    flexShrink: 0,
+  },
+  waveformAnimation: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '3px',
+    height: '22px',
+    flexShrink: 0,
+  },
+  waveBar: {
+    width: '3.5px',
+    height: '14px',
+    background: '#059669',
+    borderRadius: '3px',
+    animation: 'wavePulse 0.9s ease-in-out infinite',
+  },
+  waveformStatusText: {
+    fontSize: '12.5px',
+    flex: 1,
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  stopAudioBtn: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '4px 10px',
+    borderRadius: '6px',
+    border: 'none',
+    background: '#dc2626',
+    color: '#ffffff',
+    fontSize: '11.5px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    flexShrink: 0,
+  },
+  chaupalBar: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    overflowX: 'auto',
+    padding: '7px 12px',
+    background: '#f8fafc',
+    borderTop: '1px solid #e2e8f0',
+    WebkitOverflowScrolling: 'touch',
+    flexShrink: 0,
+  },
+  chaupalLabel: {
+    fontSize: '11px',
+    fontWeight: 800,
+    color: '#64748b',
+    whiteSpace: 'nowrap',
+    textTransform: 'uppercase',
+  },
+  chaupalCard: {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '5px',
+    padding: '5px 11px',
+    borderRadius: '999px',
+    border: '1px solid #cbd5e1',
+    background: '#ffffff',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+    fontSize: '12px',
+    fontWeight: 700,
+    color: '#334155',
+    fontFamily: 'inherit',
+    flexShrink: 0,
+    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
   },
   systemNote: {
     fontSize: '13px',
