@@ -1,15 +1,16 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
-// Primary model: gemini-3.5-flash-lite is the active official model in Google AI Studio.
-// Fallback model: gemini-2.5-flash ensures redundancy.
-const PRIMARY_MODEL = 'gemini-3.5-flash-lite'
-const FALLBACK_MODEL = 'gemini-2.5-flash'
+// Standard models in Google AI Studio
+const PRIMARY_MODEL = 'gemini-2.0-flash'
+const FALLBACK_MODEL = 'gemini-1.5-flash'
+const TERTIARY_MODEL = 'gemini-1.5-flash-8b'
 
+// Waits `ms` milliseconds before continuing.
 function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// Calls Gemini API with automatic exponential retry on rate limits (HTTP 429)
+// Calls the Gemini API with automatic retry and exponential backoff on HTTP 429.
 export async function askGemini(systemInstruction, conversationHistory, jsonMode = false) {
   const body = {
     systemInstruction: {
@@ -24,11 +25,12 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
     body.generationConfig = { responseMimeType: 'application/json', temperature: 0.2 }
   }
 
-  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL]
+  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
   let lastError = null
 
   for (const model of modelsToTry) {
     const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    // Support both header and query param authentication for maximum compatibility
     const apiUrl = GEMINI_API_KEY ? `${baseUrl}?key=${encodeURIComponent(GEMINI_API_KEY)}` : baseUrl
 
     for (let attempt = 0; attempt < 3; attempt++) {
@@ -43,6 +45,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
         })
 
         if (response.status === 429) {
+          // Rate limited on Google API - retry with exponential backoff + jitter
           lastError = 'Rate limited'
           await wait(1500 * Math.pow(2, attempt) + Math.random() * 400)
           continue
@@ -52,7 +55,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
           const errText = await response.text()
           if (response.status === 404 || response.status === 400) {
             lastError = `Model ${model} unavailable (${response.status})`
-            break
+            break // try fallback model
           }
           throw new Error(`Gemini API error (${response.status}): ${errText}`)
         }
@@ -78,6 +81,8 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
   throw new Error(lastError || 'AI सेवा से संपर्क नहीं हो सका। कृपया पुनः प्रयास करें।')
 }
 
+// Extracts fields from photos of documents (Aadhaar, land records, etc.)
+// using Gemini's native image understanding - no separate OCR library needed.
 export async function extractDocumentFields(images, schemeName, requiredDocs) {
   const docsText = Array.isArray(requiredDocs) ? requiredDocs.join(', ') : requiredDocs
 
