@@ -1036,17 +1036,21 @@ export default function App() {
                             </>
                           )}
                         </button>
-                        {i > 0 && (
-                          <button
-                            type="button"
-                            style={styles.bubbleTokenBtn}
-                            onClick={() => handleOpenVoiceToken(msg.text)}
-                            title="Generate Gram Panchayat Audio Verification Slip"
-                          >
-                            <span>🎫</span>
-                            <span>पंचायत पर्ची (Voice Token)</span>
-                          </button>
-                        )}
+                                                {i > 0 &&
+                          (msg.text.includes('₹') ||
+                            msg.text.includes('योजना') ||
+                            /scheme|benefit|eligible|पात्र|दस्तावेज़|documents|pm-|pm /i.test(msg.text)) &&
+                          msg.text.length > 80 && (
+                            <button
+                              type="button"
+                              style={styles.bubbleTokenBtn}
+                              onClick={() => handleOpenVoiceToken(msg.text)}
+                              title="Generate Gram Panchayat Audio Verification Slip"
+                            >
+                              <span>🎫</span>
+                              <span>पंचायत पर्ची (Voice Token)</span>
+                            </button>
+                          )}
                       </div>
                     </div>
                   ) : (
