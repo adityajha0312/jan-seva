@@ -1,9 +1,8 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
-// Primary, fallback, and tertiary models supported across all Google AI Studio tiers
+// Primary and fallback models for Google AI Studio (v1beta endpoint)
 const PRIMARY_MODEL = 'gemini-1.5-flash'
 const FALLBACK_MODEL = 'gemini-2.0-flash'
-const TERTIARY_MODEL = 'gemini-1.5-pro'
 
 // Waits `ms` milliseconds before continuing.
 function wait(ms) {
@@ -43,79 +42,76 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
     body.generationConfig = { responseMimeType: 'application/json', temperature: 0.2 }
   }
 
-  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
+  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL]
   let lastError = null
 
   for (const model of modelsToTry) {
-    // Try v1beta first, fallback to v1 if 404
-    const apiVersions = ['v1beta', 'v1']
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
 
-    for (const apiVersion of apiVersions) {
-      const apiUrl = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': GEMINI_API_KEY,
+          },
+          body: JSON.stringify(body),
+        })
 
-      for (let attempt = 0; attempt < 2; attempt++) {
-        try {
-          const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-goog-api-key': GEMINI_API_KEY,
-            },
-            body: JSON.stringify(body),
-          })
-
-          if (response.status === 429) {
-            lastError = 'Rate limited'
-            await wait(1500 * Math.pow(2, attempt) + Math.random() * 400)
-            continue
-          }
-
-          if (!response.ok) {
-            const errText = await response.text()
-            const detail = parseGoogleError(response.status, errText)
-
-            // If the API key is rejected or invalid, halt immediately with the true error
-            if (
-              response.status === 400 &&
-              (detail.toLowerCase().includes('api key') || detail.toLowerCase().includes('invalid_argument'))
-            ) {
-              throw new Error(`Google API Key Invalid: ${detail}. Please check your VITE_GEMINI_API_KEY.`)
-            }
-
-            if (response.status === 403) {
-              throw new Error(`Google Gemini Access Forbidden: ${detail}. Please enable Generative Language API in Google Cloud / AI Studio.`)
-            }
-
-            if (response.status === 404) {
-              lastError = `Model ${model} (${apiVersion}) not found: ${detail}`
-              break // try next version or next model
-            }
-
-            lastError = `Gemini API error (${response.status}): ${detail}`
-            break
-          }
-
-          const data = await response.json()
-          const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-          if (!text) {
-            throw new Error('No response text received from Gemini')
-          }
-          return text
-        } catch (err) {
-          lastError = err.message
-          // If it's a fatal API key error, propagate immediately
-          if (err.message.includes('Google API Key') || err.message.includes('Forbidden')) {
-            throw err
-          }
-          if (attempt === 1) break
-          await wait(1000)
+        if (response.status === 429) {
+          const errText = await response.text()
+          const detail = parseGoogleError(response.status, errText)
+          throw new Error(
+            `Google AI Studio Free Quota / Rate limit (HTTP 429): ${detail}. Please wait 30 seconds or create a new free API key at aistudio.google.com and update Vercel.`
+          )
         }
+
+        if (!response.ok) {
+          const errText = await response.text()
+          const detail = parseGoogleError(response.status, errText)
+
+          // If the API key is rejected or invalid, halt immediately with the true error
+          if (
+            response.status === 400 &&
+            (detail.toLowerCase().includes('api key') || detail.toLowerCase().includes('invalid_argument'))
+          ) {
+            throw new Error(`Google API Key Invalid: ${detail}. Please check your VITE_GEMINI_API_KEY.`)
+          }
+
+          if (response.status === 403) {
+            throw new Error(`Google Gemini Access Forbidden: ${detail}. Please enable Generative Language API in Google Cloud / AI Studio.`)
+          }
+
+          if (response.status === 404) {
+            lastError = `Model ${model} not found: ${detail}`
+            break // try fallback model
+          }
+
+          lastError = `Gemini API error (${response.status}): ${detail}`
+          break
+        }
+
+        const data = await response.json()
+        const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+        if (!text) {
+          throw new Error('No response text received from Gemini')
+        }
+        return text
+      } catch (err) {
+        lastError = err.message
+        // Stop immediately on API key or quota errors
+        if (
+          err.message.includes('Quota') ||
+          err.message.includes('Google API Key') ||
+          err.message.includes('Forbidden')
+        ) {
+          throw err
+        }
+        if (attempt === 1) break
+        await wait(1000)
       }
     }
-  }
-
-  if (lastError && lastError.toLowerCase().includes('rate')) {
-    throw new Error('सर्वर पर अभी अधिक लोड है (Rate limit)। कृपया 5-10 सेकंड बाद पुनः प्रयास करें।')
   }
 
   throw new Error(lastError || 'AI सेवा से संपर्क नहीं हो सका। कृपया पुनः प्रयास करें।')
