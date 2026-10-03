@@ -69,17 +69,42 @@ export function startListening({ lang = 'hi-IN', onResult, onEnd, onError }) {
   }
 }
 
-// Strips markdown symbols, asterisks, URLs, and emojis so spoken text sounds natural
-function cleanTextForSpeech(text) {
+// Strips markdown symbols, asterisks, URLs, and emojis so spoken text sounds natural.
+// Also cleans bracketed translation words based on the target language.
+function cleanTextForSpeech(text, lang = 'hi-IN') {
   if (!text) return ''
-  return text
+  let cleaned = text
     .replace(/#{1,6}\s+/g, '')
     .replace(/\*\*/g, '')
     .replace(/\*/g, '')
     .replace(/^[*\-•]\s+/gm, '')
-    .replace(/[👉⚠️✅ℹ️📌🔹🔸•]/g, '')
-    .replace(/https?:\/\/\S+/g, 'website')
-    .replace(/\n+/g, '. ')
+    .replace(/[👉⚠️✅ℹ️📌🔹🔸•|~_`]/g, '')
+    .replace(/https?:\/\/\S+/g, '')
+
+  const langPrefix = (lang || 'hi-IN').split('-')[0].toLowerCase()
+
+  if (langPrefix === 'en') {
+    // English mode:
+    // 1. Remove all Devanagari / Tamil words in parentheses or brackets (e.g. "(जन सेवा)")
+    cleaned = cleaned.replace(/\([^)]*[\u0900-\u097F\u0B80-\u0BFF][^)]*\)/g, '')
+    cleaned = cleaned.replace(/\[[^\]]*[\u0900-\u097F\u0B80-\u0BFF][^\]]*\]/g, '')
+    // 2. Strip any remaining Devanagari or Tamil words completely
+    cleaned = cleaned.replace(/[\u0900-\u097F\u0B80-\u0BFF]+/g, '')
+  } else if (langPrefix === 'hi' || langPrefix === 'mr') {
+    // Hindi / Marathi mode:
+    // 1. Remove all English words in parentheses or brackets (e.g. "(Jan Seva)", "(Farmer)", "(PM-KISAN)")
+    cleaned = cleaned.replace(/\([^)]*[a-zA-Z][^)]*\)/g, '')
+    cleaned = cleaned.replace(/\[[^\]]*[a-zA-Z][^\]]*\]/g, '')
+  } else if (langPrefix === 'ta') {
+    // Tamil mode:
+    // Remove English and Devanagari words in parentheses or brackets
+    cleaned = cleaned.replace(/\([^)]*[a-zA-Z\u0900-\u097F][^)]*\)/g, '')
+    cleaned = cleaned.replace(/\[[^\]]*[a-zA-Z\u0900-\u097F][^\]]*\]/g, '')
+  }
+
+  // Remove leftover empty brackets and normalize spaces
+  cleaned = cleaned.replace(/\(\s*\)/g, '').replace(/\[\s*\]/g, '')
+  return cleaned.replace(/\n+/g, '. ').trim()
 }
 
 let voicesReadyPromise = null
@@ -103,10 +128,36 @@ function waitForVoices() {
 }
 
 // Splits text into sentence-sized chunks including Hindi danda (।) and newlines.
-function splitIntoSentences(text) {
-  const cleaned = cleanTextForSpeech(text)
+// Filters out sentences that belong to a different language script so English assistant
+// only speaks English and Hindi assistant only speaks Hindi.
+function splitIntoSentences(text, lang = 'hi-IN') {
+  const cleaned = cleanTextForSpeech(text, lang)
   const sentences = cleaned.match(/[^.!?।\n]+[.!?।\n]+|\s*[^.!?।\n]+$/g)
-  return (sentences || [cleaned]).map((s) => s.trim()).filter(Boolean)
+  const rawList = (sentences || [cleaned]).map((s) => s.trim()).filter(Boolean)
+
+  const langPrefix = (lang || 'hi-IN').split('-')[0].toLowerCase()
+
+  return rawList.filter((s) => {
+    const alphanumeric = s.replace(/[^a-zA-Z0-9\u0900-\u097F\u0B80-\u0BFF]/g, '')
+    if (alphanumeric.length < 2) return false
+
+    if (langPrefix === 'en') {
+      // English assistant: Must have English Latin letters, skips pure Hindi/Tamil sentences
+      return /[a-zA-Z]/.test(s)
+    }
+
+    if (langPrefix === 'hi' || langPrefix === 'mr') {
+      // Hindi / Marathi assistant: Must have Devanagari script, skips pure English sentences
+      return /[\u0900-\u097F]/.test(s)
+    }
+
+    if (langPrefix === 'ta') {
+      // Tamil assistant: Must have Tamil script, skips pure English/Hindi sentences
+      return /[\u0B80-\u0BFF]/.test(s)
+    }
+
+    return true
+  })
 }
 
 // Automatically detect the script/language of the sentence so the browser picks the correct voice engine
@@ -123,8 +174,6 @@ function detectScriptLanguage(text, fallbackLang = 'en-IN') {
   return fallbackLang || 'en-IN'
 }
 
-let speechQueue = []
-let isSpeakingQueue = false
 let currentOnEndCallback = null
 
 function speakNextInQueue(lang, onEnd) {
@@ -191,11 +240,13 @@ export function speakText(text, lang = 'hi-IN', options = {}) {
 
   waitForVoices().then(() => {
     setTimeout(() => {
-      speechQueue = splitIntoSentences(text)
-      if (speechQueue.length > 0 && onStart) {
-        onStart()
+      speechQueue = splitIntoSentences(text, lang)
+      if (speechQueue.length > 0) {
+        if (onStart) onStart()
+        speakNextInQueue(lang, onEnd)
+      } else {
+        if (onEnd) onEnd()
       }
-      speakNextInQueue(lang, onEnd)
     }, 120)
   })
 }
