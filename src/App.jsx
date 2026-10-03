@@ -322,9 +322,9 @@ export default function App() {
   const [profile, setProfile] = useState(() => getProfile())
   const [profileForm, setProfileForm] = useState(() => getProfile() || { name: '', age: '', occupation: '', location: '' })
   const [showSettings, setShowSettings] = useState(false)
-  const [showDocVerification, setShowDocVerification] = useState(false)
   const [showScorecard, setShowScorecard] = useState(false)
   const [showRojgarRadar, setShowRojgarRadar] = useState(false)
+  const [showDocVerification, setShowDocVerification] = useState(false)
   const [showGrievance, setShowGrievance] = useState(false)
   const [showAdminDashboard, setShowAdminDashboard] = useState(false)
   const [applySchemeId, setApplySchemeId] = useState(null)
@@ -638,7 +638,7 @@ export default function App() {
   if (!started) {
     return (
       <>
-                <LandingPage
+        <LandingPage
           onStart={handleStart}
           onOpenScorecard={() => setShowScorecard(true)}
           onOpenRojgarRadar={() => setShowRojgarRadar(true)}
@@ -646,15 +646,6 @@ export default function App() {
           onOpenGrievance={() => setShowGrievance(true)}
           onOpenAdmin={() => setShowAdminDashboard(true)}
         />
-        {showDocVerification && (
-          <DocumentVerification
-            onClose={() => setShowDocVerification(false)}
-            onStartChat={(query) => {
-              setShowDocVerification(false)
-              handleStart(query)
-            }}
-          />
-        )}
         {showScorecard && (
           <EligibilityScorecard
             defaultProfile={profile}
@@ -671,6 +662,15 @@ export default function App() {
             onClose={() => setShowRojgarRadar(false)}
             onStartChat={(query) => {
               setShowRojgarRadar(false)
+              handleStart(query)
+            }}
+          />
+        )}
+        {showDocVerification && (
+          <DocumentVerification
+            onClose={() => setShowDocVerification(false)}
+            onStartChat={(query) => {
+              setShowDocVerification(false)
               handleStart(query)
             }}
           />
@@ -733,6 +733,9 @@ export default function App() {
         <button className="ym-nav-item" onClick={() => { setShowApplyForm(true); setIsMobileNavOpen(false) }}>
           <DocumentIcon size={15} color="#0284c7" /> Applications & Forms
         </button>
+        <button className="ym-nav-item" onClick={() => { setShowDocVerification(true); setIsMobileNavOpen(false) }}>
+          <SearchIcon size={15} color="#0284c7" /> Verify Documents (OCR)
+        </button>
         <button className="ym-nav-item" onClick={() => { setShowSavedSchemes(true); setIsMobileNavOpen(false) }}>
           <BookmarkIcon size={15} color="#f59e0b" /> Saved Schemes
         </button>
@@ -749,9 +752,6 @@ export default function App() {
         </button>
         <button className="ym-nav-item" onClick={() => { setShowLinks((s) => !s); setIsMobileNavOpen(false) }}>
           <GlobeIcon size={15} color="#0284c7" /> Official Portals
-        </button>
-                <button className="ym-nav-item" onClick={() => { setShowDocVerification(true); setIsMobileNavOpen(false) }}>
-          <SearchIcon size={15} color="#0284c7" /> Verify Documents (OCR)
         </button>
 
         <div style={styles.sidebarHelp}>
@@ -1046,9 +1046,15 @@ export default function App() {
         />
       )}
 
-              <button className="ym-nav-item" onClick={() => { setShowDocVerification(true); setIsMobileNavOpen(false) }}>
-          <SearchIcon size={15} color="#0284c7" /> Verify Documents (OCR)
-        </button>
+      {showDocVerification && (
+        <DocumentVerification
+          onClose={() => setShowDocVerification(false)}
+          onStartChat={(query) => {
+            setShowDocVerification(false)
+            handleSend(query)
+          }}
+        />
+      )}
 
       {showGrievance && (
         <GrievanceRedressal
