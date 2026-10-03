@@ -191,7 +191,7 @@ export default function AdminDashboard({ onClose }) {
 
   function showToast(msg) {
     setToastMessage(msg)
-    setTimeout(() => setToastMessage(null), 3200)
+    setTimeout(() => setToastMessage(null), 4200)
   }
 
   function handleDispatchMitigation(alert) {
@@ -293,7 +293,7 @@ export default function AdminDashboard({ onClose }) {
           <div style={styles.kpiCard}>
             <div style={styles.kpiLabel}>Statutory SLA Compliance</div>
             <div style={styles.kpiValue}>94.2%</div>
-            <div style={styles.kpiTrend}>Avg. resolution: 4.8 Days</div>
+            <div style={styles.kpiTrend}>Avg. resolution: 4-8 Days</div>
           </div>
           <div style={{ ...styles.kpiCard, borderLeft: '4px solid #e11d48' }}>
             <div style={styles.kpiLabel}>Predicted SLA Breaches (48h)</div>
@@ -684,10 +684,29 @@ export default function AdminDashboard({ onClose }) {
           </div>
         )}
 
-        {/* Floating Toast Notification */}
+        {/* Centered Notification Pop-up */}
         {toastMessage && (
-          <div style={styles.toast}>
-            <span>{toastMessage}</span>
+          <div style={styles.toastOverlay} onClick={() => setToastMessage(null)}>
+            <div style={styles.toast} onClick={(e) => e.stopPropagation()}>
+              <div style={styles.toastHeader}>
+                <span style={{ fontSize: '20px' }}>
+                  {toastMessage.startsWith('⚡') ? '⚡' : toastMessage.startsWith('🚨') ? '🚨' : 'ℹ️'}
+                </span>
+                <span style={{ fontSize: '15px', fontWeight: 800, color: '#ffffff' }}>
+                  {toastMessage.startsWith('⚡') ? 'AI Workload Mitigation Dispatched' : toastMessage.startsWith('🚨') ? 'Statutory Expedite Order Issued' : 'Command Center Notice'}
+                </span>
+              </div>
+              <div style={styles.toastBody}>
+                {toastMessage.replace(/^[⚡🚨]\s*/, '')}
+              </div>
+              <button
+                type="button"
+                style={styles.toastDismissBtn}
+                onClick={() => setToastMessage(null)}
+              >
+                Acknowledge & Close
+              </button>
+            </div>
           </div>
         )}
 
@@ -1165,18 +1184,54 @@ const styles = {
     fontSize: '11.5px',
     fontWeight: 700,
   },
-  toast: {
+  toastOverlay: {
     position: 'fixed',
-    bottom: '24px',
-    left: '50%',
-    transform: 'translateX(-50%)',
+    inset: 0,
+    background: 'rgba(15, 23, 42, 0.55)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999999,
+    padding: '16px',
+    backdropFilter: 'blur(4px)',
+  },
+  toast: {
     background: '#0f172a',
     color: '#ffffff',
-    padding: '10px 20px',
-    borderRadius: '10px',
+    padding: '24px 28px',
+    borderRadius: '16px',
+    maxWidth: '500px',
+    width: '100%',
+    textAlign: 'center',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '12px',
+    boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.15)',
+    border: '1px solid #334155',
+  },
+  toastHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    justifyContent: 'center',
+  },
+  toastBody: {
+    fontSize: '13px',
+    color: '#cbd5e1',
+    lineHeight: 1.5,
+  },
+  toastDismissBtn: {
+    marginTop: '6px',
+    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+    color: '#ffffff',
+    border: 'none',
+    borderRadius: '8px',
+    padding: '7px 20px',
     fontSize: '12.5px',
-    fontWeight: 600,
-    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
-    zIndex: 99999,
+    fontWeight: 700,
+    cursor: 'pointer',
+    fontFamily: 'inherit',
+    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
   },
 }
