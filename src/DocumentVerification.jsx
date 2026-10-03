@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import Logo from './Logo'
-import { CloseIcon, SearchIcon } from './Icons'
+import { CloseIcon } from './Icons'
 
 // Real Verhoeff Algorithm Tables for authentic Indian Aadhaar 12-digit validation
 const VERHOEFF_D = [
@@ -171,30 +171,198 @@ const DEMO_PRESETS = [
   },
 ]
 
+// Direct Gemini Vision API integration for real document OCR
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+const PRIMARY_MODEL = 'gemini-3.5-flash-lite'
+const FALLBACK_MODEL = 'gemini-2.5-flash'
+
+function readFileAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result
+      const [header, base64] = dataUrl.split(',')
+      const mimeType = header.match(/:(.*?);/)?.[1] || file.type || 'image/jpeg'
+      resolve({ base64, mimeType, dataUrl })
+    }
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
+async function extractWithGeminiVision(base64Data, mimeType, prompt) {
+  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, 'gemini-2.0-flash']
+  const body = {
+    contents: [
+      {
+        role: 'user',
+        parts: [
+          { text: prompt },
+          { inlineData: { mimeType, data: base64Data } },
+        ],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: 'application/json',
+      temperature: 0.1,
+    },
+  }
+
+  for (const model of modelsToTry) {
+    const baseUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`
+    const apiUrl = GEMINI_API_KEY ? `${baseUrl}?key=${encodeURIComponent(GEMINI_API_KEY)}` : baseUrl
+    try {
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(GEMINI_API_KEY ? { 'x-goog-api-key': GEMINI_API_KEY } : {})
+        },
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) continue
+      const data = await res.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) continue
+      return JSON.parse(text)
+    } catch (err) {
+      console.warn(`Vision model ${model} failed, trying fallback...`, err)
+    }
+  }
+  throw new Error('AI Vision could not parse image. Please ensure photo is clear.')
+}
+
 export default function DocumentVerification({ onClose, onStartChat }) {
   const [formData, setFormData] = useState(DEMO_PRESETS[0].data)
   const [activeTab, setActiveTab] = useState('verification') // 'verification' | 'slip'
-  const [isScanning, setIsScanning] = useState(false)
-  const [uploadedFileName, setUploadedFileName] = useState(null)
+  
+  // Real OCR State for Slot 1: Aadhaar
+  const [isScanningAadhaar, setIsScanningAadhaar] = useState(false)
+  const [aadhaarFileName, setAadhaarFileName] = useState(null)
+  const [aadhaarPreview, setAadhaarPreview] = useState(null)
+  const [aadhaarOcrMessage, setAadhaarOcrMessage] = useState(null)
+
+  // Real OCR State for Slot 2: Samagra ID / Income Doc
+  const [isScanningSamagra, setIsScanningSamagra] = useState(false)
+  const [samagraFileName, setSamagraFileName] = useState(null)
+  const [samagraPreview, setSamagraPreview] = useState(null)
+  const [samagraOcrMessage, setSamagraOcrMessage] = useState(null)
+
   const [printSuccess, setPrintSuccess] = useState(false)
 
   function applyPreset(preset) {
     setFormData(preset.data)
-    setUploadedFileName(null)
+    setAadhaarFileName(null)
+    setAadhaarPreview(null)
+    setAadhaarOcrMessage(null)
+    setSamagraFileName(null)
+    setSamagraPreview(null)
+    setSamagraOcrMessage(null)
   }
 
-  function handleSimulateUpload(e) {
+  // Real Gemini Vision OCR for Aadhaar Card
+  async function handleAadhaarUpload(e) {
     const file = e.target.files?.[0]
-    if (file) {
-      setUploadedFileName(file.name)
-      setIsScanning(true)
-      setTimeout(() => {
-        setIsScanning(false)
-      }, 1200)
+    if (!file) return
+    setAadhaarFileName(file.name)
+    setIsScanningAadhaar(true)
+    setAadhaarOcrMessage('Reading document with Gemini AI Vision...')
+
+    try {
+      const { base64, mimeType, dataUrl } = await readFileAsBase64(file)
+      setAadhaarPreview(dataUrl)
+
+      const prompt = `You are an Indian government e-KYC document OCR system. Inspect this Aadhaar card photo.
+Extract the following information:
+1. Full Name of citizen (exact English spelling)
+2. 12-digit Aadhaar Number (format as "XXXX XXXX XXXX")
+3. Date of Birth (format as DD/MM/YYYY)
+4. Gender (Male, Female, or Other)
+
+Respond with ONLY a raw JSON object (no markdown, no backticks):
+{
+  "aadhaarName": "Full Name or null",
+  "aadhaarNumber": "1234 5678 9012 or null",
+  "aadhaarDob": "DD/MM/YYYY or null",
+  "gender": "Male or Female or null"
+}`
+
+      const extracted = await extractWithGeminiVision(base64, mimeType, prompt)
+
+      if (extracted?.aadhaarName || extracted?.aadhaarNumber) {
+        setFormData((prev) => ({
+          ...prev,
+          aadhaarName: extracted.aadhaarName || prev.aadhaarName,
+          aadhaarNumber: extracted.aadhaarNumber || prev.aadhaarNumber,
+          aadhaarDob: extracted.aadhaarDob || prev.aadhaarDob,
+        }))
+        setAadhaarOcrMessage(`✅ OCR Success: Extracted "${extracted.aadhaarName || 'Name'}" & UID ${extracted.aadhaarNumber || ''}`)
+      } else {
+        setAadhaarOcrMessage('⚠️ Could not detect clear Aadhaar text. You can edit the fields below manually.')
+      }
+    } catch (err) {
+      console.error(err)
+      setAadhaarOcrMessage('Photo uploaded. Please review or adjust your details in the form below.')
+    } finally {
+      setIsScanningAadhaar(false)
     }
   }
 
-  // Cross-matching calculations
+  // Real Gemini Vision OCR for Samagra ID Slip or Income Certificate
+  async function handleSamagraUpload(e) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setSamagraFileName(file.name)
+    setIsScanningSamagra(true)
+    setSamagraOcrMessage('Reading Samagra/Income slip with Gemini AI Vision...')
+
+    try {
+      const { base64, mimeType, dataUrl } = await readFileAsBase64(file)
+      setSamagraPreview(dataUrl)
+
+      const prompt = `You are an Indian government e-KYC document OCR system. Inspect this MP Samagra ID slip or Income Certificate photo.
+Extract the following information:
+1. Member / Citizen Name (exact English or Hindi spelling)
+2. 9-digit Samagra Member ID
+3. Annual Family Income in Rupees (string like "1,20,000" or number)
+4. Caste Category (General / EWS, OBC, SC, ST)
+5. Domicile state (e.g. Madhya Pradesh)
+6. Certificate Issue Age in years (number: 1, 2, or 4 if older than 3 years)
+
+Respond with ONLY a raw JSON object (no markdown, no backticks):
+{
+  "samagraName": "Full Name or null",
+  "samagraId": "9-digit number or null",
+  "annualIncome": "Income amount or null",
+  "casteCategory": "OBC or General / EWS or SC or ST or null",
+  "domicile": "Madhya Pradesh",
+  "incomeCertAgeYears": 1
+}`
+
+      const extracted = await extractWithGeminiVision(base64, mimeType, prompt)
+
+      if (extracted?.samagraName || extracted?.samagraId || extracted?.annualIncome) {
+        setFormData((prev) => ({
+          ...prev,
+          samagraName: extracted.samagraName || prev.samagraName,
+          samagraId: extracted.samagraId || prev.samagraId,
+          annualIncome: extracted.annualIncome ? String(extracted.annualIncome) : prev.annualIncome,
+          casteCategory: extracted.casteCategory || prev.casteCategory,
+          incomeCertAgeYears: extracted.incomeCertAgeYears || prev.incomeCertAgeYears,
+        }))
+        setSamagraOcrMessage(`✅ OCR Success: Extracted "${extracted.samagraName || 'Name'}" & Samagra ID ${extracted.samagraId || ''}`)
+      } else {
+        setSamagraOcrMessage('⚠️ Could not detect clear Samagra text. You can edit the fields below manually.')
+      }
+    } catch (err) {
+      console.error(err)
+      setSamagraOcrMessage('Photo uploaded. Please review or adjust your details in the form below.')
+    } finally {
+      setIsScanningSamagra(false)
+    }
+  }
+
+  // Cross-matching calculations between Document 1 and Document 2
   const verificationResult = useMemo(() => {
     const checks = []
     let score = 0
@@ -220,21 +388,21 @@ export default function DocumentVerification({ onClose, onStartChat }) {
       })
     }
 
-    // 2. Name Matching between Aadhaar and Samagra ID
+    // 2. Cross-Document Name Matching between Aadhaar and Samagra ID
     const aName = formData.aadhaarName.trim().toLowerCase()
     const sName = formData.samagraName.trim().toLowerCase()
     const isExactName = aName === sName
     const isPartialName = aName.split(' ')[0] === sName.split(' ')[0]
 
-    if (isExactName) {
+    if (isExactName && aName.length > 0) {
       checks.push({
         id: 'name_sync',
         title: 'Cross-Document Name Match 100%',
         status: 'pass',
-        desc: `Exact spelling match across Aadhaar ("${formData.aadhaarName}") and Samagra Portal ID.`,
+        desc: `Exact spelling match across Document 1 (Aadhaar: "${formData.aadhaarName}") and Document 2 (Samagra: "${formData.samagraName}").`,
       })
       score += 30
-    } else if (isPartialName) {
+    } else if (isPartialName && aName.length > 0) {
       checks.push({
         id: 'name_sync',
         title: 'Name Spelling Mismatch Detected',
@@ -334,7 +502,7 @@ export default function DocumentVerification({ onClose, onStartChat }) {
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                 <span style={styles.govBadge}>MPOnline Kiosk Pre-Verification</span>
                 <span style={styles.liveIndicator}>● Verhoeff Algorithm Active</span>
-                <span style={styles.ocrBadge}>Computer Vision OCR</span>
+                <span style={styles.ocrBadge}>Dual-Doc Vision OCR</span>
               </div>
               <h2 style={styles.title}>AI Citizen Document Inspector & Kiosk Slip Generator</h2>
             </div>
@@ -351,28 +519,32 @@ export default function DocumentVerification({ onClose, onStartChat }) {
             onClick={() => setActiveTab('verification')}
           >
             <ShieldCheckIcon size={16} color={activeTab === 'verification' ? '#ffffff' : '#059669'} />
-            <span>Document Inspection & OCR Engine</span>
+            <span>Document Verification & Cross-Match</span>
           </button>
+
           <button
             style={{ ...styles.tabBtn, ...(activeTab === 'slip' ? styles.tabBtnActive : {}) }}
             onClick={() => setActiveTab('slip')}
           >
-            <QrCodeIcon size={16} color={activeTab === 'slip' ? '#ffffff' : '#0284c7'} />
-            <span>Pre-Verified Kiosk Slip (QR Token)</span>
+            <QrCodeIcon size={16} color={activeTab === 'slip' ? '#ffffff' : '#0f172a'} />
+            <span>Print Kiosk Slip ({verificationResult.score}%)</span>
           </button>
         </div>
 
-        {/* 1-Click Demo Presets Bar */}
+        {/* Demo Presets Bar */}
         <div style={styles.presetsBar}>
-          <span style={styles.presetsLabel}>TEST HACKATHON PERSONAS:</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={styles.presetsLabel}>FAST-DEMO PRESETS (FOR PRESENTATION & TESTING):</span>
+            <span style={{ fontSize: '11px', color: '#64748b' }}>Or upload your real photos in Document 1 & Document 2 below</span>
+          </div>
           <div style={styles.presetsList}>
             {DEMO_PRESETS.map((p, idx) => (
               <button
                 key={idx}
                 style={{
                   ...styles.presetChip,
-                  borderColor: formData.aadhaarName === p.data.aadhaarName ? p.badgeColor : '#e2e8f0',
-                  background: formData.aadhaarName === p.data.aadhaarName ? `${p.badgeColor}15` : '#ffffff',
+                  background: formData.aadhaarName === p.data.aadhaarName && formData.aadhaarNumber === p.data.aadhaarNumber ? '#ecfdf5' : '#ffffff',
+                  borderColor: formData.aadhaarName === p.data.aadhaarName && formData.aadhaarNumber === p.data.aadhaarNumber ? '#059669' : '#cbd5e1',
                 }}
                 onClick={() => applyPreset(p)}
               >
@@ -383,40 +555,125 @@ export default function DocumentVerification({ onClose, onStartChat }) {
           </div>
         </div>
 
-        {/* TAB 1: VERIFICATION & LIVE EDITING */}
+        {/* TAB 1: VERIFICATION & CROSS-MATCH */}
         {activeTab === 'verification' && (
           <div style={styles.mainGrid}>
-            {/* Left Column: Form & Simulated Image Dropzone */}
+            
+            {/* Left Column: Dual Upload Slots + Extracted Data */}
             <div style={styles.formCol}>
-              {/* Image Upload simulation box */}
-              <div style={styles.uploadCard}>
-                <div style={styles.uploadHeader}>
-                  <UploadCloudIcon size={20} color="#0284c7" />
-                  <div>
-                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>
-                      Scan or Upload Citizen Document Photo
-                    </h4>
-                    <p style={{ margin: '2px 0 0', fontSize: '11px', color: '#64748b' }}>
-                      Aadhaar Card, Samagra ID slip, or Income Certificate (PNG, JPG, PDF)
-                    </p>
+              
+              {/* DUAL UPLOAD SLOTS GRID */}
+              <div style={styles.dualUploadGrid}>
+                
+                {/* SLOT 1: AADHAAR CARD */}
+                <div style={{ ...styles.uploadCard, borderColor: isScanningAadhaar ? '#059669' : '#7dd3fc' }}>
+                  <div style={styles.uploadHeader}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <UploadCloudIcon size={18} color="#0284c7" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>Document 1: UIDAI Aadhaar</div>
+                      <div style={{ fontSize: '10.5px', color: '#64748b' }}>Extracts Name, 12-Digit UID & DOB</div>
+                    </div>
                   </div>
+
+                  {aadhaarPreview && (
+                    <div style={{ marginBottom: '8px', textAlign: 'center' }}>
+                      <img src={aadhaarPreview} alt="Aadhaar preview" style={{ maxHeight: '70px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                  )}
+
+                  <label style={styles.fileInputLabel}>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      style={{ display: 'none' }}
+                      onChange={handleAadhaarUpload}
+                      disabled={isScanningAadhaar}
+                    />
+                    <span>{isScanningAadhaar ? '🔄 Scanning...' : aadhaarFileName ? `📁 ${aadhaarFileName}` : '📁 Snap or Choose Aadhaar Photo...'}</span>
+                  </label>
+
+                  {aadhaarOcrMessage && (
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: aadhaarOcrMessage.startsWith('✅') ? '#059669' : '#0284c7', fontWeight: 600 }}>
+                      {aadhaarOcrMessage}
+                    </div>
+                  )}
                 </div>
 
-                <label style={styles.fileInputLabel}>
-                  <input
-                    type="file"
-                    accept="image/*,.pdf"
-                    style={{ display: 'none' }}
-                    onChange={handleSimulateUpload}
-                  />
-                  <span>📁 {uploadedFileName ? `Loaded: ${uploadedFileName}` : 'Choose File or Snap Camera Photo...'}</span>
-                </label>
-
-                {isScanning && (
-                  <div style={styles.scanningIndicator}>
-                    <span>🔄 AI OCR extracting text from document...</span>
+                {/* SLOT 2: SAMAGRA ID / INCOME CERTIFICATE */}
+                <div style={{ ...styles.uploadCard, borderColor: isScanningSamagra ? '#059669' : '#a7f3d0', background: '#f0fdf4' }}>
+                  <div style={styles.uploadHeader}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <UploadCloudIcon size={18} color="#059669" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>Document 2: Samagra / Income</div>
+                      <div style={{ fontSize: '10.5px', color: '#64748b' }}>Extracts Samagra ID & Income</div>
+                    </div>
                   </div>
-                )}
+
+                  {samagraPreview && (
+                    <div style={{ marginBottom: '8px', textAlign: 'center' }}>
+                      <img src={samagraPreview} alt="Samagra preview" style={{ maxHeight: '70px', borderRadius: '6px', border: '1px solid #cbd5e1' }} />
+                    </div>
+                  )}
+
+                  <label style={{ ...styles.fileInputLabel, borderColor: '#a7f3d0', color: '#047857' }}>
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      style={{ display: 'none' }}
+                      onChange={handleSamagraUpload}
+                      disabled={isScanningSamagra}
+                    />
+                    <span>{isScanningSamagra ? '🔄 Scanning...' : samagraFileName ? `📁 ${samagraFileName}` : '📁 Snap or Choose Samagra / Income...'}</span>
+                  </label>
+
+                  {samagraOcrMessage && (
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: samagraOcrMessage.startsWith('✅') ? '#059669' : '#047857', fontWeight: 600 }}>
+                      {samagraOcrMessage}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Cross-Check Harmonization Banner */}
+              <div style={{
+                background: formData.aadhaarName.trim().toLowerCase() === formData.samagraName.trim().toLowerCase() && formData.aadhaarName ? '#ecfdf5' : '#fffbeb',
+                border: `1px solid ${formData.aadhaarName.trim().toLowerCase() === formData.samagraName.trim().toLowerCase() && formData.aadhaarName ? '#a7f3d0' : '#fde68a'}`,
+                borderRadius: '10px',
+                padding: '8px 12px',
+                fontSize: '11.5px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}>
+                <span>
+                  <strong>Cross-Document Check: </strong>
+                  {formData.aadhaarName.trim().toLowerCase() === formData.samagraName.trim().toLowerCase() && formData.aadhaarName ? (
+                    <span style={{ color: '#047857' }}>Aadhaar name and Samagra name match 100%</span>
+                  ) : (
+                    <span style={{ color: '#b45309' }}>Aadhaar ({formData.aadhaarName || 'Empty'}) vs Samagra ({formData.samagraName || 'Empty'}) mismatch</span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  style={{
+                    background: 'transparent',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    padding: '3px 7px',
+                    cursor: 'pointer',
+                    color: '#0f172a',
+                  }}
+                  onClick={() => setFormData((prev) => ({ ...prev, samagraName: prev.aadhaarName }))}
+                  title="Copy Aadhaar Name to Samagra Portal"
+                >
+                  Sync Names
+                </button>
               </div>
 
               {/* Editable Extracted Fields */}
@@ -425,7 +682,7 @@ export default function DocumentVerification({ onClose, onStartChat }) {
                 
                 <div style={styles.fieldRow2}>
                   <div>
-                    <label style={styles.label}>Name on Aadhaar Card</label>
+                    <label style={styles.label}>Name on Aadhaar Card (Doc 1)</label>
                     <input
                       style={styles.input}
                       value={formData.aadhaarName}
@@ -444,7 +701,7 @@ export default function DocumentVerification({ onClose, onStartChat }) {
 
                 <div style={styles.fieldRow2}>
                   <div>
-                    <label style={styles.label}>Name on Samagra Portal</label>
+                    <label style={styles.label}>Name on Samagra Portal (Doc 2)</label>
                     <input
                       style={styles.input}
                       value={formData.samagraName}
@@ -867,17 +1124,22 @@ const styles = {
     flexDirection: 'column',
     gap: '12px',
   },
+  dualUploadGrid: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr',
+    gap: '10px',
+  },
   uploadCard: {
     background: '#f0f9ff',
     border: '1.5px dashed #7dd3fc',
     borderRadius: '14px',
-    padding: '14px',
+    padding: '12px',
   },
   uploadHeader: {
     display: 'flex',
     alignItems: 'center',
-    gap: '10px',
-    marginBottom: '10px',
+    gap: '8px',
+    marginBottom: '8px',
   },
   fileInputLabel: {
     display: 'block',
@@ -885,18 +1147,14 @@ const styles = {
     background: '#ffffff',
     border: '1px solid #bae6fd',
     color: '#0284c7',
-    padding: '8px',
+    padding: '7px 8px',
     borderRadius: '8px',
-    fontSize: '12px',
+    fontSize: '11.5px',
     fontWeight: 700,
     cursor: 'pointer',
-  },
-  scanningIndicator: {
-    marginTop: '8px',
-    fontSize: '11.5px',
-    color: '#0284c7',
-    fontWeight: 700,
-    textAlign: 'center',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
   fieldSection: {
     background: '#ffffff',
