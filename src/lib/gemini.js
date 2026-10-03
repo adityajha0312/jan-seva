@@ -1,8 +1,9 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
-// Primary and fallback models for Google AI Studio (v1beta endpoint)
-const PRIMARY_MODEL = 'gemini-1.5-flash'
-const FALLBACK_MODEL = 'gemini-2.0-flash'
+// Primary, fallback, and tertiary models for Google AI Studio
+const PRIMARY_MODEL = 'gemini-3.8-flash'
+const FALLBACK_MODEL = 'gemini-3.5-flash-lite'
+const TERTIARY_MODEL = 'gemini-2.5-flash'
 
 // Waits `ms` milliseconds before continuing.
 function wait(ms) {
@@ -42,7 +43,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
     body.generationConfig = { responseMimeType: 'application/json', temperature: 0.2 }
   }
 
-  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL]
+  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
   let lastError = null
 
   for (const model of modelsToTry) {
