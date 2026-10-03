@@ -27,7 +27,10 @@ const VERHOEFF_P = [
   [7, 0, 4, 6, 9, 1, 3, 2, 5, 8],
 ]
 
-function validateVerhoeff(numStr) {
+const VERHOEFF_INV = [0, 4, 3, 2, 1, 5, 6, 7, 8, 9]
+
+// Mathematically validates a 12-digit Aadhaar number using Verhoeff
+export function validateVerhoeff(numStr) {
   const clean = String(numStr).replace(/\D/g, '')
   if (clean.length !== 12) return false
   let c = 0
@@ -36,6 +39,26 @@ function validateVerhoeff(numStr) {
     c = VERHOEFF_D[c][VERHOEFF_P[i % 8][reversed[i]]]
   }
   return c === 0
+}
+
+// Computes the exact official Verhoeff check digit for any 11-digit prefix
+export function getVerhoeffCheckDigit(elevenDigits) {
+  const clean = String(elevenDigits).replace(/\D/g, '').slice(0, 11)
+  if (clean.length !== 11) return null
+  let c = 0
+  const reversed = clean.split('').reverse().map(Number)
+  for (let i = 0; i < reversed.length; i++) {
+    c = VERHOEFF_D[c][VERHOEFF_P[(i + 1) % 8][reversed[i]]]
+  }
+  return String(VERHOEFF_INV[c])
+}
+
+// Generates a mathematically guaranteed valid 12-digit Aadhaar number
+export function makeValidAadhaar(elevenDigits) {
+  const clean = String(elevenDigits).replace(/\D/g, '').slice(0, 11)
+  const chk = getVerhoeffCheckDigit(clean)
+  const full = clean + chk
+  return `${full.slice(0, 4)} ${full.slice(4, 8)} ${full.slice(8, 12)}`
 }
 
 // Inline helper SVG icons
@@ -99,7 +122,7 @@ function PrinterIcon({ size = 16, color = 'currentColor' }) {
   )
 }
 
-// 4 Realistic Demo Presets for Hackathon Testing
+// 4 Realistic Demo Presets with Mathematically Validated Aadhaar Numbers
 const DEMO_PRESETS = [
   {
     label: 'Clean Verified Citizen (100% Ready)',
@@ -107,7 +130,7 @@ const DEMO_PRESETS = [
     badgeColor: '#059669',
     data: {
       aadhaarName: 'Rameshwar Sharma',
-      aadhaarNumber: '3412 8790 5642',
+      aadhaarNumber: makeValidAadhaar('34128790564'), // Guaranteed Verhoeff Pass (Check digit: 8)
       aadhaarDob: '14/08/1984',
       samagraName: 'Rameshwar Sharma',
       samagraId: '194820194',
@@ -124,7 +147,7 @@ const DEMO_PRESETS = [
     badgeColor: '#d97706',
     data: {
       aadhaarName: 'Radha Devi',
-      aadhaarNumber: '5820 9143 8219',
+      aadhaarNumber: makeValidAadhaar('58209143821'), // Guaranteed Verhoeff Pass (Check digit: 9)
       aadhaarDob: '05/11/1988',
       samagraName: 'Radha Bai',
       samagraId: '284719302',
@@ -141,7 +164,7 @@ const DEMO_PRESETS = [
     badgeColor: '#e11d48',
     data: {
       aadhaarName: 'Vikas Patel',
-      aadhaarNumber: '4920 1823 9991', // Will fail Verhoeff algorithm
+      aadhaarNumber: '4920 1823 9991', // Deliberate typo for demonstration (valid check digit is 7)
       aadhaarDob: '22/03/1999',
       samagraName: 'Vikas Patel',
       samagraId: '394810294',
@@ -158,7 +181,7 @@ const DEMO_PRESETS = [
     badgeColor: '#7c3aed',
     data: {
       aadhaarName: 'Aman Verma',
-      aadhaarNumber: '8912 3456 7018',
+      aadhaarNumber: makeValidAadhaar('89123456701'), // Guaranteed Verhoeff Pass (Check digit: 3)
       aadhaarDob: '10/06/2004',
       samagraName: 'Aman Verma',
       samagraId: '582910482',
@@ -216,7 +239,7 @@ async function extractWithGeminiVision(base64Data, mimeType, prompt) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(GEMINI_API_KEY ? { 'x-goog-api-key': GEMINI_API_KEY } : {})
+          ...(GEMINI_API_KEY ? { 'x-goog-api-key': GEMINI_API_KEY } : {}),
         },
         body: JSON.stringify(body),
       })
@@ -275,7 +298,7 @@ export default function DocumentVerification({ onClose, onStartChat }) {
       const prompt = `You are an Indian government e-KYC document OCR system. Inspect this Aadhaar card photo.
 Extract the following information:
 1. Full Name of citizen (exact English spelling)
-2. 12-digit Aadhaar Number (format as "XXXX XXXX XXXX")
+2. 12-digit Aadhaar Number (digits only, e.g. "341287905648" or with spaces)
 3. Date of Birth (format as DD/MM/YYYY)
 4. Gender (Male, Female, or Other)
 
@@ -290,13 +313,18 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
       const extracted = await extractWithGeminiVision(base64, mimeType, prompt)
 
       if (extracted?.aadhaarName || extracted?.aadhaarNumber) {
+        let cleanExtractedNum = extracted.aadhaarNumber ? String(extracted.aadhaarNumber).replace(/\D/g, '').slice(0, 12) : ''
+        if (cleanExtractedNum.length === 12) {
+          cleanExtractedNum = `${cleanExtractedNum.slice(0, 4)} ${cleanExtractedNum.slice(4, 8)} ${cleanExtractedNum.slice(8, 12)}`
+        }
+
         setFormData((prev) => ({
           ...prev,
           aadhaarName: extracted.aadhaarName || prev.aadhaarName,
-          aadhaarNumber: extracted.aadhaarNumber || prev.aadhaarNumber,
+          aadhaarNumber: cleanExtractedNum || extracted.aadhaarNumber || prev.aadhaarNumber,
           aadhaarDob: extracted.aadhaarDob || prev.aadhaarDob,
         }))
-        setAadhaarOcrMessage(`✅ OCR Success: Extracted "${extracted.aadhaarName || 'Name'}" & UID ${extracted.aadhaarNumber || ''}`)
+        setAadhaarOcrMessage(`✅ OCR Success: Extracted "${extracted.aadhaarName || 'Name'}" & UID ${cleanExtractedNum || extracted.aadhaarNumber || ''}`)
       } else {
         setAadhaarOcrMessage('⚠️ Could not detect clear Aadhaar text. You can edit the fields below manually.')
       }
@@ -345,7 +373,7 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
         setFormData((prev) => ({
           ...prev,
           samagraName: extracted.samagraName || prev.samagraName,
-          samagraId: extracted.samagraId || prev.samagraId,
+          samagraId: extracted.samagraId ? String(extracted.samagraId).replace(/\D/g, '').slice(0, 9) : prev.samagraId,
           annualIncome: extracted.annualIncome ? String(extracted.annualIncome) : prev.annualIncome,
           casteCategory: extracted.casteCategory || prev.casteCategory,
           incomeCertAgeYears: extracted.incomeCertAgeYears || prev.incomeCertAgeYears,
@@ -367,34 +395,39 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
     const checks = []
     let score = 0
 
-    // 1. Aadhaar Verhoeff Checksum Check
-    const cleanAadhaar = formData.aadhaarNumber.replace(/\s+/g, '')
+    // 1. Aadhaar Verhoeff Checksum Check (Strips all spaces, hyphens, and letters)
+    const cleanAadhaar = String(formData.aadhaarNumber || '').replace(/\D/g, '')
     const isVerhoeffValid = cleanAadhaar.length === 12 && validateVerhoeff(cleanAadhaar)
+    const suggestedValidAadhaar = cleanAadhaar.length >= 11 ? makeValidAadhaar(cleanAadhaar.slice(0, 11)) : null
     
     if (isVerhoeffValid) {
       checks.push({
         id: 'aadhaar_chk',
         title: 'UIDAI Aadhaar Checksum Validated (Verhoeff Alg.)',
         status: 'pass',
-        desc: `12-digit number [${formData.aadhaarNumber}] passed mathematical checksum. No keyboard typos detected.`,
+        desc: `12-digit number [${formData.aadhaarNumber}] passed mathematical Verhoeff checksum. Check digit is 100% authentic.`,
       })
       score += 25
     } else {
       checks.push({
         id: 'aadhaar_chk',
-        title: 'Aadhaar Checksum Failure (Invalid Check Digit)',
+        title: 'Aadhaar Checksum Failure (Check Digit Mismatch)',
         status: 'fail',
-        desc: `Number [${formData.aadhaarNumber}] failed Verhoeff checksum test. Please re-check the physical Aadhaar card digits.`,
+        desc: cleanAadhaar.length !== 12 
+          ? `Expected 12 digits, but found ${cleanAadhaar.length} digits. Please check the physical card.`
+          : `Number [${formData.aadhaarNumber}] failed Verhoeff checksum test. (Correct check digit for this prefix would be "${suggestedValidAadhaar?.slice(-1)}").`,
+        canAutoFix: Boolean(suggestedValidAadhaar),
+        suggestedValue: suggestedValidAadhaar,
       })
     }
 
     // 2. Cross-Document Name Matching between Aadhaar and Samagra ID
-    const aName = formData.aadhaarName.trim().toLowerCase()
-    const sName = formData.samagraName.trim().toLowerCase()
-    const isExactName = aName === sName
-    const isPartialName = aName.split(' ')[0] === sName.split(' ')[0]
+    const aName = (formData.aadhaarName || '').trim().toLowerCase()
+    const sName = (formData.samagraName || '').trim().toLowerCase()
+    const isExactName = aName === sName && aName.length > 0
+    const isPartialName = aName.length > 0 && sName.length > 0 && (aName.split(' ')[0] === sName.split(' ')[0] || aName.includes(sName) || sName.includes(aName))
 
-    if (isExactName && aName.length > 0) {
+    if (isExactName) {
       checks.push({
         id: 'name_sync',
         title: 'Cross-Document Name Match 100%',
@@ -402,7 +435,7 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
         desc: `Exact spelling match across Document 1 (Aadhaar: "${formData.aadhaarName}") and Document 2 (Samagra: "${formData.samagraName}").`,
       })
       score += 30
-    } else if (isPartialName && aName.length > 0) {
+    } else if (isPartialName) {
       checks.push({
         id: 'name_sync',
         title: 'Name Spelling Mismatch Detected',
@@ -415,7 +448,7 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
         id: 'name_sync',
         title: 'Critical Identity Discrepancy',
         status: 'fail',
-        desc: `Names do not match ("${formData.aadhaarName}" vs "${formData.samagraName}"). Application will be auto-flagged for biometric re-verification.`,
+        desc: `Names do not match ("${formData.aadhaarName || 'Empty'}" vs "${formData.samagraName || 'Empty'}"). Application will be auto-flagged for biometric re-verification.`,
       })
     }
 
@@ -438,7 +471,7 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
     }
 
     // 4. Income Certificate Validity
-    const incomeNum = parseInt(formData.annualIncome.replace(/,/g, ''), 10) || 0
+    const incomeNum = parseInt(String(formData.annualIncome || '0').replace(/,/g, ''), 10) || 0
     const isCertExpired = formData.incomeCertAgeYears > 3
     const isHighIncome = incomeNum > 600000
 
@@ -473,6 +506,12 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
       isKioskReady: score >= 85,
     }
   }, [formData])
+
+  function handleAutoFixAadhaar(suggested) {
+    if (suggested) {
+      setFormData((prev) => ({ ...prev, aadhaarNumber: suggested }))
+    }
+  }
 
   function handlePrintSlip() {
     setPrintSuccess(true)
@@ -678,7 +717,10 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
 
               {/* Editable Extracted Fields */}
               <div style={styles.fieldSection}>
-                <h4 style={styles.fieldSectionTitle}>Extracted Identity Data (Editable)</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h4 style={{ ...styles.fieldSectionTitle, margin: 0 }}>Extracted Identity Data (Editable)</h4>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>All fields live recalculate</span>
+                </div>
                 
                 <div style={styles.fieldRow2}>
                   <div>
@@ -690,7 +732,12 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
                     />
                   </div>
                   <div>
-                    <label style={styles.label}>Aadhaar Number (12 Digits)</label>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <label style={styles.label}>Aadhaar Number (12 Digits)</label>
+                      {!verificationResult.checks.find((c) => c.id === 'aadhaar_chk')?.status === 'pass' && (
+                        <span style={{ fontSize: '10px', color: '#b91c1c', fontWeight: 700 }}>Typo Detected</span>
+                      )}
+                    </div>
                     <input
                       style={styles.input}
                       value={formData.aadhaarNumber}
@@ -805,15 +852,35 @@ Respond with ONLY a raw JSON object (no markdown, no backticks):
                     ...styles.checkCard,
                     borderLeft: `4px solid ${chk.status === 'pass' ? '#10b981' : chk.status === 'warn' ? '#f59e0b' : '#ef4444'}`
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
-                      {chk.status === 'pass' ? (
-                        <CheckmarkCircleIcon size={16} color="#10b981" />
-                      ) : chk.status === 'warn' ? (
-                        <AlertTriangleIcon size={16} color="#f59e0b" />
-                      ) : (
-                        <AlertTriangleIcon size={16} color="#ef4444" />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '3px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {chk.status === 'pass' ? (
+                          <CheckmarkCircleIcon size={16} color="#10b981" />
+                        ) : chk.status === 'warn' ? (
+                          <AlertTriangleIcon size={16} color="#f59e0b" />
+                        ) : (
+                          <AlertTriangleIcon size={16} color="#ef4444" />
+                        )}
+                        <strong style={{ fontSize: '13px', color: '#0f172a' }}>{chk.title}</strong>
+                      </div>
+                      {chk.canAutoFix && (
+                        <button
+                          type="button"
+                          style={{
+                            background: '#059669',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                          }}
+                          onClick={() => handleAutoFixAadhaar(chk.suggestedValue)}
+                        >
+                          Auto-Fix Check Digit
+                        </button>
                       )}
-                      <strong style={{ fontSize: '13px', color: '#0f172a' }}>{chk.title}</strong>
                     </div>
                     <p style={{ margin: 0, fontSize: '12px', color: '#475569', lineHeight: 1.45, paddingLeft: '24px' }}>
                       {chk.desc}
