@@ -11,6 +11,10 @@ export const isVoiceInputSupported = !!SpeechRecognitionAPI
 export const isVoiceOutputSupported =
   typeof window !== 'undefined' && !!window.speechSynthesis
 
+let speechQueue = []
+let isSpeakingQueue = false
+let currentOnEndCallback = null
+
 // Starts listening for speech and returns a controller object with a stop() method.
 export function startListening({ lang = 'hi-IN', onResult, onEnd, onError }) {
   if (!SpeechRecognitionAPI) {
@@ -174,8 +178,6 @@ function detectScriptLanguage(text, fallbackLang = 'en-IN') {
   return fallbackLang || 'en-IN'
 }
 
-let currentOnEndCallback = null
-
 function speakNextInQueue(lang, onEnd) {
   if (speechQueue.length === 0) {
     isSpeakingQueue = false
@@ -230,7 +232,9 @@ function speakNextInQueue(lang, onEnd) {
 
 export function speakText(text, lang = 'hi-IN', options = {}) {
   if (!isVoiceOutputSupported) return
-  window.speechSynthesis.cancel()
+  try {
+    window.speechSynthesis.cancel()
+  } catch (e) {}
   speechQueue = []
   isSpeakingQueue = false
 
@@ -258,8 +262,10 @@ export function stopSpeaking() {
     if (currentOnEndCallback) {
       const cb = currentOnEndCallback
       currentOnEndCallback = null
-      cb()
+      try { cb() } catch (e) {}
     }
-    window.speechSynthesis.cancel()
+    try {
+      window.speechSynthesis.cancel()
+    } catch (e) {}
   }
 }
