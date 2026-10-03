@@ -484,14 +484,16 @@ export default function App() {
     const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setInput('')
-    latestVoiceTextRef.current = ''
     setLoading(true)
     setError(null)
-    stopSpeaking()
-    setIsSpeaking(false)
-    setCurrentlySpeakingIndex(null)
 
     try {
+      try {
+        stopSpeaking()
+      } catch (e) {}
+      setIsSpeaking(false)
+      setCurrentlySpeakingIndex(null)
+
       const conversationText = newMessages.map((m) => m.text).join(' ')
       const systemInstruction = buildSystemInstruction(schemes, conversationText, voiceLang, isAwaazMode)
       const replyText = await askGemini(systemInstruction, newMessages)
@@ -571,12 +573,12 @@ export default function App() {
 
   function handleToggleSpeakMessage(text, index) {
     if (isSpeaking && currentlySpeakingIndex === index) {
-      stopSpeaking()
+      try { stopSpeaking() } catch (e) {}
       setIsSpeaking(false)
       setCurrentlySpeakingIndex(null)
       return
     }
-    stopSpeaking()
+    try { stopSpeaking() } catch (e) {}
     setCurrentlySpeakingIndex(index)
     setIsSpeaking(true)
     speakText(text, voiceLang, {
@@ -663,7 +665,9 @@ export default function App() {
       return
     }
 
-    stopSpeaking()
+    try {
+      stopSpeaking()
+    } catch (e) {}
     setIsSpeaking(false)
     setCurrentlySpeakingIndex(null)
     setInput('')
@@ -990,8 +994,6 @@ export default function App() {
             ))}
           </div>
         )}
-
-
                 <div style={styles.chatArea}>
           {loadingSchemes ? (
             <p style={styles.systemNote}>Loading scheme database...</p>
@@ -1207,7 +1209,7 @@ export default function App() {
           )}
         </div>
         <div style={styles.promoCard}>
-          <strong style={{ fontSize: '13px' }}>Jan Seva · Sovereign AI</strong>
+          <strong style={{ fontSize: '13.5px' }}>Jan Seva · Sovereign AI</strong>
           <p style={{ fontSize: '12px', margin: '6px 0 0', opacity: 0.9 }}>AI-Powered Governance for Every Citizen</p>
         </div>
       </aside>
