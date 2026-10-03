@@ -77,7 +77,7 @@ const KEY_METRICS = [
   { label: 'Grievance SLA Target', val: '7 Days', badge: 'Fast Track', color: '#e11d48' },
 ]
 
-export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance, onOpenAdmin, onOpenRojgarRadar }) {
+export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance, onOpenAdmin, onOpenRojgarRadar, onOpenDocVerification }) {
   return (
     <div style={styles.page} id="top">
       {/* Top Government Tri-color subtle band */}
@@ -295,7 +295,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
             <p style={styles.capDesc}>
               Instant extraction from uploaded Aadhaar, Samagra ID, and Khasra records. Analyzes document readiness, checks digit checksums, and flags errors before kiosk submission.
             </p>
-            <button style={styles.capLink} onClick={() => onStart()}>Test Vision OCR →</button>
+            <button style={styles.capLink} onClick={onOpenDocVerification || (() => onStart('Help me verify my documents for government schemes'))}>Test Vision OCR →</button>
           </div>
 
           <div style={styles.capCard}>
