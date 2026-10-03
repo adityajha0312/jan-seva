@@ -1,8 +1,35 @@
 import { useState, useMemo } from 'react'
 import {
-  CloseIcon, ArrowRightIcon, CheckCircleIcon, ExternalLinkIcon, SparklesIcon,
+  CloseIcon, ArrowRightIcon,
   BriefcaseJobIcon, EducationIcon, FemaleIcon, MaleIcon, SearchIcon, DocumentIcon,
 } from './Icons'
+
+function CheckCircleIcon({ size = 16, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="1.8" />
+      <path d="M8.5 12.5L10.8 14.8L15.5 9.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+function ExternalLinkIcon({ size = 15, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <polyline points="15 3 21 3 21 9" />
+      <line x1="10" y1="14" x2="21" y2="3" />
+    </svg>
+  )
+}
+
+function SparklesIcon({ size = 16, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 7l1.5 3.5L17 12l-3.5 1.5L12 17l-1.5-3.5L7 12l3.5-1.5L12 7z" fill={color} fillOpacity="0.2" />
+    </svg>
+  )
+}
 
 // 8 Flagship MP Govt Scholarships, Stipends, and Direct Recruitment Exams
 const OPPORTUNITIES_DATABASE = [
