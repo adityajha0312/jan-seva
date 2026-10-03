@@ -77,7 +77,7 @@ const KEY_METRICS = [
   { label: 'Grievance SLA Target', val: '7 Days', badge: 'Fast Track', color: '#e11d48' },
 ]
 
-export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance, onOpenAdmin }) {
+export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance, onOpenAdmin, onOpenRojgarRadar }) {
   return (
     <div style={styles.page} id="top">
       {/* Top Government Tri-color subtle band */}
@@ -149,6 +149,13 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
               <button className="ym-cta" style={styles.scorecardBtn} onClick={onOpenScorecard}>
                 <CalculatorIcon size={16} color="#0f172a" />
                 <span>Eligibility Scorecard</span>
+              </button>
+            )}
+
+            {onOpenRojgarRadar && (
+              <button className="ym-cta" style={styles.rojgarBtn} onClick={onOpenRojgarRadar}>
+                <BriefcaseJobIcon size={16} color="#d97706" />
+                <span>Rojgar & Scholarships</span>
               </button>
             )}
 
@@ -254,6 +261,19 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
               Transparent rule-engine scoring that tells citizens precisely *why* they qualify with green criteria ticks and calculates cumulative annual welfare benefits.
             </p>
             <button style={styles.capLink} onClick={onOpenScorecard}>Try Scorecard Calculator →</button>
+          </div>
+
+          <div style={styles.capCard}>
+            <div style={{ ...styles.capIconWrap, background: '#fffbeb', color: '#d97706' }}>
+              <BriefcaseJobIcon size={22} color="#d97706" />
+            </div>
+            <h3 style={styles.capTitle}>AI Sarkari Rojgar & Scholarship Radar</h3>
+            <p style={styles.capDesc}>
+              Real-time matching for MP Government Recruitments (ESB / Patwari / Police), MMVY 100% higher education tuition fee waivers, and MMSKY skill stipends (up to ₹10,000/mo).
+            </p>
+            <button style={{ ...styles.capLink, color: '#d97706' }} onClick={onOpenRojgarRadar || (() => onStart('Tell me about MP government jobs and scholarships'))}>
+              Launch Rojgar Radar →
+            </button>
           </div>
 
           <div style={styles.capCard}>
@@ -511,6 +531,12 @@ const styles = {
     borderRadius: '12px', border: '1.5px solid #cbd5e1', background: '#ffffff',
     color: '#0f172a', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer',
     boxShadow: '0 4px 14px rgba(0, 0, 0, 0.04)',
+  },
+  rojgarBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 22px',
+    borderRadius: '12px', border: '1.5px solid #fde68a', background: '#fffbeb',
+    color: '#d97706', fontSize: '14.5px', fontWeight: 700, cursor: 'pointer',
+    boxShadow: '0 4px 14px rgba(217, 119, 6, 0.08)',
   },
   grievanceBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 20px',
