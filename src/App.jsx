@@ -30,50 +30,6 @@ const VOICE_LANGUAGES = [
   { code: 'ta-IN', label: 'தமிழ்' },
 ]
 
-// 1-Tap Audio Prompts for Chaupal & Non-Literate Citizen Consultation
-const CHAUPAL_VOICE_CARDS = [
-  {
-    id: 'kisan',
-    icon: '🚜',
-    title: 'किसान कल्याण',
-    sub: 'Farmer Aid',
-    color: '#059669',
-    query: 'मैं मध्य प्रदेश का 2 एकड़ ज़मीन वाला छोटा किसान हूँ, मुझे कृषि उपकरण, सोलर पंप और आर्थिक सहायता की योजना बताएं।',
-  },
-  {
-    id: 'mahila',
-    icon: '👩',
-    title: 'लाड़ली बहना',
-    sub: 'Women Welfare',
-    color: '#e11d48',
-    query: 'मैं गृहणी हूँ, लाड़ली बहना योजना ₹1,250 और महिलाओं के लिए स्वयं सहायता समूह ऋण की जानकारी दीजिए।',
-  },
-  {
-    id: 'shramik',
-    icon: '🏗️',
-    title: 'संबल मजदूर',
-    sub: 'Worker Security',
-    color: '#7c3aed',
-    query: 'हम असंगठित मजदूर परिवार हैं, संबल कार्ड 2.0, दुर्घटना सहायता और बच्चों की फीस माफी योजना कैसे मिलेगी?',
-  },
-  {
-    id: 'yuva',
-    icon: '🎓',
-    title: 'छात्रवृत्ति व रोजगार',
-    sub: 'Student & Youth',
-    color: '#d97706',
-    query: 'मैं 12वीं पास छात्र हूँ, मुझे MP पोस्ट-मैट्रिक स्कॉलरशिप और मुख्यमंत्री सीखो-कमाओ योजना स्टाइपेंड चाहिए।',
-  },
-  {
-    id: 'vridha',
-    icon: '👴',
-    title: 'वृद्धावस्था पेंशन',
-    sub: 'Senior Citizen',
-    color: '#475569',
-    query: 'मेरी उम्र 60 वर्ष से अधिक है, मुझे वृद्धावस्था सामाजिक सुरक्षा पेंशन और 5 लाख आयुष्मान कार्ड का लाभ कैसे मिलेगा?',
-  },
-]
-
 const QUICK_LINKS = [
   { label: 'PM-KISAN', url: 'https://pmkisan.gov.in' },
   { label: 'Ayushman Bharat', url: 'https://beneficiary.nha.gov.in' },
@@ -208,10 +164,10 @@ function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN'
 CRITICAL LANGUAGE INSTRUCTION (ABSOLUTE TOP PRIORITY):
 - The user has selected language: ${selectedLangName}.
 - You MUST WRITE YOUR ENTIRE RESPONSE STRICTLY IN ${selectedLangName.toUpperCase()}.
-- If the user has selected English or writes/speaks in English: REPLY 100% IN CLEAR, NATURAL ENGLISH. NEVER respond in Hindi when English is selected or when the user speaks in English!
-- If the user has selected Hindi or writes/speaks in Hindi: Reply in clean Hindi (Devanagari script).
-- If the user has selected Marathi: Reply in Marathi.
-- If the user has selected Tamil: Reply in Tamil.
+- If the user has selected English: WRITE 100% IN CLEAR ENGLISH. Do NOT include Hindi translations or brackets (e.g. write "Jan Seva", NEVER "Jan Seva (जन सेवा)").
+- If the user has selected Hindi: WRITE 100% IN CLEAR HINDI (Devanagari script). Do NOT include English words in brackets or transliterations (e.g. write "जन सेवा", NEVER "जन सेवा (Jan Seva)", and write "किसान", NEVER "किसान (Farmer)").
+- If the user has selected Marathi: WRITE 100% IN MARATHI. Do NOT include English in brackets.
+- If the user has selected Tamil: WRITE 100% IN TAMIL. Do NOT include English in brackets.
 - Always strictly match the user's selected language (${selectedLangName}) in both the answer and the follow-up question.
 
 VOICE & AUDIO SYSTEM CAPABILITIES:
@@ -266,7 +222,7 @@ SCOPE RESTRICTION:
 // matching whatever language the person actually types.
 const UI_TEXT = {
   'en-IN': {
-    welcome: "Namaste! I am Jan Seva (जन सेवा). Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes and benefits you qualify for.",
+    welcome: "Namaste! I am Jan Seva. Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes and benefits you qualify for.",
     online: 'Online',
     offline: 'Offline',
     placeholderIdle: "Ask Jan Seva... (e.g. 'I am a farmer with 2 acres of land in MP')",
@@ -274,7 +230,7 @@ const UI_TEXT = {
     placeholderListening: 'Listening... speak now',
   },
   'hi-IN': {
-    welcome: 'नमस्ते! मैं जन सेवा (Jan Seva) हूँ। मुझे अपने बारे में थोड़ा बताएं — आपका व्यवसाय, उम्र, या स्थिति — और मैं आपको उन सरकारी योजनाओं को खोजने में मदद करूंगा जिनके लिए आप पात्र हैं।',
+    welcome: 'नमस्ते! मैं जन सेवा हूँ। मुझे अपने बारे में थोड़ा बताएं — आपका व्यवसाय, उम्र, या स्थिति — और मैं आपको उन सरकारी योजनाओं को खोजने में मदद करूंगा जिनके लिए आप पात्र हैं।',
     online: 'ऑनलाइन',
     offline: 'ऑफलाइन',
     placeholderIdle: "जन सेवा से पूछें... (उदा: 'मैं 2 एकड़ जमीन वाला किसान हूं')",
@@ -282,7 +238,7 @@ const UI_TEXT = {
     placeholderListening: 'सुन रहा हूं... अब बोलें',
   },
   'mr-IN': {
-    welcome: 'नमस्कार! मी जन सेवा (Jan Seva) आहे. मला तुमच्याबद्दल थोडं सांगा — तुमचा व्यवसाय, वय किंवा परिस्थिती — आणि मी तुम्हाला पात्र असलेल्या सरकारी योजना शोधण्यात मदत करेन.',
+    welcome: 'नमस्कार! मी जन सेवा आहे. मला तुमच्याबद्दल थोडं सांगा — तुमचा व्यवसाय, वय किंवा परिस्थिती — आणि मी तुम्हाला पात्र असलेल्या सरकारी योजना शोधण्यात मदत करेन.',
     online: 'ऑनलाइन',
     offline: 'ऑफलाइन',
     placeholderIdle: "जन सेवेला विचारा... (उदा: 'मी 2 एकर जमीन असलेला शेतकरी आहे')",
@@ -290,7 +246,7 @@ const UI_TEXT = {
     placeholderListening: 'ऐकत आहे... आता बोला',
   },
   'ta-IN': {
-    welcome: 'வணக்கம்! நான் ஜன் சேவா (Jan Seva). உங்களைப் பற்றி கொஞ்சம் சொல்லுங்கள் — உங்கள் தொழில், வயது அல்லது சூழ்நிலை — நீங்கள் தகுதி பெறக்கூடிய அரசு திட்டங்களைக் கண்டறிய நான் உதவுகிறேன்.',
+    welcome: 'வணக்கம்! நான் ஜன் சேவா. உங்களைப் பற்றி கொஞ்சம் சொல்லுங்கள் — உங்கள் தொழில், வயது அல்லது சூழ்நிலை — நீங்கள் தகுதி பெறக்கூடிய அரசு திட்டங்களைக் கண்டறிய நான் உதவுகிறேன்.',
     online: 'ஆன்லைன்',
     offline: 'ஆஃப்லைன்',
     placeholderIdle: "ஜன் சேவாவிடம் கேளுங்கள்...",
@@ -1034,6 +990,8 @@ export default function App() {
             ))}
           </div>
         )}
+
+
                 <div style={styles.chatArea}>
           {loadingSchemes ? (
             <p style={styles.systemNote}>Loading scheme database...</p>
@@ -1191,23 +1149,6 @@ export default function App() {
           </div>
         )}
 
-        {/* Chaupal 1-Tap Voice Consultation Strip */}
-        <div style={styles.chaupalBar}>
-          <span style={styles.chaupalLabel}>चौपाल 1-टैप आवाज:</span>
-          {CHAUPAL_VOICE_CARDS.map((card) => (
-            <button
-              key={card.id}
-              type="button"
-              style={styles.chaupalCard}
-              onClick={() => handleSend(card.query, true)}
-              title={card.sub}
-            >
-              <span style={{ fontSize: '13px' }}>{card.icon}</span>
-              <span>{card.title}</span>
-            </button>
-          ))}
-        </div>
-
         <div style={styles.inputArea}>
           {isVoiceInputSupported && (
             <button
@@ -1266,7 +1207,7 @@ export default function App() {
           )}
         </div>
         <div style={styles.promoCard}>
-          <strong style={{ fontSize: '13.5px' }}>Jan Seva · Sovereign AI</strong>
+          <strong style={{ fontSize: '13px' }}>Jan Seva · Sovereign AI</strong>
           <p style={{ fontSize: '12px', margin: '6px 0 0', opacity: 0.9 }}>AI-Powered Governance for Every Citizen</p>
         </div>
       </aside>
@@ -2010,41 +1951,6 @@ const styles = {
     fontWeight: 700,
     cursor: 'pointer',
     flexShrink: 0,
-  },
-  chaupalBar: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-    overflowX: 'auto',
-    padding: '7px 12px',
-    background: '#f8fafc',
-    borderTop: '1px solid #e2e8f0',
-    WebkitOverflowScrolling: 'touch',
-    flexShrink: 0,
-  },
-  chaupalLabel: {
-    fontSize: '11px',
-    fontWeight: 800,
-    color: '#64748b',
-    whiteSpace: 'nowrap',
-    textTransform: 'uppercase',
-  },
-  chaupalCard: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '5px',
-    padding: '5px 11px',
-    borderRadius: '999px',
-    border: '1px solid #cbd5e1',
-    background: '#ffffff',
-    cursor: 'pointer',
-    whiteSpace: 'nowrap',
-    fontSize: '12px',
-    fontWeight: 700,
-    color: '#334155',
-    fontFamily: 'inherit',
-    flexShrink: 0,
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
   },
   systemNote: {
     fontSize: '13px',
