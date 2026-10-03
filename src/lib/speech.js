@@ -125,10 +125,16 @@ function detectScriptLanguage(text, fallbackLang = 'en-IN') {
 
 let speechQueue = []
 let isSpeakingQueue = false
+let currentOnEndCallback = null
 
-function speakNextInQueue(lang) {
+function speakNextInQueue(lang, onEnd) {
   if (speechQueue.length === 0) {
     isSpeakingQueue = false
+    if (currentOnEndCallback) {
+      const cb = currentOnEndCallback
+      currentOnEndCallback = null
+      cb()
+    }
     return
   }
   isSpeakingQueue = true
@@ -168,21 +174,28 @@ function speakNextInQueue(lang) {
     }
   } catch (e) {}
 
-  utterance.onend = () => speakNextInQueue(lang)
-  utterance.onerror = () => speakNextInQueue(lang)
+  utterance.onend = () => speakNextInQueue(lang, onEnd)
+  utterance.onerror = () => speakNextInQueue(lang, onEnd)
   window.speechSynthesis.speak(utterance)
 }
 
-export function speakText(text, lang = 'hi-IN') {
+export function speakText(text, lang = 'hi-IN', options = {}) {
   if (!isVoiceOutputSupported) return
   window.speechSynthesis.cancel()
   speechQueue = []
   isSpeakingQueue = false
 
+  const onStart = typeof options === 'function' ? null : options?.onStart
+  const onEnd = typeof options === 'function' ? options : options?.onEnd
+  currentOnEndCallback = onEnd || null
+
   waitForVoices().then(() => {
     setTimeout(() => {
       speechQueue = splitIntoSentences(text)
-      speakNextInQueue(lang)
+      if (speechQueue.length > 0 && onStart) {
+        onStart()
+      }
+      speakNextInQueue(lang, onEnd)
     }, 120)
   })
 }
@@ -191,6 +204,11 @@ export function stopSpeaking() {
   if (isVoiceOutputSupported) {
     speechQueue = []
     isSpeakingQueue = false
+    if (currentOnEndCallback) {
+      const cb = currentOnEndCallback
+      currentOnEndCallback = null
+      cb()
+    }
     window.speechSynthesis.cancel()
   }
 }
