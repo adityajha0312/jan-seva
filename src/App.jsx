@@ -9,18 +9,21 @@ import Logo from './Logo'
 import {
   MicIcon, StopIcon, SpeakerOnIcon, SpeakerOffIcon, MenuIcon, CloseIcon, PlusChatIcon,
   GridIcon, DocumentIcon, BookmarkIcon, UserCircleIcon, SettingsGearIcon, GlobeIcon,
-  SendIcon, SearchIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon,
+  SendIcon, SearchIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon, BriefcaseJobIcon,
 } from './Icons'
 import ApplicationForm from './ApplicationForm'
 import LandingPage from './LandingPage'
 import GrievanceRedressal from './GrievanceRedressal'
 import EligibilityScorecard from './EligibilityScorecard'
 import AdminDashboard from './AdminDashboard'
+import RojgarScholarshipRadar from './RojgarScholarshipRadar'
 
-// Voice input/output languages supported
+// Voice input/output languages. Web Speech API support for Marathi and
+// Tamil depends on the browser/OS having those voices installed, but the
+// language codes themselves are standard BCP-47 tags it understands.
 const VOICE_LANGUAGES = [
-  { code: 'hi-IN', label: 'हिन्दी' },
   { code: 'en-IN', label: 'English' },
+  { code: 'hi-IN', label: 'हिन्दी' },
   { code: 'mr-IN', label: 'मराठी' },
   { code: 'ta-IN', label: 'தமிழ்' },
 ]
@@ -110,6 +113,9 @@ function MessageContent({ text }) {
   return <>{blocks}</>
 }
 
+// Lightweight keyword matching to guess which scheme categories are
+// relevant based on the conversation so far - just narrows Gemini's
+// attention to a smaller, clearly-labeled "likely relevant" subset.
 const CATEGORY_KEYWORDS = {
   farmer: ['farmer', 'farming', 'kisan', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet'],
   student: ['student', 'scholarship', 'school', 'college', 'class ', 'study', 'studying', 'graduate', 'education'],
@@ -202,15 +208,10 @@ SCOPE RESTRICTION:
 - If asked unrelated off-topic questions (sports, celebrities, coding, etc.), politely decline in 1 sentence and remind them you are here for government schemes and citizen services.`
 }
 
+// Static UI text (greeting, status labels, input hints) in each supported
+// language - separate from the Gemini system prompt, which already handles
+// matching whatever language the person actually types.
 const UI_TEXT = {
-  'hi-IN': {
-    welcome: 'नमस्ते! मैं जन सेवा (Jan Seva) हूँ। मुझे अपने बारे में थोड़ा बताएं — आपका व्यवसाय, उम्र, या स्थिति — और मैं आपको उन सरकारी योजनाओं को खोजने में मदद करूंगा जिनके लिए आप पात्र हैं।',
-    online: 'ऑनलाइन',
-    offline: 'ऑफलाइन',
-    placeholderIdle: "जन सेवा से पूछें... (उदा: 'मैं 2 एकड़ जमीन वाला किसान हूं')",
-    placeholderOffline: 'बातचीत जारी रखने के लिए इंटरनेट से दोबारा जुड़ें...',
-    placeholderListening: 'सुन रहा हूं... अब बोलें',
-  },
   'en-IN': {
     welcome: "Namaste! I am Jan Seva (जन सेवा). Tell me a bit about yourself — your occupation, age, or situation — and I'll help you find government schemes and benefits you qualify for.",
     online: 'Online',
@@ -218,6 +219,14 @@ const UI_TEXT = {
     placeholderIdle: "Ask Jan Seva... (e.g. 'I am a farmer with 2 acres of land in MP')",
     placeholderOffline: 'Reconnect to internet to keep chatting...',
     placeholderListening: 'Listening... speak now',
+  },
+  'hi-IN': {
+    welcome: 'नमस्ते! मैं जन सेवा (Jan Seva) हूँ। मुझे अपने बारे में थोड़ा बताएं — आपका व्यवसाय, उम्र, या स्थिति — और मैं आपको उन सरकारी योजनाओं को खोजने में मदद करूंगा जिनके लिए आप पात्र हैं।',
+    online: 'ऑनलाइन',
+    offline: 'ऑफलाइन',
+    placeholderIdle: "जन सेवा से पूछें... (उदा: 'मैं 2 एकड़ जमीन वाला किसान हूं')",
+    placeholderOffline: 'बातचीत जारी रखने के लिए इंटरनेट से दोबारा जुड़ें...',
+    placeholderListening: 'सुन रहा हूं... अब बोलें',
   },
   'mr-IN': {
     welcome: 'नमस्कार! मी जन सेवा (Jan Seva) आहे. मला तुमच्याबद्दल थोडं सांगा — तुमचा व्यवसाय, वय किंवा परिस्थिती — आणि मी तुम्हाला पात्र असलेल्या सरकारी योजना शोधण्यात मदत करेन.',
@@ -238,7 +247,7 @@ const UI_TEXT = {
 }
 
 function t(lang, key) {
-  return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT['hi-IN'][key] || UI_TEXT['en-IN'][key]
+  return (UI_TEXT[lang] && UI_TEXT[lang][key]) || UI_TEXT['en-IN'][key]
 }
 
 function Welcome(lang) {
@@ -248,6 +257,9 @@ function Welcome(lang) {
   }
 }
 
+// Eligibility criteria / documents required can come back from the database
+// as an array, a plain object, or a single string - this renders whichever
+// shape shows up as something readable, without needing a network call.
 function FormattedField({ value }) {
   if (value === null || value === undefined || value === '') {
     return <span style={{ color: 'var(--color-charcoal-soft)' }}>Not specified</span>
@@ -279,7 +291,7 @@ export default function App() {
   const [started, setStarted] = useState(false)
   const [pendingOpener, setPendingOpener] = useState(null)
   const [schemes, setSchemes] = useState(() => getSchemesFromCache() || [])
-  const [messages, setMessages] = useState(() => [Welcome(getSettings().defaultVoiceLang || 'en-IN')])
+  const [messages, setMessages] = useState(() => [Welcome(getSettings().defaultVoiceLang)])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [loadingSchemes, setLoadingSchemes] = useState(true)
@@ -293,7 +305,7 @@ export default function App() {
   const [showSavedSchemes, setShowSavedSchemes] = useState(false)
   const [isListening, setIsListening] = useState(false)
   const [settings, setSettings] = useState(() => getSettings())
-  const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang || 'en-IN')
+  const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang)
   const [showLangMenu, setShowLangMenu] = useState(false)
   const [speakEnabled, setSpeakEnabled] = useState(false)
   const listenControllerRef = useRef(null)
@@ -310,6 +322,7 @@ export default function App() {
   const [profileForm, setProfileForm] = useState(() => getProfile() || { name: '', age: '', occupation: '', location: '' })
   const [showSettings, setShowSettings] = useState(false)
   const [showScorecard, setShowScorecard] = useState(false)
+  const [showRojgarRadar, setShowRojgarRadar] = useState(false)
   const [showGrievance, setShowGrievance] = useState(false)
   const [showAdminDashboard, setShowAdminDashboard] = useState(false)
   const [applySchemeId, setApplySchemeId] = useState(null)
@@ -331,6 +344,8 @@ export default function App() {
   useEffect(() => {
     fetchAllSchemes().then(({ schemes, fromCache }) => {
       if (schemes.length === 0) {
+        // First attempt came back empty (likely a transient network hiccup) -
+        // automatically retry once after a short delay before giving up.
         setTimeout(() => {
           fetchAllSchemes().then((retryResult) => {
             setSchemes(retryResult.schemes)
@@ -358,6 +373,7 @@ export default function App() {
     const unsubscribe = subscribeToConnectionStatus((online) => {
       setIsOnline(online)
       if (online) {
+        // Reconnected - fetch fresh scheme data in the background
         fetchAllSchemes().then(({ schemes, fromCache }) => {
           setSchemes(schemes)
           setUsingCachedSchemes(fromCache)
@@ -367,19 +383,19 @@ export default function App() {
     return unsubscribe
   }, [])
 
-  // Smart scrolling: When the assistant replies, scroll to the start of the interaction
-  // so the citizen can read naturally from line 1 without scrolling up!
   useEffect(() => {
     if (messages.length <= 1) return
 
     const lastMsg = messages[messages.length - 1]
     if (lastMsg.role === 'assistant') {
+      // Scroll to the user's prompt so they can read from where the message started
       if (userPromptRef.current) {
         userPromptRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
       } else if (latestAssistantRef.current) {
         latestAssistantRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }
     } else {
+      // When user sends, scroll to show their message + typing indicator
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [messages])
@@ -399,6 +415,10 @@ export default function App() {
     return () => document.removeEventListener('click', handleClickOutside)
   }, [showLangMenu])
 
+  // If the person switches language before the conversation has really
+  // started (still just showing the initial greeting), update that greeting
+  // to match - so picking Hindi/Marathi/Tamil actually changes what's on
+  // screen, not just the voice.
   useEffect(() => {
     setMessages((prev) => {
       if (prev.length === 1 && prev[0].role === 'assistant') {
@@ -408,6 +428,9 @@ export default function App() {
     })
   }, [voiceLang])
 
+  // If the user started the chat from a landing-page category card (or a
+  // quick chip), fire off that opener as their first message as soon as
+  // the chat is up and the scheme list has loaded.
   useEffect(() => {
     if (started && pendingOpener && !loadingSchemes) {
       const opener = pendingOpener
@@ -545,7 +568,6 @@ export default function App() {
       setIsListening(false)
       const speechToSend = latestVoiceTextRef.current.trim() || input.trim()
       if (speechToSend) {
-        latestVoiceTextRef.current = ''
         handleSend(speechToSend, true)
       }
       return
@@ -563,7 +585,7 @@ export default function App() {
         latestVoiceTextRef.current = transcript
         setInput(transcript)
 
-        // Clear pending silence timer whenever new speech arrives
+        // Clear pending silence timer whenever new speech or word chunk arrives
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current)
         }
@@ -617,6 +639,7 @@ export default function App() {
         <LandingPage
           onStart={handleStart}
           onOpenScorecard={() => setShowScorecard(true)}
+          onOpenRojgarRadar={() => setShowRojgarRadar(true)}
           onOpenGrievance={() => setShowGrievance(true)}
           onOpenAdmin={() => setShowAdminDashboard(true)}
         />
@@ -628,6 +651,15 @@ export default function App() {
               setApplySchemeId(scheme.id)
               setStarted(true)
               setShowApplyForm(true)
+            }}
+          />
+        )}
+        {showRojgarRadar && (
+          <RojgarScholarshipRadar
+            onClose={() => setShowRojgarRadar(false)}
+            onStartChat={(query) => {
+              setShowRojgarRadar(false)
+              handleStart(query)
             }}
           />
         )}
@@ -680,6 +712,9 @@ export default function App() {
         <button className="ym-nav-item" onClick={() => { setShowScorecard(true); setIsMobileNavOpen(false) }}>
           <CalculatorIcon size={15} color="#059669" /> Eligibility Scorecard
         </button>
+        <button className="ym-nav-item" onClick={() => { setShowRojgarRadar(true); setIsMobileNavOpen(false) }}>
+          <BriefcaseJobIcon size={15} color="#d97706" /> Rojgar & Scholarships
+        </button>
         <button className="ym-nav-item" onClick={() => { setShowGrievance(true); setIsMobileNavOpen(false) }}>
           <ShieldAlertIcon size={15} color="#e11d48" /> CM Helpline 181
         </button>
@@ -714,7 +749,7 @@ export default function App() {
           </div>
           {isVoiceInputSupported && (
             <button
-              className={isListening ? 'ym-mic-btn ym-mic-active' : 'ym-mic-btn'}
+              className={isListening ? 'ym-mic-btn ym-mic-active' : 'ym-nav-item'}
               style={styles.sidebarVoiceBtn}
               onClick={() => { handleMicClick(); setIsMobileNavOpen(false) }}
               disabled={loadingSchemes || !isOnline}
@@ -986,6 +1021,16 @@ export default function App() {
         />
       )}
 
+      {showRojgarRadar && (
+        <RojgarScholarshipRadar
+          onClose={() => setShowRojgarRadar(false)}
+          onStartChat={(query) => {
+            setShowRojgarRadar(false)
+            handleSend(query)
+          }}
+        />
+      )}
+
       {showGrievance && (
         <GrievanceRedressal
           defaultProfile={profile}
@@ -1009,10 +1054,10 @@ export default function App() {
               </button>
             </div>
             <div style={styles.browseSearchRow}>
-              <SearchIcon size={16} color="var(--color-forest)" />
+              <SearchIcon size={15} color="var(--color-charcoal-soft)" />
               <input
                 style={styles.browseSearchInput}
-                placeholder="Search schemes by name or keyword..."
+                placeholder="Search schemes..."
                 value={schemeSearch}
                 onChange={(e) => setSchemeSearch(e.target.value)}
               />
@@ -1020,7 +1065,7 @@ export default function App() {
             <div style={styles.browseList}>
               {filteredSchemes.length === 0 ? (
                 <p style={{ fontSize: '13px', color: 'var(--color-charcoal-soft)', padding: '12px 0' }}>
-                  No schemes match your search.
+                  {schemes.length === 0 ? 'Scheme list is still loading or unavailable.' : 'No schemes match your search.'}
                 </p>
               ) : (
                 filteredSchemes.map((s) => (
@@ -1173,21 +1218,21 @@ export default function App() {
                   <option value="">Select...</option>
                   <option>Farmer</option>
                   <option>Student</option>
-                  <option>Small Business / Self-Employed</option>
-                  <option>Daily-Wage / Construction Worker</option>
                   <option>Homemaker</option>
-                  <option>Unemployed / Jobseeker</option>
-                  <option>Retired</option>
+                  <option>Business owner</option>
+                  <option>Daily wage worker</option>
+                  <option>Unemployed</option>
+                  <option>Senior citizen</option>
                   <option>Other</option>
                 </select>
               </label>
               <label style={styles.formLabel}>
-                Location (District / State)
+                Location (district/state)
                 <input
                   style={styles.formInput}
                   value={profileForm.location}
                   onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })}
-                  placeholder="e.g. Sehore, MP"
+                  placeholder="e.g. Bhopal, Madhya Pradesh"
                 />
               </label>
             </div>
@@ -1299,53 +1344,28 @@ const styles = {
     position: 'relative',
   },
   sidebarBrandTitle: { fontSize: '14px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap' },
-  sidebarBrandSub: { fontSize: '10.5px', color: '#059669', fontWeight: 600, whiteSpace: 'nowrap' },
+  sidebarBrandSub: { fontSize: '10px', color: '#059669', fontWeight: 700, marginTop: '1px', whiteSpace: 'nowrap' },
   mobileCloseBtn: {
-    display: 'none',
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '32px',
-    height: '32px',
-    borderRadius: '50%',
-    background: '#f1f5f9',
-    border: '1px solid #cbd5e1',
-    cursor: 'pointer',
-    color: '#0f172a',
+    display: 'none', marginLeft: 'auto', background: '#dcfce7', border: 'none', borderRadius: '6px', padding: '4px', cursor: 'pointer',
   },
   sidebarSectionLabel: {
-    fontSize: '9.5px',
-    fontWeight: 800,
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
-    color: '#059669',
-    padding: '6px 6px 2px',
+    fontSize: '9.5px', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 800,
+    color: '#047857', margin: '5px 6px 2px',
   },
   sidebarHelp: {
-    marginTop: 'auto',
-    background: '#ecfdf5',
-    border: '1px solid #a7f3d0',
-    borderRadius: '10px',
-    padding: '8px 10px',
+    marginTop: 'auto', background: '#ffffff', borderRadius: '10px',
+    padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: '6px',
+    border: '1px solid #bbf7d0', boxShadow: '0 2px 8px rgba(5, 150, 105, 0.06)',
   },
-  sidebarHelpRow: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' },
-  sidebarHelpAvatar: { display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  sidebarHelpTitle: { fontSize: '11.5px', fontWeight: 800, color: '#065f46' },
-  sidebarHelpText: { fontSize: '10px', color: '#047857' },
+  sidebarHelpRow: { display: 'flex', alignItems: 'center', gap: '6px' },
+  sidebarHelpAvatar: { width: '24px', height: '24px', borderRadius: '6px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  sidebarHelpTitle: { fontSize: '12px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 },
+  sidebarHelpText: { fontSize: '10.5px', color: '#64748b', lineHeight: 1.2 },
   sidebarVoiceBtn: {
-    width: '100%',
-    padding: '6px 10px',
-    background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
-    color: '#ffffff',
-    border: 'none',
-    borderRadius: '8px',
-    fontWeight: 700,
-    fontSize: '11.5px',
-    cursor: 'pointer',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '6px',
-    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: 'none', borderRadius: '8px',
+    padding: '6px 10px', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)', color: '#ffffff',
+    fontSize: '11.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', width: '100%',
+    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.2)',
   },
   mainCol: {
     display: 'flex',
