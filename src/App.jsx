@@ -1109,52 +1109,7 @@ export default function App() {
           <div ref={bottomRef} />
         </div>
 
-        {/* Audio Waveform Banner when listening, loading, or speaking */}
-        {(isListening || isSpeaking || loading) && (
-          <div style={styles.audioWaveformBanner}>
-            <div style={styles.waveformAnimation}>
-              <span style={{ ...styles.waveBar, animationDelay: '0.1s' }} />
-              <span style={{ ...styles.waveBar, animationDelay: '0.3s' }} />
-              <span style={{ ...styles.waveBar, animationDelay: '0.2s' }} />
-              <span style={{ ...styles.waveBar, animationDelay: '0.5s' }} />
-              <span style={{ ...styles.waveBar, animationDelay: '0.15s' }} />
-              <span style={{ ...styles.waveBar, animationDelay: '0.4s' }} />
-              <span style={{ ...styles.waveBar, animationDelay: '0.25s' }} />
-            </div>
-            <div style={styles.waveformStatusText}>
-              {isListening && (
-                <span style={{ color: '#dc2626', fontWeight: 700 }}>
-                  🔴 आपकी आवाज सुन रहे हैं... बोलिए (Listening to your voice...)
-                </span>
-              )}
-              {loading && (
-                <span style={{ color: '#0284c7', fontWeight: 700 }}>
-                  ⚡ जन सेवा AI योजनाएं खोज रहा है... (Matching welfare schemes...)
-                </span>
-              )}
-              {isSpeaking && !loading && !isListening && (
-                <span style={{ color: '#059669', fontWeight: 700 }}>
-                  🔊 योजना मित्र आवाज में समझा रहे हैं... (Speaking aloud...)
-                </span>
-              )}
-            </div>
-            {isSpeaking && (
-              <button
-                type="button"
-                style={styles.stopAudioBtn}
-                onClick={() => {
-                  stopSpeaking()
-                  setIsSpeaking(false)
-                  setCurrentlySpeakingIndex(null)
-                }}
-              >
-                <StopIcon size={12} color="#ffffff" />
-                <span>रोकें (Stop)</span>
-              </button>
-            )}
-          </div>
-        )}
-
+        
         <div style={styles.inputArea}>
           {isVoiceInputSupported && (
             <button
