@@ -2,8 +2,30 @@ import Logo from './Logo'
 import {
   ArrowRightIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon, SearchIcon,
   AgricultureIcon, WomenEmpowermentIcon, EducationIcon, BriefcaseJobIcon, WorkerToolsIcon, SeniorPensionIcon,
-  CitizenAvatarIcon,
 } from './Icons'
+
+function CitizenAvatarIcon({ size = 18, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M12 12C14.4853 12 16.5 9.98528 16.5 7.5C16.5 5.01472 14.4853 3 12 3C9.51472 3 7.5 5.01472 7.5 7.5C7.5 9.98528 9.51472 12 12 12Z"
+        fill={color}
+        fillOpacity="0.18"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4.5 20.5C4.5 16.634 7.85786 13.5 12 13.5C16.1421 13.5 19.5 16.634 19.5 20.5"
+        stroke={color}
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
 
 const POPULAR_SCHEMES = [
   { name: 'PM-KISAN & Kisan Kalyan', blurb: '₹12,000/yr direct income support (Central + MP Govt)', tag: 'Farmers', color: '#059669', benefit: '₹12,000/yr' },
@@ -77,7 +99,7 @@ const KEY_METRICS = [
   { label: 'Grievance SLA Target', val: '7 Days', badge: 'Fast Track', color: '#e11d48' },
 ]
 
-export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance, onOpenAdmin, onOpenRojgarRadar, onOpenDocVerification }) {
+export default function LandingPage({ onStart, onStartVoice, onOpenScorecard, onOpenGrievance, onOpenAdmin, onOpenRojgarRadar, onOpenDocVerification }) {
   return (
     <div style={styles.page} id="top">
       {/* Top Government Tri-color subtle band */}
@@ -105,6 +127,12 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
           </div>
 
           <div style={styles.navActions}>
+            {onStartVoice && (
+              <button style={styles.voiceNavBtn} onClick={onStartVoice} title="Awaaz Seva - Voice Kiosk for Non-Literate Citizens">
+                <span style={{ fontSize: '14px' }}>🎙️</span>
+                <span>Awaaz Kiosk (आवाज)</span>
+              </button>
+            )}
             {onOpenAdmin && (
               <button style={styles.adminNavBtn} onClick={onOpenAdmin}>
                 <BarChartIcon size={14} color="#059669" />
@@ -144,6 +172,13 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
               <span>Discover My Schemes</span>
               <ArrowRightIcon size={16} color="#ffffff" />
             </button>
+
+            {onStartVoice && (
+              <button className="ym-cta" style={styles.voiceKioskBtn} onClick={onStartVoice} title="Voice Kiosk for Non-Literate Citizens">
+                <span style={{ fontSize: '16px' }}>🎙️</span>
+                <span>Awaaz Seva (आवाज कियोस्क)</span>
+              </button>
+            )}
 
             {onOpenScorecard && (
               <button className="ym-cta" style={styles.scorecardBtn} onClick={onOpenScorecard}>
@@ -480,6 +515,12 @@ const styles = {
     color: '#334155', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer',
     transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
   },
+  voiceNavBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
+    borderRadius: '10px', border: '1.5px solid #a7f3d0', background: '#ecfdf5',
+    color: '#047857', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+    transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(5, 150, 105, 0.08)',
+  },
   launchChatBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
     borderRadius: '10px', border: 'none', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
@@ -525,6 +566,12 @@ const styles = {
     borderRadius: '12px', border: 'none', background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
     color: '#ffffff', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
     boxShadow: '0 10px 24px -4px rgba(5, 150, 105, 0.42)',
+  },
+  voiceKioskBtn: {
+    display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 22px',
+    borderRadius: '12px', border: '1.5px solid #a7f3d0', background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
+    color: '#065f46', fontSize: '14.5px', fontWeight: 800, cursor: 'pointer',
+    boxShadow: '0 6px 18px rgba(5, 150, 105, 0.15)',
   },
   scorecardBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 22px',
