@@ -17,6 +17,7 @@ import GrievanceRedressal from './GrievanceRedressal'
 import EligibilityScorecard from './EligibilityScorecard'
 import AdminDashboard from './AdminDashboard'
 import RojgarScholarshipRadar from './RojgarScholarshipRadar'
+import DocumentVerification from './DocumentVerification'
 
 // Voice input/output languages. Web Speech API support for Marathi and
 // Tamil depends on the browser/OS having those voices installed, but the
@@ -321,6 +322,7 @@ export default function App() {
   const [profile, setProfile] = useState(() => getProfile())
   const [profileForm, setProfileForm] = useState(() => getProfile() || { name: '', age: '', occupation: '', location: '' })
   const [showSettings, setShowSettings] = useState(false)
+  const [showDocVerification, setShowDocVerification] = useState(false)
   const [showScorecard, setShowScorecard] = useState(false)
   const [showRojgarRadar, setShowRojgarRadar] = useState(false)
   const [showGrievance, setShowGrievance] = useState(false)
@@ -636,13 +638,23 @@ export default function App() {
   if (!started) {
     return (
       <>
-        <LandingPage
+                <LandingPage
           onStart={handleStart}
           onOpenScorecard={() => setShowScorecard(true)}
           onOpenRojgarRadar={() => setShowRojgarRadar(true)}
+          onOpenDocVerification={() => setShowDocVerification(true)}
           onOpenGrievance={() => setShowGrievance(true)}
           onOpenAdmin={() => setShowAdminDashboard(true)}
         />
+        {showDocVerification && (
+          <DocumentVerification
+            onClose={() => setShowDocVerification(false)}
+            onStartChat={(query) => {
+              setShowDocVerification(false)
+              handleStart(query)
+            }}
+          />
+        )}
         {showScorecard && (
           <EligibilityScorecard
             defaultProfile={profile}
@@ -737,6 +749,9 @@ export default function App() {
         </button>
         <button className="ym-nav-item" onClick={() => { setShowLinks((s) => !s); setIsMobileNavOpen(false) }}>
           <GlobeIcon size={15} color="#0284c7" /> Official Portals
+        </button>
+                <button className="ym-nav-item" onClick={() => { setShowDocVerification(true); setIsMobileNavOpen(false) }}>
+          <SearchIcon size={15} color="#0284c7" /> Verify Documents (OCR)
         </button>
 
         <div style={styles.sidebarHelp}>
@@ -1030,6 +1045,10 @@ export default function App() {
           }}
         />
       )}
+
+              <button className="ym-nav-item" onClick={() => { setShowDocVerification(true); setIsMobileNavOpen(false) }}>
+          <SearchIcon size={15} color="#0284c7" /> Verify Documents (OCR)
+        </button>
 
       {showGrievance && (
         <GrievanceRedressal
