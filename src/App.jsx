@@ -19,7 +19,6 @@ import AdminDashboard from './AdminDashboard'
 import RojgarScholarshipRadar from './RojgarScholarshipRadar'
 import DocumentVerification from './DocumentVerification'
 
-
 // Voice input/output languages. Web Speech API support for Marathi and
 // Tamil depends on the browser/OS having those voices installed, but the
 // language codes themselves are standard BCP-47 tags it understands.
@@ -139,7 +138,7 @@ function guessRelevantCategories(conversationText) {
   return matched
 }
 
-function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN', isAwaazMode = false) {
+function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN') {
   const relevantCategories = guessRelevantCategories(conversationText)
   const likelyRelevant = schemes.filter((s) => relevantCategories.has(s.category))
   const others = schemes.filter((s) => !relevantCategories.has(s.category))
@@ -176,13 +175,6 @@ VOICE & AUDIO SYSTEM CAPABILITIES:
 - If the citizen asks in English ("speak to me", "read aloud", "read it out"): Acknowledge warmly in English: "Certainly, I am reading this aloud for you..."
 - If the citizen asks in Hindi ("बोल के बताओ", "आवाज़ में बताओ"): Acknowledge warmly in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..."
 - Write cleanly so speech synthesis sounds natural. Avoid messy markdown tables or raw URLs.
-${isAwaazMode ? `
-RURAL AWAAZ KIOSK & SPOKEN AUDIO MODE ACTIVE:
-- The citizen is listening via voice audio at a Gram Panchayat Kiosk or mobile helpline. They might not be reading text on a screen.
-- Keep sentences concise, conversational, and direct so speech synthesis sounds natural and warm.
-- Clearly speak the exact cash amounts (e.g. ₹1,250 per month, ₹12,000 per year).
-- Avoid long nested bullet points or complex punctuation that trips up screen readers.
-- In Hindi, address the citizen respectfully as "आप" with a friendly, reassuring tone.` : ''}
 
 CRITICAL CONVERSATIONAL RULES & PROACTIVE FOLLOW-UP QUESTIONS:
 1. ALWAYS ASK 1-2 TARGETED FOLLOW-UP QUESTIONS:
@@ -313,11 +305,8 @@ export default function App() {
   const [savedSchemeIds, setSavedSchemeIds] = useState(() => getSavedSchemeIds())
   const [showSavedSchemes, setShowSavedSchemes] = useState(false)
   const [isListening, setIsListening] = useState(false)
-  const [isAwaazMode, setIsAwaazMode] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [currentlySpeakingIndex, setCurrentlySpeakingIndex] = useState(null)
-  const [showVoiceTokenModal, setShowVoiceTokenModal] = useState(false)
-  const [selectedTokenMessage, setSelectedTokenMessage] = useState('')
   const [settings, setSettings] = useState(() => getSettings())
   const [voiceLang, setVoiceLang] = useState(() => getSettings().defaultVoiceLang)
   const [showLangMenu, setShowLangMenu] = useState(false)
@@ -472,9 +461,9 @@ export default function App() {
       return
     }
 
-    // Detect if citizen requested voice output or sent via mic or if Awaaz mode is active
+    // Detect if citizen requested voice output or sent via mic
     const voiceTriggers = /बोल\s*(?:के|कर|के बताओ|कर बताओ|िए|ो)|सुनाओ|आवाज़|आवाज|audio|voice|speak|read\s*aloud/i
-    const wantsVoice = isAwaazMode || fromVoice || voiceTriggers.test(textToSend)
+    const wantsVoice = fromVoice || voiceTriggers.test(textToSend)
 
     if (wantsVoice && !speakEnabled) {
       setSpeakEnabled(true)
@@ -495,7 +484,7 @@ export default function App() {
       setCurrentlySpeakingIndex(null)
 
       const conversationText = newMessages.map((m) => m.text).join(' ')
-      const systemInstruction = buildSystemInstruction(schemes, conversationText, voiceLang, isAwaazMode)
+      const systemInstruction = buildSystemInstruction(schemes, conversationText, voiceLang)
       const replyText = await askGemini(systemInstruction, newMessages)
       const updatedMessages = [...newMessages, { role: 'assistant', text: replyText }]
       setMessages(updatedMessages)
@@ -534,43 +523,6 @@ export default function App() {
     setCurrentlySpeakingIndex(null)
   }
 
-  function handleStartVoice() {
-    setStarted(true)
-    setIsAwaazMode(true)
-    setSpeakEnabled(true)
-    setVoiceLang('hi-IN')
-    showToast('आवाज सेवा सक्रिय (Awaaz Kiosk Active)')
-    setTimeout(() => {
-      const hiWelcome = t('hi-IN', 'welcome')
-      speakText(hiWelcome, 'hi-IN', {
-        onStart: () => setIsSpeaking(true),
-        onEnd: () => setIsSpeaking(false),
-      })
-    }, 450)
-  }
-
-  function handleToggleAwaazMode() {
-    const nextMode = !isAwaazMode
-    setIsAwaazMode(nextMode)
-    if (nextMode) {
-      setSpeakEnabled(true)
-      setVoiceLang('hi-IN')
-      showToast('आवाज सेवा सक्रिय (Awaaz Kiosk Mode On)')
-      if (messages.length === 1 && messages[0].role === 'assistant') {
-        const hiWelcome = t('hi-IN', 'welcome')
-        speakText(hiWelcome, 'hi-IN', {
-          onStart: () => setIsSpeaking(true),
-          onEnd: () => setIsSpeaking(false),
-        })
-      }
-    } else {
-      stopSpeaking()
-      setIsSpeaking(false)
-      setCurrentlySpeakingIndex(null)
-      showToast('Standard Text Mode Active')
-    }
-  }
-
   function handleToggleSpeakMessage(text, index) {
     if (isSpeaking && currentlySpeakingIndex === index) {
       try { stopSpeaking() } catch (e) {}
@@ -588,11 +540,6 @@ export default function App() {
         setCurrentlySpeakingIndex(null)
       },
     })
-  }
-
-  function handleOpenVoiceToken(messageText) {
-    setSelectedTokenMessage(messageText)
-    setShowVoiceTokenModal(true)
   }
 
   function handleSaveProfile() {
@@ -734,7 +681,6 @@ export default function App() {
       <>
         <LandingPage
           onStart={handleStart}
-          onStartVoice={handleStartVoice}
           onOpenScorecard={() => setShowScorecard(true)}
           onOpenRojgarRadar={() => setShowRojgarRadar(true)}
           onOpenDocVerification={() => setShowDocVerification(true)}
@@ -907,20 +853,6 @@ export default function App() {
             >
               <BarChartIcon size={14} color="#7c3aed" /> GovTech
             </button>
-            <button
-              className="ym-icon-btn"
-              style={{
-                background: isAwaazMode ? '#ecfdf5' : 'transparent',
-                borderColor: isAwaazMode ? '#059669' : '#cbd5e1',
-                color: isAwaazMode ? '#047857' : '#334155',
-                fontWeight: isAwaazMode ? 800 : 600,
-              }}
-              onClick={handleToggleAwaazMode}
-              title="Awaaz Kiosk Mode for Spoken / Audio Assistance"
-            >
-              <span style={{ fontSize: '13px' }}>🎙️</span>
-              <span className="ym-header-desktop-only">{isAwaazMode ? 'आवाज सेवा (On)' : 'आवाज सेवा'}</span>
-            </button>
             {isVoiceInputSupported && (
               <div style={styles.langMenuWrap} onClick={(e) => e.stopPropagation()}>
                 <button
@@ -971,8 +903,7 @@ export default function App() {
             )}
           </div>
         </header>
-
-        {!isOnline && (
+                {!isOnline && (
           <div style={styles.offlineBanner}>
             You're offline — chat needs internet to think through scheme matches. Browse the saved scheme list below, or reconnect to keep chatting.
             {usingCachedSchemes && ` (Showing scheme data saved from your last connection.)`}
@@ -994,7 +925,8 @@ export default function App() {
             ))}
           </div>
         )}
-                <div style={styles.chatArea}>
+
+        <div style={styles.chatArea}>
           {loadingSchemes ? (
             <p style={styles.systemNote}>Loading scheme database...</p>
           ) : (
@@ -1014,7 +946,7 @@ export default function App() {
                   {msg.role === 'assistant' ? (
                     <div>
                       <MessageContent text={msg.text} />
-                                            <div style={styles.bubbleActionRow}>
+                      <div style={styles.bubbleActionRow}>
                         <button
                           type="button"
                           style={{
@@ -1094,7 +1026,6 @@ export default function App() {
           <div ref={bottomRef} />
         </div>
 
-        
         <div style={styles.inputArea}>
           {isVoiceInputSupported && (
             <button
@@ -1113,7 +1044,7 @@ export default function App() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={!isOnline ? t(voiceLang, 'placeholderOffline') : isListening ? t(voiceLang, 'placeholderListening') : isAwaazMode ? 'बोलने के लिए माइक दबाएं या यहां टाइप करें... (Tap mic to speak)' : t(voiceLang, 'placeholderIdle')}
+            placeholder={!isOnline ? t(voiceLang, 'placeholderOffline') : isListening ? t(voiceLang, 'placeholderListening') : t(voiceLang, 'placeholderIdle')}
             rows={2}
             disabled={loadingSchemes || !isOnline}
           />
@@ -1486,15 +1417,7 @@ export default function App() {
 
       {toast && <div className="ym-toast">{toast}</div>}
 
-     
-
-      {/* Embedded CSS for pulsing audio waveform */}
       <style>{`
-        @keyframes wavePulse {
-          0% { height: 4px; }
-          50% { height: 20px; }
-          100% { height: 4px; }
-        }
         @media print {
           .no-print { display: none !important; }
         }
@@ -1831,66 +1754,6 @@ const styles = {
     background: '#dc2626',
     borderColor: '#ef4444',
     color: '#ffffff',
-  },
-  bubbleTokenBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '5px',
-    padding: '4px 10px',
-    borderRadius: '8px',
-    border: '1px solid #fde68a',
-    background: '#fffbeb',
-    color: '#b45309',
-    fontSize: '11.5px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    fontFamily: 'inherit',
-  },
-  audioWaveformBanner: {
-    background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
-    borderTop: '1px solid #a7f3d0',
-    borderBottom: '1px solid #a7f3d0',
-    padding: '8px 14px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: '12px',
-    flexShrink: 0,
-  },
-  waveformAnimation: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '3px',
-    height: '22px',
-    flexShrink: 0,
-  },
-  waveBar: {
-    width: '3.5px',
-    height: '14px',
-    background: '#059669',
-    borderRadius: '3px',
-    animation: 'wavePulse 0.9s ease-in-out infinite',
-  },
-  waveformStatusText: {
-    fontSize: '12.5px',
-    flex: 1,
-    whiteSpace: 'nowrap',
-    overflow: 'hidden',
-    textOverflow: 'ellipsis',
-  },
-  stopAudioBtn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '5px',
-    padding: '4px 10px',
-    borderRadius: '6px',
-    border: 'none',
-    background: '#dc2626',
-    color: '#ffffff',
-    fontSize: '11.5px',
-    fontWeight: 700,
-    cursor: 'pointer',
-    flexShrink: 0,
   },
   systemNote: {
     fontSize: '13px',
