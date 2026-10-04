@@ -1,9 +1,9 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
 // Primary, fallback, and tertiary models for Google AI Studio
-const PRIMARY_MODEL = 'gemini-3.8-flash'
-const FALLBACK_MODEL = 'gemini-3.5-flash-lite'
-const TERTIARY_MODEL = 'gemini-2.5-flash'
+const PRIMARY_MODEL = 'gemini-2.5-flash'
+const FALLBACK_MODEL = 'gemini-2.0-flash'
+const TERTIARY_MODEL = 'gemini-1.5-flash'
 
 // Waits `ms` milliseconds before continuing.
 function wait(ms) {
@@ -30,17 +30,37 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
     )
   }
 
+  // Ensure multi-turn conversation starts with user turn and filter leading assistant greeting
+  let formattedContents = conversationHistory
+    .filter((msg, idx) => !(idx === 0 && msg.role === 'assistant'))
+    .map((msg) => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: msg.text }],
+    }))
+
+  if (formattedContents.length === 0) {
+    formattedContents = [{ role: 'user', parts: [{ text: 'Hello' }] }]
+  }
+
+  // Keep the most recent 12 turns for instant response latency while preserving conversation context
+  if (formattedContents.length > 12) {
+    formattedContents = formattedContents.slice(-12)
+    if (formattedContents[0].role === 'model') {
+      formattedContents = formattedContents.slice(1)
+    }
+  }
+
   const body = {
     systemInstruction: {
       parts: [{ text: systemInstruction }],
     },
-    contents: conversationHistory.map((msg) => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.text }],
-    })),
-  }
-  if (jsonMode) {
-    body.generationConfig = { responseMimeType: 'application/json', temperature: 0.2 }
+    contents: formattedContents,
+    generationConfig: {
+      temperature: jsonMode ? 0.2 : 0.35,
+      maxOutputTokens: 2048,
+      topP: 0.85,
+      ...(jsonMode ? { responseMimeType: 'application/json' } : {}),
+    },
   }
 
   const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
@@ -151,30 +171,48 @@ CRITICAL: If a field is not clearly visible or not present in the image(s), use 
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }
 
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${PRIMARY_MODEL}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
+  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
+  let lastError = null
 
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': GEMINI_API_KEY,
-    },
-    body: JSON.stringify(body),
-  })
+  for (const model of modelsToTry) {
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
 
-  if (!response.ok) {
-    const errText = await response.text()
-    const detail = parseGoogleError(response.status, errText)
-    throw new Error(`Document extraction failed (${response.status}): ${detail}`)
+    try {
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': GEMINI_API_KEY,
+        },
+        body: JSON.stringify(body),
+      })
+
+      if (!response.ok) {
+        const errText = await response.text()
+        const detail = parseGoogleError(response.status, errText)
+        if (response.status === 404) {
+          lastError = `Model ${model} not found: ${detail}`
+          continue
+        }
+        throw new Error(`Document extraction failed (${response.status}): ${detail}`)
+      }
+
+      const data = await response.json()
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
+      if (!text) throw new Error('No response from document extraction')
+
+      try {
+        return JSON.parse(text)
+      } catch (e) {
+        throw new Error('Could not read the extracted details - please try again with a clearer photo.')
+      }
+    } catch (err) {
+      if (err.message.includes('Document extraction failed') || err.message.includes('Could not read')) {
+        throw err
+      }
+      lastError = err.message
+    }
   }
 
-  const data = await response.json()
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
-  if (!text) throw new Error('No response from document extraction')
-
-  try {
-    return JSON.parse(text)
-  } catch (e) {
-    throw new Error('Could not read the extracted details - please try again with a clearer photo.')
-  }
+  throw new Error(lastError || 'Document extraction failed. Please try again with a clear photo.')
 }
