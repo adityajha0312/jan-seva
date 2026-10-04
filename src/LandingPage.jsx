@@ -126,11 +126,11 @@ export default function LandingPage({ onStart, onStartVoice, onOpenScorecard, on
             <a href="#popular" style={styles.navLink} onClick={(e) => { e.preventDefault(); scrollToSection('popular') }}>Popular Schemes</a>
           </div>
 
-          <div style={styles.navActions}>
-            {onStartVoice && (
-              <button style={styles.voiceNavBtn} onClick={onStartVoice} title="Awaaz Seva - Voice Kiosk for Non-Literate Citizens">
-                <span style={{ fontSize: '14px' }}>🎙️</span>
-                <span>Awaaz Kiosk (आवाज)</span>
+                    <div style={styles.navActions}>
+            {onOpenDocVerification && (
+              <button style={styles.ocrNavBtn} onClick={onOpenDocVerification} title="Computer Vision OCR - Document Verification">
+                <span style={{ fontSize: '14px' }}>📷</span>
+                <span>Document OCR</span>
               </button>
             )}
             {onOpenAdmin && (
@@ -173,13 +173,12 @@ export default function LandingPage({ onStart, onStartVoice, onOpenScorecard, on
               <ArrowRightIcon size={16} color="#ffffff" />
             </button>
 
-            {onStartVoice && (
-              <button className="ym-cta" style={styles.voiceKioskBtn} onClick={onStartVoice} title="Voice Kiosk for Non-Literate Citizens">
-                <span style={{ fontSize: '16px' }}>🎙️</span>
-                <span>Awaaz Seva (आवाज कियोस्क)</span>
+                       {onOpenDocVerification && (
+              <button className="ym-cta" style={styles.ocrBtn} onClick={onOpenDocVerification} title="Computer Vision OCR - Instant Document Verification">
+                <span style={{ fontSize: '16px' }}>📷</span>
+                <span>Verify Documents (OCR)</span>
               </button>
             )}
-
             {onOpenScorecard && (
               <button className="ym-cta" style={styles.scorecardBtn} onClick={onOpenScorecard}>
                 <CalculatorIcon size={16} color="#0f172a" />
@@ -515,11 +514,11 @@ const styles = {
     color: '#334155', fontSize: '12.5px', fontWeight: 600, cursor: 'pointer',
     transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
   },
-  voiceNavBtn: {
+    ocrNavBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '8px 14px',
-    borderRadius: '10px', border: '1.5px solid #a7f3d0', background: '#ecfdf5',
-    color: '#047857', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
-    transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(5, 150, 105, 0.08)',
+    borderRadius: '10px', border: '1.5px solid #bae6fd', background: '#f0f9ff',
+    color: '#0284c7', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer',
+    transition: 'all 0.2s ease', boxShadow: '0 1px 3px rgba(2, 132, 199, 0.08)',
   },
   launchChatBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 18px',
@@ -567,11 +566,11 @@ const styles = {
     color: '#ffffff', fontSize: '15px', fontWeight: 700, cursor: 'pointer',
     boxShadow: '0 10px 24px -4px rgba(5, 150, 105, 0.42)',
   },
-  voiceKioskBtn: {
+   ocrBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 22px',
-    borderRadius: '12px', border: '1.5px solid #a7f3d0', background: 'linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)',
-    color: '#065f46', fontSize: '14.5px', fontWeight: 800, cursor: 'pointer',
-    boxShadow: '0 6px 18px rgba(5, 150, 105, 0.15)',
+    borderRadius: '12px', border: '1.5px solid #bae6fd', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+    color: '#0369a1', fontSize: '14.5px', fontWeight: 800, cursor: 'pointer',
+    boxShadow: '0 6px 18px rgba(2, 132, 199, 0.15)',
   },
   scorecardBtn: {
     display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '14px 22px',
