@@ -61,6 +61,7 @@ function MessageContent({ text }) {
   const lines = text.split('\n')
   const blocks = []
   let currentList = []
+  let currentOrderedList = []
 
   function flushList(key) {
     if (currentList.length > 0) {
@@ -74,6 +75,18 @@ function MessageContent({ text }) {
         </ul>
       )
       currentList = []
+    }
+    if (currentOrderedList.length > 0) {
+      blocks.push(
+        <ol key={`ol-${key}`} style={{ margin: '4px 0', paddingLeft: '22px' }}>
+          {currentOrderedList.map((line, i) => (
+            <li key={i} style={{ marginBottom: '3px' }}>
+              {renderInline(line.replace(/^\d+[\.)]\s+/, ''), `oli-${key}-${i}`)}
+            </li>
+          ))}
+        </ol>
+      )
+      currentOrderedList = []
     }
   }
 
@@ -96,8 +109,12 @@ function MessageContent({ text }) {
           {renderInline(headingMatch[2], `h-${idx}`)}
         </div>
       )
-    } else if (/^[*\-]\s+/.test(trimmed) && !/^\*\*/.test(trimmed)) {
+    } else if (/^[*\-]\s+/.test(trimmed)) {
+      if (currentOrderedList.length > 0) flushList(idx)
       currentList.push(trimmed)
+    } else if (/^\d+[\.)]\s+/.test(trimmed)) {
+      if (currentList.length > 0) flushList(idx)
+      currentOrderedList.push(trimmed)
     } else {
       flushList(idx)
       if (trimmed === '') {
@@ -114,17 +131,311 @@ function MessageContent({ text }) {
   return <>{blocks}</>
 }
 
+// 12 Flagship MP & Central Govt Schemes with full eligibility, tangible benefits,
+// required documents checklist, and official portal how-to-apply steps.
+const DEFAULT_SCHEMES = [
+  {
+    id: 'ladli-behna',
+    scheme_name: 'Mukhyamantri Ladli Behna Yojana (MP)',
+    scheme_name_hindi: 'मुख्यमंत्री लाड़ली बहना योजना',
+    category: 'woman',
+    level: 'State (Madhya Pradesh)',
+    benefits: '₹15,000 / year (₹1,250 / month direct bank transfer into Aadhaar-linked DBT account on the 10th of every month)',
+    eligibility_criteria: [
+      'Female resident of Madhya Pradesh aged between 21 and 60 years',
+      'Married, widowed, divorced, or abandoned women are eligible',
+      'Annual combined family income must be less than ₹2.5 Lakh',
+      'Family must own less than 5 acres of agricultural land',
+      'No family member should be a government employee or income tax payer'
+    ],
+    documents_required: [
+      'Samagra Member ID & Family ID (e-KYC biometric verified)',
+      'Aadhaar Card (linked to active mobile number)',
+      'Bank Account Passbook with NPCI Direct Benefit Transfer (DBT) enabled',
+      'Active Mobile Number for OTP authentication'
+    ],
+    how_to_apply: 'Apply through special Gram Panchayat / Ward camps or online at ladlibehna.mp.gov.in via Lok Sewa Kendra / MPOnline kiosk. e-KYC and photo verification are done free of cost.'
+  },
+  {
+    id: 'pm-kisan-kalyan',
+    scheme_name: 'PM-KISAN Samman Nidhi + MP Mukhyamantri Kisan Kalyan Yojana',
+    scheme_name_hindi: 'पीएम-किसान + मुख्यमंत्री किसान कल्याण योजना',
+    category: 'farmer',
+    level: 'Combined Central + State (MP)',
+    benefits: '₹12,000 / year direct bank transfer (₹6,000 Central in 3 installments of ₹2,000 + ₹6,000 MP Govt in 3 installments of ₹2,000)',
+    eligibility_criteria: [
+      'Small and marginal farmers holding cultivable agricultural land in Madhya Pradesh',
+      'Land title must be officially registered in applicant name in MP Bhulekh records',
+      'Excludes institutional landowners, serving/retired government officials, and income tax payers'
+    ],
+    documents_required: [
+      'Land Record Document (Khasra/Khatauni B-1 from MP Bhulekh portal)',
+      'Aadhaar Card (linked to mobile number)',
+      'Samagra ID',
+      'Bank Account Passbook with NPCI Aadhaar Seeding (DBT enabled)',
+      'Active Mobile Number'
+    ],
+    how_to_apply: 'Apply online on pmkisan.gov.in and MP SAARA portal (saara.mp.gov.in) through MPOnline kiosk, CSC center, or submit physical application to your local village Patwari or Gram Panchayat.'
+  },
+  {
+    id: 'ayushman-bharat',
+    scheme_name: 'Ayushman Bharat (Niramayam Madhya Pradesh)',
+    scheme_name_hindi: 'आयुष्मान भारत - निरामयम मध्य प्रदेश',
+    category: 'general',
+    level: 'State & Central',
+    benefits: '₹5,00,000 / year free cashless medical treatment per family across 1,000+ empaneled government and private hospitals across MP and India',
+    eligibility_criteria: [
+      'Families identified in SECC-2011 deprivation database',
+      'NFSA Ration Card holders & BPL cardholders',
+      'Mukhyamantri Sambal 2.0 cardholders',
+      'All senior citizens aged 70 years and above (universal coverage without income limit)'
+    ],
+    documents_required: [
+      'Samagra Family & Member ID',
+      'Ration Card / Sambal Card / BPL Card',
+      'Aadhaar Card of all family members',
+      'Active Mobile Number'
+    ],
+    how_to_apply: 'Generate your digital Ayushman Card instantly via Ayushman App / beneficiary.nha.gov.in, nearest Lok Sewa Kendra, MPOnline kiosk, or Ayushman Mitra helpdesk at any government district hospital.'
+  },
+  {
+    id: 'sambal-yojana',
+    scheme_name: 'Mukhyamantri Jan Kalyan (Sambal 2.0) Yojana',
+    scheme_name_hindi: 'मुख्यमंत्री जन कल्याण (संबल 2.0) योजना',
+    category: 'general',
+    level: 'State (Madhya Pradesh)',
+    benefits: 'Comprehensive unorganized worker social security: ₹16,000 maternity aid, ₹4 Lakh accidental death assistance, ₹2 Lakh natural death grant, ₹1 Lakh disability aid, electricity bill subsidy, and full college fee waiver for children',
+    eligibility_criteria: [
+      'Unorganized sector worker aged 18 to 60 years residing in Madhya Pradesh',
+      'Engaged as laborer, artisan, hawker, rickshaw puller, domestic worker, or marginal cultivator',
+      'Family must not be paying income tax or in government employment'
+    ],
+    documents_required: [
+      'Samagra Member ID',
+      'Aadhaar Card',
+      'Self-declaration of unorganized employment / occupation',
+      'Bank Account Passbook with DBT active',
+      'Active Mobile Number'
+    ],
+    how_to_apply: 'Register online on Sambal Portal (sambal.mp.gov.in) via MPOnline / CSC kiosk, or submit application form at local Gram Panchayat / Janpad Panchayat / Municipal Ward Office.'
+  },
+  {
+    id: 'seekho-kamao',
+    scheme_name: 'Mukhyamantri Seekho-Kamao Yojana (MMSKY)',
+    scheme_name_hindi: 'मुख्यमंत्री सीखो-कमाओ योजना',
+    category: 'youth',
+    level: 'State (Madhya Pradesh)',
+    benefits: 'Monthly government stipend of ₹8,000 (12th pass), ₹8,500 (ITI), ₹9,000 (Polytechnic Diploma), and ₹10,000 (College Degree/PG) via DBT + on-the-job industrial skill certification',
+    eligibility_criteria: [
+      'Permanent resident of Madhya Pradesh',
+      'Age between 18 and 29 years',
+      'Educational qualification: Minimum 12th Pass, ITI, Diploma, or Degree from recognized board/university',
+      'Must complete Samagra e-KYC'
+    ],
+    documents_required: [
+      '12th / ITI / Diploma / Degree Marksheet and Certificate',
+      'Samagra Member ID (with completed e-KYC)',
+      'Aadhaar Card',
+      'MP Domicile Certificate',
+      'Bank Passbook with NPCI DBT enabled'
+    ],
+    how_to_apply: 'Register on official MMSKY portal (mmsky.mp.gov.in) using Samagra ID, create candidate profile, browse vacancies posted by registered industries/enterprises in MP, and apply directly.'
+  },
+  {
+    id: 'pm-awas',
+    scheme_name: 'Pradhan Mantri Awas Yojana (PMAY Gramin & Urban)',
+    scheme_name_hindi: 'प्रधानमंत्री आवास योजना (ग्रामीण एवं शहरी)',
+    category: 'general',
+    level: 'Combined Central + State (MP)',
+    benefits: 'Direct financial grant of ₹1,20,000 (plains) to ₹1,30,000 (hilly) for rural house construction + 90 days MGNREGA wages (approx ₹25,000) + ₹12,000 Swachh Bharat toilet aid. Urban credit subsidy up to ₹2,50,000',
+    eligibility_criteria: [
+      'Homeless families or families living in kutcha/damaged houses in MP',
+      'Applicant or family members must not own a pucca house anywhere in India',
+      'Name listed in SECC-2011 / Awas+ survey list',
+      'BPL or low-income household'
+    ],
+    documents_required: [
+      'Aadhaar Card of all adult family members',
+      'Bank Account Passbook (Aadhaar linked)',
+      'Samagra Family ID',
+      'MGNREGA Job Card (for rural applicants)',
+      'Land ownership patta or allotment papers',
+      'Photo of existing kutcha house'
+    ],
+    how_to_apply: 'Gramin: Verified by Gram Sabha and listed on Awas+ app via Gram Panchayat Secretary. Urban: Apply on pmaymis.gov.in or through local Municipal Corporation / Nagarpalika office.'
+  },
+  {
+    id: 'mmvy-scholarship',
+    scheme_name: 'Mukhyamantri Medhavi Vidyarthi Yojana (MMVY)',
+    scheme_name_hindi: 'मुख्यमंत्री मेधावी विद्यार्थी योजना',
+    category: 'student',
+    level: 'State (Madhya Pradesh)',
+    benefits: 'Full 100% academic tuition and course fee paid directly by MP Government to the educational institution for higher education (Engineering, Medical, Law, Degree colleges)',
+    eligibility_criteria: [
+      'Resident student of Madhya Pradesh',
+      'Secured 70%+ marks in MP Board 12th exam OR 85%+ in CBSE/ICSE 12th exam',
+      'Enrolled in recognized undergraduate professional course (JEE/NEET/CLAT or Govt college)',
+      'Annual family income must be under ₹6 Lakh'
+    ],
+    documents_required: [
+      '10th and 12th Marksheets',
+      'College Admission / Seat Allotment Letter & Fee Receipt',
+      'MP Domicile Certificate',
+      'Income Certificate (under ₹6 Lakh issued by competent authority)',
+      'Samagra ID',
+      'Aadhaar Card',
+      'Bank Passbook'
+    ],
+    how_to_apply: 'Apply online on MP State Scholarship Portal (scholarshipportal.mp.nic.in) under MMVY section, submit scanned copies, and get online verification from college nodal officer.'
+  },
+  {
+    id: 'gaon-ki-beti',
+    scheme_name: 'Gaon Ki Beti & Pratibha Kiran Scholarship Yojana',
+    scheme_name_hindi: 'गांव की बेटी एवं प्रतिभा किरण योजना',
+    category: 'student',
+    level: 'State (Madhya Pradesh)',
+    benefits: 'Scholarship grant of ₹5,00,000 - ₹7,500 per academic year (₹500 - ₹750/month for 10 months) paid directly into girl student bank account',
+    eligibility_criteria: [
+      'Gaon Ki Beti: Rural MP girl students passing 12th with 60%+ first division from a village school and studying in college',
+      'Pratibha Kiran: Urban BPL girl students passing 12th with 60%+'
+    ],
+    documents_required: [
+      '12th Class Marksheet (First Division 60%+)',
+      'Village Residence Certificate from Sarpanch/Secretary (Gaon Ki Beti) or Urban BPL Card (Pratibha Kiran)',
+      'College Admission Receipt',
+      'Samagra ID',
+      'Aadhaar Card',
+      'Bank Passbook'
+    ],
+    how_to_apply: 'Apply online on MP State Scholarship Portal 2.0 (scholarshipportal.mp.nic.in) through college portal login.'
+  },
+  {
+    id: 'pm-ujjwala',
+    scheme_name: 'PM Ujjwala Yojana 2.0 + MP ₹450 LPG Cylinder Subsidy',
+    scheme_name_hindi: 'पीएम उज्ज्वला योजना 2.0 + ₹450 रसोई गैस सिलेंडर सब्सिडी',
+    category: 'woman',
+    level: 'Combined Central + MP State',
+    benefits: 'Free new LPG connection with gas cylinder, regulator, and stove + domestic LPG refill at subsidized price of ₹450 per cylinder (balance refunded directly into bank account via DBT)',
+    eligibility_criteria: [
+      'Adult woman from poor/BPL household or Ladli Behna Yojana beneficiary in MP',
+      'Family must not already have an active LPG connection',
+      'Ration card holder'
+    ],
+    documents_required: [
+      'Samagra Family & Member ID',
+      'Aadhaar Card of applicant and adult family members',
+      'BPL Ration Card',
+      'Bank Passbook with Aadhaar-linked DBT',
+      'Ladli Behna registration number (if beneficiary)'
+    ],
+    how_to_apply: 'Apply at nearest authorized LPG gas distributor (Indane, Bharat Gas, HP Gas) or register gas connection Consumer ID at Gram Panchayat / Lok Sewa Kendra for ₹450 subsidy.'
+  },
+  {
+    id: 'udyam-kranti',
+    scheme_name: 'Mukhyamantri Udyam Kranti Yojana',
+    scheme_name_hindi: 'मुख्यमंत्री उद्यम क्रांति योजना',
+    category: 'youth',
+    level: 'State (Madhya Pradesh)',
+    benefits: 'Bank loans from ₹1 Lakh up to ₹50 Lakh for manufacturing, and up to ₹25 Lakh for service/trade enterprises with 3% annual interest subsidy for 7 years and 100% government collateral guarantee',
+    eligibility_criteria: [
+      'Resident youth of MP aged 18 to 40 years',
+      'Minimum 8th class pass educational qualification',
+      'Annual family income not falling in income tax bracket',
+      'New enterprise/business project'
+    ],
+    documents_required: [
+      '8th / 10th / 12th Marksheet',
+      'MP Domicile Certificate',
+      'Aadhaar Card',
+      'Samagra ID',
+      'Detailed Project Report (DPR)',
+      'Bank Account details',
+      'Quotation of machinery/equipment'
+    ],
+    how_to_apply: 'Apply online on Samast Portal (samast.mponline.gov.in), choose lending bank branch, and track approval through District Industries Centre (DIC).'
+  },
+  {
+    id: 'social-pension',
+    scheme_name: 'MP Social Security Pension (Old Age, Widow & Divyang Pension)',
+    scheme_name_hindi: 'मध्य प्रदेश सामाजिक सुरक्षा पेंशन (वृद्धावस्था, विधवा एवं दिव्यांग)',
+    category: 'senior',
+    level: 'State & Central',
+    benefits: '₹600 - ₹1,000 / month direct pension credited into beneficiary bank account on the 1st of every month',
+    eligibility_criteria: [
+      'Senior citizens aged 60+ (Old Age Pension)',
+      'Widows aged 18+ (Kalyani / Widow Pension)',
+      'Differently-abled individuals with 40%+ disability (Divyang Pension)',
+      'BPL or low-income families in MP'
+    ],
+    documents_required: [
+      'Aadhaar Card',
+      'Samagra Member ID',
+      'Age proof / Husband death certificate (for widow) / Disability certificate from District Medical Board (for Divyang)',
+      'BPL Card',
+      'Bank Passbook with DBT'
+    ],
+    how_to_apply: 'Apply online through MP Social Security Portal (socialsecurity.mp.gov.in) via Lok Sewa Kendra or submit at Gram Panchayat / Municipal Ward Office.'
+  },
+  {
+    id: 'post-matric-scholarship',
+    scheme_name: 'Post-Matric Scholarship for SC/ST/OBC Students (MP)',
+    scheme_name_hindi: 'पोस्ट-मैट्रिक छात्रवृत्ति (एससी/एसटी/ओबीसी)',
+    category: 'student',
+    level: 'State & Central',
+    benefits: '100% government tuition fee reimbursement + monthly maintenance allowance for college and polytechnic courses',
+    eligibility_criteria: [
+      'Regular student belonging to SC, ST, or OBC category in MP',
+      'Enrolled in post-matric courses (Class 11, 12, ITI, Diploma, Graduation, Post-Graduation)',
+      'Family annual income under ₹3 Lakh for OBC; under ₹6 Lakh for SC/ST'
+    ],
+    documents_required: [
+      'Caste Certificate (Digital SC/ST/OBC Certificate issued by MP SDO/Tehsildar)',
+      'Income Certificate',
+      'MP Domicile Certificate',
+      '10th & 12th Marksheets',
+      'College Admission Fee Receipt',
+      'Samagra ID',
+      'Aadhaar Card',
+      'Bank Passbook'
+    ],
+    how_to_apply: 'Apply on MP Scholarship Portal 2.0 (scholarshipportal.mp.nic.in) or MP TAAS Portal (tribal.mp.gov.in/mptaas) for SC/ST students.'
+  }
+]
+
 // Lightweight keyword matching to guess which scheme categories are
-// relevant based on the conversation so far - just narrows Gemini's
-// attention to a smaller, clearly-labeled "likely relevant" subset.
+// relevant based on the conversation so far in English, Hindi, and Hinglish.
 const CATEGORY_KEYWORDS = {
-  farmer: ['farmer', 'farming', 'kisan', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet'],
-  student: ['student', 'scholarship', 'school', 'college', 'class ', 'study', 'studying', 'graduate', 'education'],
-  woman: ['woman', 'women', 'girl', 'daughter', 'wife', 'mother', 'pregnan', 'widow', 'ladli'],
-  senior: ['senior', 'old age', 'elderly', '60 year', '65 year', '70 year', 'retire'],
-  disability: ['disab', 'divyang', 'handicap'],
-  youth: ['unemployed', 'youth', 'jobless', 'no job', 'looking for work', 'fresher', 'unemploy'],
-  general: ['bpl', 'poor', 'ration card', 'below poverty', 'house', 'housing', 'lpg', 'gas connection', 'hospital', 'health insurance'],
+  farmer: [
+    'farmer', 'farming', 'kisan', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet',
+    'किसान', 'खेती', 'फसल', 'जमीन', 'एकड़', 'कृषि', 'पटवारी', 'खसरा', 'खाद', 'बीज', 'kisan kalyan'
+  ],
+  student: [
+    'student', 'scholarship', 'school', 'college', 'class ', 'study', 'studying', 'graduate', 'education', 'marks', '10th', '12th',
+    'छात्र', 'छात्रा', 'विद्यार्थी', 'पढ़ाई', 'छात्रवृत्ति', 'स्कॉलरशिप', 'कॉलेज', 'स्कूल', 'मेधावी', 'अंक'
+  ],
+  woman: [
+    'woman', 'women', 'girl', 'daughter', 'wife', 'mother', 'pregnan', 'widow', 'ladli', 'behna', 'female',
+    'महिला', 'औरत', 'लाड़ली', 'लाडली', 'बहना', 'बेटी', 'गर्भवती', 'विधवा', 'मातृत्व', 'नारी'
+  ],
+  senior: [
+    'senior', 'old age', 'elderly', '60 year', '65 year', '70 year', 'retire', 'pension',
+    'बुजुर्ग', 'वृद्ध', 'पेंशन', 'वृद्धावस्था', 'वरिष्ठ'
+  ],
+  disability: [
+    'disab', 'divyang', 'handicap', 'दिव्यांग', 'विकलांग', 'अशक्त'
+  ],
+  youth: [
+    'unemployed', 'youth', 'jobless', 'no job', 'looking for work', 'fresher', 'unemploy', 'stipend', 'rojgar', 'naukri', 'skill',
+    'युवा', 'बेरोजगार', 'रोजगार', 'नौकरी', 'सीखो', 'कमाना', 'कौशल', 'उद्योग'
+  ],
+  worker: [
+    'worker', 'labor', 'labour', 'shramik', 'sambal', 'e-shram', 'construction', 'majdoor',
+    'मजदूर', 'श्रमिक', 'संबल', 'कामगार'
+  ],
+  general: [
+    'bpl', 'poor', 'ration card', 'below poverty', 'house', 'housing', 'lpg', 'gas connection', 'hospital', 'health insurance', 'ayushman', 'pmay',
+    'राशन', 'आवास', 'मकान', 'बीपीएल', 'गैस', 'उज्ज्वला', 'आयुष्मान', 'इलाज', 'समग्र', 'गरीब', 'बीमारी'
+  ],
 }
 
 function guessRelevantCategories(conversationText) {
@@ -139,9 +450,10 @@ function guessRelevantCategories(conversationText) {
 }
 
 function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN') {
+  const activeSchemes = (schemes && schemes.length > 0) ? schemes : DEFAULT_SCHEMES
   const relevantCategories = guessRelevantCategories(conversationText)
-  const likelyRelevant = schemes.filter((s) => relevantCategories.has(s.category))
-  const others = schemes.filter((s) => !relevantCategories.has(s.category))
+  const likelyRelevant = activeSchemes.filter((s) => relevantCategories.has(s.category))
+  const others = activeSchemes.filter((s) => !relevantCategories.has(s.category))
 
   const langNames = {
     'en-IN': 'English',
@@ -152,57 +464,65 @@ function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN'
   const selectedLangName = langNames[currentLang] || 'English'
 
   const formatScheme = (s) => `
-- ${s.scheme_name} (${s.scheme_name_hindi || ''}) [${s.category}, ${s.level}]
-  Eligibility: ${JSON.stringify(s.eligibility_criteria)}
-  Benefits: ${s.benefits}
-  Documents: ${JSON.stringify(s.documents_required)}
-  How to apply: ${s.how_to_apply}`
+🏛️ SCHEME: ${s.scheme_name} ${s.scheme_name_hindi ? `(${s.scheme_name_hindi})` : ''} [Category: ${s.category}, Level: ${s.level || 'State/Central'}]
+- Financial Benefit: ${s.benefits}
+- Eligibility Criteria: ${Array.isArray(s.eligibility_criteria) ? s.eligibility_criteria.join('; ') : JSON.stringify(s.eligibility_criteria)}
+- Required Documents: ${Array.isArray(s.documents_required) ? s.documents_required.join(', ') : JSON.stringify(s.documents_required)}
+- How to Apply: ${s.how_to_apply}`
 
-  return `You are Jan Seva (जन सेवा), a friendly, highly capable Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
+  return `You are Jan Seva (जन सेवा), an expert, deeply helpful Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
 
 CRITICAL LANGUAGE INSTRUCTION (ABSOLUTE TOP PRIORITY):
 - The user has selected language: ${selectedLangName}.
 - You MUST WRITE YOUR ENTIRE RESPONSE STRICTLY IN ${selectedLangName.toUpperCase()}.
-- If the user has selected English: WRITE 100% IN CLEAR ENGLISH. Do NOT include Hindi translations or brackets (e.g. write "Jan Seva", NEVER "Jan Seva (जन सेवा)").
-- If the user has selected Hindi: WRITE 100% IN CLEAR HINDI (Devanagari script). Do NOT include English words in brackets or transliterations (e.g. write "जन सेवा", NEVER "जन सेवा (Jan Seva)", and write "किसान", NEVER "किसान (Farmer)").
-- If the user has selected Marathi: WRITE 100% IN MARATHI. Do NOT include English in brackets.
-- If the user has selected Tamil: WRITE 100% IN TAMIL. Do NOT include English in brackets.
-- Always strictly match the user's selected language (${selectedLangName}) in both the answer and the follow-up question.
+- If English: WRITE 100% IN CLEAR ENGLISH. Do NOT include Hindi translations or brackets (e.g. write "Jan Seva", NEVER "Jan Seva (जन सेवा)").
+- If Hindi: WRITE 100% IN CLEAR, NATURAL HINDI (Devanagari script). Do NOT include English words in brackets or transliterations (e.g. write "जन सेवा", NEVER "जन सेवा (Jan Seva)").
+- If Marathi: WRITE 100% IN MARATHI. Do NOT include English in brackets.
+- If Tamil: WRITE 100% IN TAMIL. Do NOT include English in brackets.
+- Always strictly match the user's selected language (${selectedLangName}) in both the answer and any follow-up guidance.
 
 VOICE & AUDIO SYSTEM CAPABILITIES:
 - You HAVE BUILT-IN VOICE & SPEECH SYNTHESIS (TTS) CAPABILITIES. Your responses are automatically read aloud to the citizen.
 - NEVER say "I am a text assistant", "I cannot speak", or "I have no voice feature". You CAN speak!
 - If the citizen asks in English ("speak to me", "read aloud", "read it out"): Acknowledge warmly in English: "Certainly, I am reading this aloud for you..."
 - If the citizen asks in Hindi ("बोल के बताओ", "आवाज़ में बताओ"): Acknowledge warmly in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..."
-- Write cleanly so speech synthesis sounds natural. Avoid messy markdown tables or raw URLs.
+- Write cleanly and expressively so speech synthesis sounds natural.
 
-CRITICAL CONVERSATIONAL RULES & PROACTIVE FOLLOW-UP QUESTIONS:
-1. ALWAYS ASK 1-2 TARGETED FOLLOW-UP QUESTIONS:
-   - Do NOT dump long lists of schemes at once. A citizen needs step-by-step guidance.
-   - If the citizen has only shared partial information (e.g. "I am a farmer" / "मैं किसान हूँ"), acknowledge their situation briefly (1-2 sentences), mention 1-2 key schemes they might qualify for (like PM-KISAN, Fasal Bima), and then ALWAYS ask 1-2 focused follow-up questions to verify their exact eligibility:
-     * For Farmers: Ask about landholding size in acres, district in MP, or if they have a Kisan Credit Card (KCC).
-     * For Students: Ask their class/course, caste category (SC/ST/OBC/General), and annual family income.
-     * For Women: Ask their age, marital status, or family income.
-     * For Housing/BPL/Ration: Ask whether they have a BPL card, Samagra ID, or own a pucca house.
-     * For Health: Ask if they have an Ayushman Bharat Card or need hospitalization assistance.
-   - Format the follow-up question clearly at the end on its own line:
+MANDATORY SCHEME PRESENTATION STANDARD (CRITICAL):
+The citizen relies on you for complete, thorough, actionable information. NEVER give very short, vague, or one-line answers when discussing or recommending schemes!
+
+Whenever the citizen matches with scheme(s), asks what schemes they qualify for, or inquires about a scheme, you MUST provide an IN-DEPTH, COMPLETE, AND BEAUTIFULLY STRUCTURED breakdown for each matching scheme.
+
+For EACH matched scheme, you MUST include ALL of the following distinct sections:
+1. 🏛️ **Scheme Name & Total Benefit**: Official name and the exact financial/material grant (e.g., ₹12,000 / year via DBT).
+2. ✨ **Key Features & Highlights**: 2-3 specific bullet points on how the scheme works, disbursement cycles (monthly/quarterly), subsidies, and perks.
+3. 🎯 **Eligibility Verification**: Specific qualification criteria (age range, income ceiling, domicile, land size, caste/gender) and why this citizen matches.
+4. 📋 **Required Documents Checklist**: Exhaustive list of documents the citizen must have before applying (e.g., Aadhaar Card linked to active mobile, Samagra Family & Member ID with e-KYC, Land Record Khasra B-1 / Marksheet / Income Certificate / Caste Certificate, Bank Passbook with NPCI DBT enabled).
+5. 🚀 **Step-by-Step How to Apply**:
+   - **Online Portal**: Direct official portal / MPOnline link.
+   - **Kiosk / Offline Submission**: Nearest Gram Panchayat / Janpad Panchayat, Lok Sewa Kendra, MPOnline / CSC kiosk.
+   - **Step-by-Step Walkthrough**: Step 1 (Gather documents) -> Step 2 (e-KYC verification) -> Step 3 (Application submission) -> Step 4 (Acknowledgment receipt).
+
+CONVERSATIONAL GUIDELINES & PROACTIVE FOLLOW-UPS:
+1. If the citizen shares basic info (e.g. "I am a farmer" / "मैं किसान हूँ" or "I am a 12th student"):
+   - Immediately introduce the top 1-2 flagship schemes they qualify for WITH their key benefits, features, documents, and how to apply.
+   - DO NOT withhold scheme information to only ask questions! Provide the core scheme info upfront!
+   - Conclude with 1-2 focused questions to verify their exact entitlement (e.g. asking land in acres, family income, or marks percentage):
      If responding in English: "👉 **Please tell me:** [your question]"
      If responding in Hindi: "👉 **कृपया बताएं:** [आपका प्रश्न]"
+2. If the citizen has provided their details:
+   - Provide the complete, structured scheme breakdown for all matching schemes.
+   - Conclude with a helpful next step (e.g. offering guidance on document verification, Samagra e-KYC, or application drafting).
+3. Tone:
+   - Warm, respectful, highly encouraging, authoritative, and citizen-friendly.
+   - Say "Namaste" only in the first turn.
+   - Do NOT artificially cut short your answer. Ensure complete clarity on benefits, features, documents, and application steps.
 
-2. STRUCTURED, STEP-BY-STEP RECOMMENDATIONS:
-   - Once the citizen's details are clear, recommend the exact matching schemes from the database.
-   - State clearly: Scheme name in bold, monthly/annual benefit amount, key documents required, and how to apply.
-   - Conclude with a helpful next step question.
+VERIFIED FLAGSHIP SCHEMES (from official database):
+${(likelyRelevant.length > 0 ? likelyRelevant : activeSchemes).map(formatScheme).join('\n')}
 
-3. TONE:
-   - Keep answers warm, respectful, concise (under 120-150 words per message), and citizen-centric.
-   - Say "Namaste" only in your first reply.
-
-LIKELY RELEVANT SCHEMES (from verified database):
-${likelyRelevant.map(formatScheme).join('\n')}
-
-OTHER SCHEMES in database:
-${others.map(formatScheme).join('\n')}
+ADDITIONAL SCHEMES:
+${others.slice(0, 8).map(formatScheme).join('\n')}
 
 SCOPE RESTRICTION:
 - You ONLY help with Indian government schemes, citizen welfare, eligibility, and governance portals.
@@ -291,11 +611,14 @@ function FormattedField({ value }) {
 export default function App() {
   const [started, setStarted] = useState(false)
   const [pendingOpener, setPendingOpener] = useState(null)
-  const [schemes, setSchemes] = useState(() => getSchemesFromCache() || [])
+  const [schemes, setSchemes] = useState(() => {
+    const cached = getSchemesFromCache()
+    return (cached && cached.length > 0) ? cached : DEFAULT_SCHEMES
+  })
   const [messages, setMessages] = useState(() => [Welcome(getSettings().defaultVoiceLang)])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
-  const [loadingSchemes, setLoadingSchemes] = useState(true)
+  const [loadingSchemes, setLoadingSchemes] = useState(false)
   const [error, setError] = useState(null)
   const [showLinks, setShowLinks] = useState(false)
   const [showApplyForm, setShowApplyForm] = useState(false)
@@ -346,29 +669,30 @@ export default function App() {
   }
 
   useEffect(() => {
-    fetchAllSchemes().then(({ schemes, fromCache }) => {
-      if (schemes.length === 0) {
-        // First attempt came back empty (likely a transient network hiccup) -
-        // automatically retry once after a short delay before giving up.
-        setTimeout(() => {
-          fetchAllSchemes().then((retryResult) => {
-            setSchemes(retryResult.schemes)
-            setUsingCachedSchemes(retryResult.fromCache)
-            setLoadingSchemes(false)
-          })
-        }, 2000)
-      } else {
-        setSchemes(schemes)
+    fetchAllSchemes().then(({ schemes: remoteSchemes, fromCache }) => {
+      if (remoteSchemes && remoteSchemes.length > 0) {
+        setSchemes(remoteSchemes)
         setUsingCachedSchemes(fromCache)
-        setLoadingSchemes(false)
+      } else {
+        setSchemes((prev) => (prev && prev.length > 0 ? prev : DEFAULT_SCHEMES))
       }
+      setLoadingSchemes(false)
+    }).catch(() => {
+      setSchemes((prev) => (prev && prev.length > 0 ? prev : DEFAULT_SCHEMES))
+      setLoadingSchemes(false)
     })
   }, [])
 
   function retryLoadSchemes() {
-    fetchAllSchemes().then(({ schemes, fromCache }) => {
-      setSchemes(schemes)
-      setUsingCachedSchemes(fromCache)
+    fetchAllSchemes().then(({ schemes: remoteSchemes, fromCache }) => {
+      if (remoteSchemes && remoteSchemes.length > 0) {
+        setSchemes(remoteSchemes)
+        setUsingCachedSchemes(fromCache)
+      } else {
+        setSchemes((prev) => (prev && prev.length > 0 ? prev : DEFAULT_SCHEMES))
+      }
+      setLoadingSchemes(false)
+    }).catch(() => {
       setLoadingSchemes(false)
     })
   }
@@ -378,10 +702,12 @@ export default function App() {
       setIsOnline(online)
       if (online) {
         // Reconnected - fetch fresh scheme data in the background
-        fetchAllSchemes().then(({ schemes, fromCache }) => {
-          setSchemes(schemes)
-          setUsingCachedSchemes(fromCache)
-        })
+        fetchAllSchemes().then(({ schemes: remoteSchemes, fromCache }) => {
+          if (remoteSchemes && remoteSchemes.length > 0) {
+            setSchemes(remoteSchemes)
+            setUsingCachedSchemes(fromCache)
+          }
+        }).catch(() => {})
       }
     })
     return unsubscribe
@@ -730,8 +1056,7 @@ export default function App() {
       </>
     )
   }
-
-  const filteredSchemes = schemes.filter((s) =>
+    const filteredSchemes = schemes.filter((s) =>
     s.scheme_name.toLowerCase().includes(schemeSearch.toLowerCase())
   )
   const popularSchemes = schemes.slice(0, 5)
@@ -903,7 +1228,8 @@ export default function App() {
             )}
           </div>
         </header>
-                {!isOnline && (
+
+        {!isOnline && (
           <div style={styles.offlineBanner}>
             You're offline — chat needs internet to think through scheme matches. Browse the saved scheme list below, or reconnect to keep chatting.
             {usingCachedSchemes && ` (Showing scheme data saved from your last connection.)`}
