@@ -1,9 +1,39 @@
 const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
 
-// Primary, fallback, and tertiary models for Google AI Studio
-const PRIMARY_MODEL = 'gemini-2.5-flash'
-const FALLBACK_MODEL = 'gemini-2.0-flash'
-const TERTIARY_MODEL = 'gemini-1.5-flash'
+// Primary, fallback, and candidate models for Google AI Studio
+const KNOWN_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-4-argon',
+]
+
+let discoveredModel = null
+
+// Dynamically retrieves the active supported model for this specific API key if needed
+async function getAvailableModel(apiKey) {
+  if (discoveredModel) return discoveredModel
+
+  try {
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`)
+    if (res.ok) {
+      const data = await res.json()
+      const models = data?.models || []
+      const candidate = models.find((m) =>
+        m.supportedGenerationMethods?.includes('generateContent') &&
+        (m.name.includes('flash') || m.name.includes('3.8') || m.name.includes('3.5'))
+      ) || models.find((m) => m.supportedGenerationMethods?.includes('generateContent'))
+
+      if (candidate?.name) {
+        discoveredModel = candidate.name.replace(/^models\//, '')
+        return discoveredModel
+      }
+    }
+  } catch (e) {
+    console.warn('Could not auto-discover model:', e)
+  }
+  return KNOWN_MODELS[0]
+}
 
 // Waits `ms` milliseconds before continuing.
 function wait(ms) {
@@ -63,10 +93,14 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
     },
   }
 
-  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
+  const modelsToTry = discoveredModel
+    ? [discoveredModel, ...KNOWN_MODELS.filter((m) => m !== discoveredModel)]
+    : [...KNOWN_MODELS]
+
   let lastError = null
 
-  for (const model of modelsToTry) {
+  for (let i = 0; i < modelsToTry.length; i++) {
+    const model = modelsToTry[i]
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
 
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -106,6 +140,13 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
 
           if (response.status === 404) {
             lastError = `Model ${model} not found: ${detail}`
+            // Try auto-discovering working model from Google AI Studio list
+            if (!discoveredModel && i === 0) {
+              const liveModel = await getAvailableModel(GEMINI_API_KEY)
+              if (liveModel && !modelsToTry.includes(liveModel)) {
+                modelsToTry.splice(i + 1, 0, liveModel)
+              }
+            }
             break // try fallback model
           }
 
@@ -118,6 +159,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
         if (!text) {
           throw new Error('No response text received from Gemini')
         }
+        discoveredModel = model // Cache working model for lightning-fast future calls
         return text
       } catch (err) {
         lastError = err.message
@@ -171,7 +213,9 @@ CRITICAL: If a field is not clearly visible or not present in the image(s), use 
     generationConfig: { responseMimeType: 'application/json', temperature: 0.1 },
   }
 
-  const modelsToTry = [PRIMARY_MODEL, FALLBACK_MODEL, TERTIARY_MODEL]
+  const modelsToTry = discoveredModel
+    ? [discoveredModel, ...KNOWN_MODELS.filter((m) => m !== discoveredModel)]
+    : [...KNOWN_MODELS]
   let lastError = null
 
   for (const model of modelsToTry) {
