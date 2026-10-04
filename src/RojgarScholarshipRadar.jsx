@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import {
   CloseIcon, ArrowRightIcon,
   BriefcaseJobIcon, EducationIcon, FemaleIcon, MaleIcon, SearchIcon, DocumentIcon,
+  ScienceIcon, GraduationCapIcon, TechnicalToolsIcon, FemaleScholarIcon,
 } from './Icons'
 
 function CheckCircleIcon({ size = 16, color = 'currentColor' }) {
@@ -375,22 +376,26 @@ const OPPORTUNITIES_DATABASE = [
 const QUICK_PRESETS = [
   {
     label: '12th Pass Science (PCM)',
-    icon: '🔬',
+    Icon: ScienceIcon,
+    iconColor: '#0284c7',
     profile: { qual: '12th', category: 'obc', age: 19, boardScore: 78, income: 'low', gender: 'male', domicile: true },
   },
   {
     label: 'College Graduate (BA/BSc)',
-    icon: '🎓',
+    Icon: GraduationCapIcon,
+    iconColor: '#059669',
     profile: { qual: 'graduate', category: 'general', age: 23, boardScore: 68, income: 'medium', gender: 'male', domicile: true },
   },
   {
     label: 'Technical Diploma / ITI',
-    icon: '⚙️',
+    Icon: TechnicalToolsIcon,
+    iconColor: '#d97706',
     profile: { qual: 'iti_diploma', category: 'sc', age: 21, boardScore: 65, income: 'low', gender: 'male', domicile: true },
   },
   {
     label: 'Rural Female Student',
-    icon: '👩‍🎓',
+    Icon: FemaleScholarIcon,
+    iconColor: '#e11d48',
     profile: { qual: '12th', category: 'obc', age: 18, boardScore: 74, income: 'low', gender: 'female', domicile: true },
   },
 ]
@@ -492,15 +497,19 @@ export default function RojgarScholarshipRadar({ onClose, onStartChat }) {
 
         {/* Quick Presets */}
         <div style={styles.presetSection}>
-          <span style={styles.presetLabel}>⚡ Quick Youth Presets:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <SparklesIcon size={14} color="#059669" />
+            <span style={styles.presetLabel}>Quick Youth Presets:</span>
+          </div>
           <div style={styles.presetGrid}>
             {QUICK_PRESETS.map((p, idx) => (
               <button
                 key={idx}
+                type="button"
                 style={styles.presetBtn}
                 onClick={() => setProfile({ ...p.profile })}
               >
-                <span>{p.icon}</span>
+                <p.Icon size={14} color={p.iconColor || '#059669'} />
                 <span>{p.label}</span>
               </button>
             ))}
@@ -590,7 +599,7 @@ export default function RojgarScholarshipRadar({ onClose, onStartChat }) {
                 <label style={styles.filterLabel}>12th Board Score: <strong style={{ color: '#0284c7' }}>{profile.boardScore}%</strong></label>
                 {profile.boardScore >= 70 && (
                   <span style={{ fontSize: '10.5px', fontWeight: 800, color: '#0284c7', background: '#f0f9ff', padding: '2px 8px', borderRadius: '5px' }}>
-                    🏆 MMVY Eligible (≥70%)
+                    ✓ MMVY Merit Eligible (≥70%)
                   </span>
                 )}
               </div>
@@ -828,7 +837,7 @@ const styles = {
     border: '1px solid rgba(226, 232, 240, 0.9)',
     fontFamily: 'var(--font-body)',
   },
-    header: {
+  header: {
     padding: '24px 28px 18px',
     background: '#ffffff',
     borderBottom: '1px solid #e2e8f0',
