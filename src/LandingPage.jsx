@@ -138,7 +138,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
                 onClick={onOpenDocVerification}
                 title="Computer Vision OCR - Document Verification"
               >
-                <span style={{ fontSize: '14px' }}>📷</span>
+                <SearchIcon size={14} color="#0284c7" />
                 <span>Document OCR</span>
               </button>
             )}
@@ -192,7 +192,7 @@ export default function LandingPage({ onStart, onOpenScorecard, onOpenGrievance,
 
             {onOpenDocVerification && (
               <button className="ym-cta ym-landing-cta-btn" style={styles.ocrBtn} onClick={onOpenDocVerification} title="Computer Vision OCR - Document Verification">
-                <span style={{ fontSize: '16px' }}>📷</span>
+                <SearchIcon size={16} color="#0284c7" />
                 <span>Verify Documents (OCR)</span>
               </button>
             )}
