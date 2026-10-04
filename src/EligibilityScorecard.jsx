@@ -1,5 +1,8 @@
 import { useState, useMemo } from 'react'
-import { CloseIcon, ArrowRightIcon, DocumentIcon, FemaleIcon, MaleIcon } from './Icons'
+import {
+  CloseIcon, ArrowRightIcon, DocumentIcon, FemaleIcon, MaleIcon,
+  AgricultureIcon, HomeHeartIcon, WorkerToolsIcon, EducationIcon, BriefcaseJobIcon, StoreIcon,
+} from './Icons'
 
 const MP_SCHEMES_CRITERIA = [
   {
@@ -258,18 +261,29 @@ export default function EligibilityScorecard({ onClose, onSelectSchemeToApply, d
 
             <div style={styles.filterGroup}>
               <label style={styles.filterLabel}>Occupation</label>
-              <select
-                style={styles.select}
-                value={profile.occupation}
-                onChange={(e) => setProfile((p) => ({ ...p, occupation: e.target.value }))}
-              >
-                <option value="farmer">🌾 Farmer / Cultivator</option>
-                <option value="homemaker">🏡 Homemaker (Women)</option>
-                <option value="unorganized">🔨 Laborer / Unorganized Worker</option>
-                <option value="student">🎓 Student / Scholar</option>
-                <option value="youth">💼 Job-Seeking Youth</option>
-                <option value="business">🏪 Small Shopkeeper / Self-employed</option>
-              </select>
+              <div style={styles.occGrid}>
+                {[
+                  { id: 'farmer', label: 'Farmer / Cultivator', Icon: AgricultureIcon },
+                  { id: 'homemaker', label: 'Homemaker (Women)', Icon: HomeHeartIcon },
+                  { id: 'unorganized', label: 'Laborer / Worker', Icon: WorkerToolsIcon },
+                  { id: 'student', label: 'Student / Scholar', Icon: EducationIcon },
+                  { id: 'youth', label: 'Job-Seeking Youth', Icon: BriefcaseJobIcon },
+                  { id: 'business', label: 'Small Business', Icon: StoreIcon },
+                ].map((item) => {
+                  const isActive = profile.occupation === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      style={{ ...styles.occBtn, ...(isActive ? styles.occBtnActive : {}) }}
+                      onClick={() => setProfile((p) => ({ ...p, occupation: item.id }))}
+                    >
+                      <item.Icon size={14} color={isActive ? '#ffffff' : '#059669'} />
+                      <span>{item.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             <div style={styles.filterGroup}>
@@ -466,6 +480,17 @@ const styles = {
     transition: 'all 0.15s ease',
   },
   pillBtnActive: { background: 'var(--color-forest)', color: '#fff', borderColor: 'var(--color-forest)' },
+  occGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' },
+  occBtn: {
+    padding: '7px 8px', borderRadius: '8px', border: '1px solid #cbd5e1',
+    background: '#fff', fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+    display: 'flex', alignItems: 'center', gap: '5px', textAlign: 'left',
+    color: '#334155', transition: 'all 0.15s ease', fontFamily: 'inherit',
+  },
+  occBtnActive: {
+    background: 'var(--color-forest)', color: '#ffffff', borderColor: 'var(--color-forest)',
+    boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+  },
   select: {
     width: '100%', padding: '7px 9px', borderRadius: '7px', border: '1px solid #cbd5e1',
     fontSize: '12.5px', fontFamily: 'inherit', background: '#fff',
