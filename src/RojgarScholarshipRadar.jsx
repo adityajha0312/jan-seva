@@ -828,16 +828,13 @@ const styles = {
     border: '1px solid rgba(226, 232, 240, 0.9)',
     fontFamily: 'var(--font-body)',
   },
-  header: {
+    header: {
     padding: '24px 28px 18px',
     background: '#ffffff',
     borderBottom: '1px solid #e2e8f0',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    position: 'sticky',
-    top: 0,
-    zIndex: 20,
   },
   badgeRow: { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' },
   badge: {
