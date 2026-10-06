@@ -1,11 +1,20 @@
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY
+import { getSettings } from './settings'
 
-// Primary, fallback, and candidate models for Google AI Studio
+export function getActiveApiKey() {
+  try {
+    const custom = getSettings()?.customApiKey?.trim()
+    if (custom && custom.length > 15) return custom
+  } catch (_) {}
+  return import.meta.env.VITE_GEMINI_API_KEY
+}
+
+// Real, active models on Google AI Studio with separate quota buckets
 const KNOWN_MODELS = [
-  'gemini-3.8-flash',
-  'gemini-3.5-flash-lite',
   'gemini-2.5-flash',
-  'gemini-4-argon',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-1.5-flash-8b',
 ]
 
 let discoveredModel = null
@@ -21,7 +30,7 @@ async function getAvailableModel(apiKey) {
       const models = data?.models || []
       const candidate = models.find((m) =>
         m.supportedGenerationMethods?.includes('generateContent') &&
-        (m.name.includes('flash') || m.name.includes('3.8') || m.name.includes('3.5'))
+        (m.name.includes('flash') || m.name.includes('lite'))
       ) || models.find((m) => m.supportedGenerationMethods?.includes('generateContent'))
 
       if (candidate?.name) {
@@ -53,10 +62,12 @@ function parseGoogleError(status, errText) {
 
 // Calls the Gemini API with automatic model fallbacks, clear diagnostics, and exponential backoff
 export async function askGemini(systemInstruction, conversationHistory, jsonMode = false) {
+  const apiKey = getActiveApiKey()
+
   // 1. Guard against missing environment variable (common in Vercel deployments)
-  if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '' || GEMINI_API_KEY.includes('your_')) {
+  if (!apiKey || apiKey.trim() === '' || apiKey.includes('your_')) {
     throw new Error(
-      'VITE_GEMINI_API_KEY is missing! Please go to Vercel Project Settings → Environment Variables, add VITE_GEMINI_API_KEY with your Google AI Studio API key, and Redeploy.'
+      'Gemini API Key is missing! Please configure VITE_GEMINI_API_KEY in Vercel or enter a fresh free key in Settings.'
     )
   }
 
@@ -101,7 +112,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
 
   for (let i = 0; i < modelsToTry.length; i++) {
     const model = modelsToTry[i]
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
 
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
@@ -109,7 +120,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'x-goog-api-key': GEMINI_API_KEY,
+            'x-goog-api-key': apiKey,
           },
           body: JSON.stringify(body),
         })
@@ -117,9 +128,9 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
         if (response.status === 429) {
           const errText = await response.text()
           const detail = parseGoogleError(response.status, errText)
-          throw new Error(
-            `Google AI Studio Free Quota / Rate limit (HTTP 429): ${detail}. Please wait 30 seconds or create a new free API key at aistudio.google.com and update Vercel.`
-          )
+          lastError = `Google AI Studio Free Quota / Rate limit (HTTP 429 on ${model}): ${detail}. Please wait or update API key in Settings.`
+          // Fallback to the next model in KNOWN_MODELS (each model has its own separate quota bucket)
+          break
         }
 
         if (!response.ok) {
@@ -131,7 +142,7 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
             response.status === 400 &&
             (detail.toLowerCase().includes('api key') || detail.toLowerCase().includes('invalid_argument'))
           ) {
-            throw new Error(`Google API Key Invalid: ${detail}. Please check your VITE_GEMINI_API_KEY.`)
+            throw new Error(`Google API Key Invalid: ${detail}. Please check or update your key in Settings.`)
           }
 
           if (response.status === 403) {
@@ -140,13 +151,6 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
 
           if (response.status === 404) {
             lastError = `Model ${model} not found: ${detail}`
-            // Try auto-discovering working model from Google AI Studio list
-            if (!discoveredModel && i === 0) {
-              const liveModel = await getAvailableModel(GEMINI_API_KEY)
-              if (liveModel && !modelsToTry.includes(liveModel)) {
-                modelsToTry.splice(i + 1, 0, liveModel)
-              }
-            }
             break // try fallback model
           }
 
@@ -163,10 +167,9 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
         return text
       } catch (err) {
         lastError = err.message
-        // Stop immediately on API key or quota errors
+        // Stop immediately on invalid key or forbidden errors
         if (
-          err.message.includes('Quota') ||
-          err.message.includes('Google API Key') ||
+          err.message.includes('Google API Key Invalid') ||
           err.message.includes('Forbidden')
         ) {
           throw err
@@ -177,15 +180,19 @@ export async function askGemini(systemInstruction, conversationHistory, jsonMode
     }
   }
 
-  throw new Error(lastError || 'AI सेवा से संपर्क नहीं हो सका। कृपया पुनः प्रयास करें।')
+  throw new Error(
+    lastError ||
+    'Google AI Studio Free Quota exceeded on all models. Please add a fresh free API key at aistudio.google.com and paste it in Settings, or update Vercel.'
+  )
 }
 
 // Extracts fields from photos of documents (Aadhaar, land records, etc.)
 // using Gemini's native image understanding - no separate OCR library needed.
 export async function extractDocumentFields(images, schemeName, requiredDocs) {
-  if (!GEMINI_API_KEY || GEMINI_API_KEY.trim() === '' || GEMINI_API_KEY.includes('your_')) {
+  const apiKey = getActiveApiKey()
+  if (!apiKey || apiKey.trim() === '' || apiKey.includes('your_')) {
     throw new Error(
-      'VITE_GEMINI_API_KEY is missing! Please configure VITE_GEMINI_API_KEY in your environment variables.'
+      'Gemini API Key is missing! Please configure VITE_GEMINI_API_KEY in your environment variables or Settings.'
     )
   }
 
@@ -219,7 +226,7 @@ CRITICAL: If a field is not clearly visible or not present in the image(s), use 
   let lastError = null
 
   for (const model of modelsToTry) {
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`
 
     try {
       const response = await fetch(apiUrl, {
