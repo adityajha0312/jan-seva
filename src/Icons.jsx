@@ -399,3 +399,17 @@ export function CopyIcon({ size = 14, color = 'currentColor' }) {
     </svg>
   )
 }
+
+export function PortalGatewayIcon({ size = 16, color = 'currentColor' }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="3" y="3" width="18" height="18" rx="3" stroke={color} strokeWidth="1.8" />
+      <path d="M3 9H21" stroke={color} strokeWidth="1.8" />
+      <path d="M9 21V9" stroke={color} strokeWidth="1.8" />
+      <circle cx="6" cy="6" r="1.1" fill={color} />
+    </svg>
+  )
+}
+
+
+
