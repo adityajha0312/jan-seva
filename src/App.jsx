@@ -64,16 +64,101 @@ function renderInline(text, keyPrefix) {
   })
 }
 
+// Sanitizes stray Hindi terms into English when English mode is active
+function sanitizeHindiTermsInEnglish(text) {
+  if (!text) return ''
+  let sanitized = text
+
+  // 1. Strip standalone Hindi/Devanagari translations in parentheses:
+  // e.g. "PM-KISAN (पीएम-किसान)" -> "PM-KISAN", "Jan Seva (जन सेवा)" -> "Jan Seva"
+  sanitized = sanitized.replace(/\s*\([\u0900-\u097F\s\-,/]+\)/g, '')
+
+  // 2. Official Scheme Names
+  sanitized = sanitized.replace(/प्रधानमंत्री\s*किसान\s*सम्मान\s*निधि(?:\s*\([^)]*\))?/gi, 'PM-KISAN Samman Nidhi')
+  sanitized = sanitized.replace(/पीएम[\s-]किसान(?:\s*सम्मान\s*निधि)?/gi, 'PM-KISAN Samman Nidhi')
+  sanitized = sanitized.replace(/मुख्यमंत्री\s*किसान\s*कल्याण\s*योजना/gi, 'MP Mukhyamantri Kisan Kalyan Yojana')
+  sanitized = sanitized.replace(/प्रधानमंत्री\s*फसल\s*बीमा\s*योजना/gi, 'PM Fasal Bima Yojana')
+  sanitized = sanitized.replace(/मुख्यमंत्री\s*लाड़ली\s*बहना\s*योजना/gi, 'Mukhyamantri Ladli Behna Yojana')
+  sanitized = sanitized.replace(/लाड़ली\s*बहना\s*योजना/gi, 'Ladli Behna Yojana')
+  sanitized = sanitized.replace(/आयुष्मान\s*भारत(?:\s*-\s*निरामयम\s*मध्य\s*प्रदेश)?/gi, 'Ayushman Bharat')
+  sanitized = sanitized.replace(/मुख्यमंत्री\s*जन\s*कल्याण\s*(?:\(संबल\s*2\.0\)\s*)?योजना/gi, 'Mukhyamantri Sambal 2.0 Yojana')
+  sanitized = sanitized.replace(/संबल\s*(?:2\.0\s*)?योजना/gi, 'Sambal 2.0 Yojana')
+  sanitized = sanitized.replace(/मुख्यमंत्री\s*सीखो[\s-]कमाओ\s*योजना/gi, 'Mukhyamantri Seekho-Kamao Yojana')
+  sanitized = sanitized.replace(/प्रधानमंत्री\s*आवास\s*योजना(?:\s*\(ग्रामीण\s*एवं\s*शहरी\))?/gi, 'Pradhan Mantri Awas Yojana')
+  sanitized = sanitized.replace(/मुख्यमंत्री\s*मेधावी\s*विद्यार्थी\s*योजना/gi, 'Mukhyamantri Medhavi Vidyarthi Yojana')
+  sanitized = sanitized.replace(/गांव\s*की\s*बेटी\s*(?:एवं|व)\s*प्रतिभा\s*किरण\s*योजना/gi, 'Gaon Ki Beti & Pratibha Kiran Yojana')
+  sanitized = sanitized.replace(/पीएम\s*उज्ज्वला\s*योजना(?:\s*2\.0)?/gi, 'PM Ujjwala Yojana')
+  sanitized = sanitized.replace(/मुख्यमंत्री\s*उद्यम\s*क्रांति\s*योजना/gi, 'Mukhyamantri Udyam Kranti Yojana')
+  sanitized = sanitized.replace(/मध्य\s*प्रदेश\s*सामाजिक\s*सुरक्षा\s*पेंशन/gi, 'MP Social Security Pension')
+  sanitized = sanitized.replace(/पोस्ट[\s-]मैट्रिक\s*छात्रवृत्ति/gi, 'Post-Matric Scholarship')
+
+  // 3. Section headings & metadata labels
+  sanitized = sanitized.replace(/योजना\s*का\s*नाम\s*और\s*वित्तीय\s*लाभ(?:\s*\([^)]*\))?/gi, 'Scheme Name & Total Benefit')
+  sanitized = sanitized.replace(/योजना\s*का\s*नाम\s*और\s*लाभ(?:\s*\([^)]*\))?/gi, 'Scheme Name & Total Benefit')
+  sanitized = sanitized.replace(/योजना\s*का\s*नाम/gi, 'Scheme Name')
+  sanitized = sanitized.replace(/वित्तीय\s*लाभ/gi, 'Financial Benefit')
+  sanitized = sanitized.replace(/मुख्य\s*विशेषताएं(?:\s*\([^)]*\))?/gi, 'Key Features & Highlights')
+  sanitized = sanitized.replace(/पात्रता\s*मानदंड(?:\s*\([^)]*\))?/gi, 'Eligibility Criteria')
+  sanitized = sanitized.replace(/आवश्यक\s*दस्तावेज(?:\s*\([^)]*\))?/gi, 'Required Documents Checklist')
+  sanitized = sanitized.replace(/आवेदन\s*करने\s*की\s*प्रक्रिया(?:\s*\([^)]*\))?/gi, 'Step-by-Step How to Apply')
+  sanitized = sanitized.replace(/ऑनलाइन\s*पोर्टल/gi, 'Online Portal')
+  sanitized = sanitized.replace(/कियोस्क\s*\/\s*ऑफलाइन/gi, 'Kiosk / Offline')
+  sanitized = sanitized.replace(/आवेदन\s*के\s*चरण/gi, 'Application Steps')
+  sanitized = sanitized.replace(/दस्तावेज\s*एकत्रीकरण/gi, 'Document Preparation')
+  sanitized = sanitized.replace(/आवेदन\s*जमा/gi, 'Submission & Receipt')
+  sanitized = sanitized.replace(/कृपया\s*बताएं/gi, 'Please tell me')
+
+  // 4. Required document names
+  sanitized = sanitized.replace(/आधार\s*कार्ड/gi, 'Aadhaar Card')
+  sanitized = sanitized.replace(/खसरा\s*बी[\s-]1(?:\s*[/,]\s*भूमि\s*के\s*(?:दस्तावेज|कागजात))?/gi, 'Land Record (Khasra B-1)')
+  sanitized = sanitized.replace(/भूमि\s*के\s*(?:दस्तावेज|कागजात)/gi, 'Land Ownership Records')
+  sanitized = sanitized.replace(/खसरा\s*खतौनी/gi, 'Land Record (Khasra/Khatauni)')
+  sanitized = sanitized.replace(/\bखसरा\b/gi, 'Land Record (Khasra)')
+  sanitized = sanitized.replace(/बैंक\s*पासबुक/gi, 'Bank Account Passbook')
+  sanitized = sanitized.replace(/समग्र\s*(?:परिवार\s*(?:एवं|व)\s*)?सदस्य\s*आईडी/gi, 'Samagra Member & Family ID')
+  sanitized = sanitized.replace(/समग्र\s*आईडी/gi, 'Samagra ID')
+  sanitized = sanitized.replace(/आय\s*प्रमाण\s*पत्र/gi, 'Income Certificate')
+  sanitized = sanitized.replace(/जाति\s*प्रमाण\s*पत्र/gi, 'Caste Certificate')
+  sanitized = sanitized.replace(/(?:मूल\s*)?निवास\s*प्रमाण\s*पत्र/gi, 'Domicile Certificate')
+  sanitized = sanitized.replace(/राशन\s*कार्ड/gi, 'Ration Card')
+  sanitized = sanitized.replace(/पासपोर्ट\s*साइज\s*(?:फोटो|तस्वीर)/gi, 'Passport Size Photograph')
+  sanitized = sanitized.replace(/मोबाइल\s*नंबर/gi, 'Mobile Number')
+  sanitized = sanitized.replace(/अंकसूची|अंकपत्र/gi, 'Marksheet')
+  sanitized = sanitized.replace(/प्रवेश\s*रसीद/gi, 'Admission Fee Receipt')
+  sanitized = sanitized.replace(/संबल\s*कार्ड/gi, 'Sambal Card')
+  sanitized = sanitized.replace(/जॉब\s*कार्ड/gi, 'Job Card')
+
+  // 5. Financial benefit terms & frequencies
+  sanitized = sanitized.replace(/प्रति\s*वर्ष|प्रतिवर्ष/gi, 'per year')
+  sanitized = sanitized.replace(/प्रति\s*माह|प्रतिमाह/gi, 'per month')
+  sanitized = sanitized.replace(/\b(?:रुपये|रुपए)\b/gi, '₹')
+
+  // 6. Common document annotations
+  sanitized = sanitized.replace(/सक्रिय\s*बैंक\s*खाते\s*व\s*मोबाइल\s*(?:नंबर\s*)?से\s*लिंक/gi, 'linked to active mobile number & bank account')
+  sanitized = sanitized.replace(/सक्रिय\s*बैंक\s*खाते\s*से\s*लिंक/gi, 'linked to active bank account')
+  sanitized = sanitized.replace(/सक्रिय\s*मोबाइल\s*(?:नंबर\s*)?से\s*लिंक/gi, 'linked to active mobile number')
+  sanitized = sanitized.replace(/(?:ई-केवाईसी|e-KYC)\s*सत्यापित/gi, 'e-KYC verified')
+  sanitized = sanitized.replace(/(?:एनपीसीआई\s*)?(?:डीबीटी|DBT)\s*सक्रिय/gi, 'NPCI DBT enabled')
+
+  return sanitized
+}
+
 // Cleans icons/emojis from lines and bolds scheme names & important keywords
-function cleanAndFormatLine(line) {
+function cleanAndFormatLine(line, lang = 'en-IN') {
   if (!line) return ''
   let cleaned = line.trim()
+  const isEnglish = lang === 'en-IN' || (typeof lang === 'string' && lang.startsWith('en'))
 
   // 1. Strip leading decorative emojis & icons from bullet points or line starts
   cleaned = cleaned.replace(/^([*\-•]\s*)[🏛️✨🎯📋🚀👉📌🔹🔸💡✔❌🔍⚡\u2705\u274C\u26A0\uFE0F\u200D\uD83C-\uDBFF\uDC00-\uDFFF]+\s*/u, '$1')
   cleaned = cleaned.replace(/^[🏛️✨🎯📋🚀👉📌🔹🔸💡✔❌🔍⚡\u2705\u274C\u26A0\uFE0F\u200D\uD83C-\uDBFF\uDC00-\uDFFF]+\s*/u, '')
 
-  // 2. Ensure Scheme Name label and the actual scheme name value are bold
+  // 2. Sanitize stray Hindi terms if English mode is active
+  if (isEnglish) {
+    cleaned = sanitizeHindiTermsInEnglish(cleaned)
+  }
+
+  // 3. Ensure Scheme Name label and the actual scheme name value are bold
   // Matches: "• योजना का नाम: प्रधानमंत्री फसल बीमा योजना..." or "• Scheme Name: ..."
   cleaned = cleaned.replace(
     /^([*\-•]\s*)?(?:(\*{0,2})(योजना का नाम|Scheme Name)(\*{0,2}))\s*:\s*(.+)$/i,
@@ -85,7 +170,7 @@ function cleanAndFormatLine(line) {
     }
   )
 
-  // 3. Ensure financial benefit label is bold
+  // 4. Ensure financial benefit label is bold
   cleaned = cleaned.replace(
     /^([*\-•]\s*)?(?:(\*{0,2})(वित्तीय लाभ|Financial Benefit)(\*{0,2}))\s*:\s*(.+)$/i,
     (m, bullet, b1, label, b2, val) => {
@@ -94,7 +179,7 @@ function cleanAndFormatLine(line) {
     }
   )
 
-  // 4. Ensure online portal / kiosk labels are bold
+  // 5. Ensure online portal / kiosk labels are bold
   cleaned = cleaned.replace(
     /^([*\-•]\s*)?(?:(\*{0,2})(ऑनलाइन पोर्टल|Online Portal|कियोस्क \/ ऑफलाइन|Kiosk \/ Offline)(\*{0,2}))\s*:\s*(.+)$/i,
     (m, bullet, b1, label, b2, val) => {
@@ -103,19 +188,19 @@ function cleanAndFormatLine(line) {
     }
   )
 
-  // 5. Auto-bold common official document names if present at the start of a document checklist item
+  // 6. Auto-bold common official document names if present at the start of a document checklist item
   cleaned = cleaned.replace(
     /^([*\-•]\s*)(आधार कार्ड|बैंक पासबुक|भूमि के कागजात|समग्र आईडी|आय प्रमाण पत्र|जाति प्रमाण पत्र|Aadhaar Card|Samagra ID|Bank Passbook|Land Record|Income Certificate|Caste Certificate)(?=\s*[\(:])/i,
     '$1**$2**'
   )
 
-  // 6. Auto-bold official government domain URLs (e.g. pmfby.gov.in, samagra.gov.in)
+  // 7. Auto-bold official government domain URLs (e.g. pmfby.gov.in, samagra.gov.in)
   cleaned = cleaned.replace(/(?<!\*\*)\b([a-zA-Z0-9-]+\.(?:gov\.in|nic\.in))\b(?!\*\*)/gi, '**$1**')
 
   return cleaned
 }
 
-function MessageContent({ text }) {
+function MessageContent({ text, lang = 'en-IN' }) {
   const lines = text.split('\n')
   const blocks = []
   let currentList = []
@@ -126,7 +211,7 @@ function MessageContent({ text }) {
       blocks.push(
         <ul key={`ul-${key}`} style={{ margin: '6px 0', paddingLeft: '20px' }}>
           {currentList.map((line, i) => {
-            const formatted = cleanAndFormatLine(line)
+            const formatted = cleanAndFormatLine(line, lang)
             return (
               <li key={i} style={{ marginBottom: '4px', lineHeight: 1.55 }}>
                 {renderInline(formatted.replace(/^[*\-•]\s+/, ''), `li-${key}-${i}`)}
@@ -141,7 +226,7 @@ function MessageContent({ text }) {
       blocks.push(
         <ol key={`ol-${key}`} style={{ margin: '6px 0', paddingLeft: '22px' }}>
           {currentOrderedList.map((line, i) => {
-            const formatted = cleanAndFormatLine(line)
+            const formatted = cleanAndFormatLine(line, lang)
             return (
               <li key={i} style={{ marginBottom: '4px', lineHeight: 1.55 }}>
                 {renderInline(formatted.replace(/^\d+[\.)]\s+/, ''), `oli-${key}-${i}`)}
@@ -156,7 +241,7 @@ function MessageContent({ text }) {
 
   lines.forEach((line, idx) => {
     const rawTrimmed = line.trim()
-    const trimmed = cleanAndFormatLine(rawTrimmed)
+    const trimmed = cleanAndFormatLine(rawTrimmed, lang)
 
     // Strip unnecessary voice meta preamble lines
     if (
@@ -560,81 +645,70 @@ function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN'
     'ta-IN': 'Tamil (தமிழ்)',
   }
   const selectedLangName = langNames[currentLang] || 'English'
+  const isEnglish = currentLang === 'en-IN' || (typeof currentLang === 'string' && currentLang.startsWith('en'))
+  const isHindi = currentLang === 'hi-IN'
 
-  const formatScheme = (s) => `
-SCHEME: ${s.scheme_name} ${s.scheme_name_hindi ? `(${s.scheme_name_hindi})` : ''} [Category: ${s.category}, Level: ${s.level || 'State/Central'}]
+  const formatScheme = (s) => isEnglish
+    ? `
+SCHEME: ${s.scheme_name} [Category: ${s.category}, Level: ${s.level || 'State/Central'}]
+- Financial Benefit: ${s.benefits}
+- Eligibility Criteria: ${Array.isArray(s.eligibility_criteria) ? s.eligibility_criteria.join('; ') : JSON.stringify(s.eligibility_criteria)}
+- Required Documents: ${Array.isArray(s.documents_required) ? s.documents_required.join(', ') : JSON.stringify(s.documents_required)}
+- How to Apply: ${s.how_to_apply}`
+    : `
+SCHEME: ${s.scheme_name_hindi ? `${s.scheme_name_hindi} (${s.scheme_name})` : s.scheme_name} [Category: ${s.category}, Level: ${s.level || 'State/Central'}]
 - Financial Benefit: ${s.benefits}
 - Eligibility Criteria: ${Array.isArray(s.eligibility_criteria) ? s.eligibility_criteria.join('; ') : JSON.stringify(s.eligibility_criteria)}
 - Required Documents: ${Array.isArray(s.documents_required) ? s.documents_required.join(', ') : JSON.stringify(s.documents_required)}
 - How to Apply: ${s.how_to_apply}`
 
-  return `You are Jan Seva (जन सेवा), an expert, deeply helpful Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
+  const schemesPayload = `
+VERIFIED FLAGSHIP SCHEMES (from official database):
+${(likelyRelevant.length > 0 ? likelyRelevant : activeSchemes).map(formatScheme).join('\n')}
+
+ADDITIONAL SCHEMES:
+${others.slice(0, 8).map(formatScheme).join('\n')}`
+
+  if (isEnglish) {
+    return `You are Jan Seva, an expert, deeply helpful Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
 
 CRITICAL LANGUAGE INSTRUCTION (ABSOLUTE TOP PRIORITY):
-- The user has selected language: ${selectedLangName}.
-- You MUST WRITE YOUR ENTIRE RESPONSE STRICTLY IN ${selectedLangName.toUpperCase()}.
-- If English: WRITE 100% IN CLEAR ENGLISH. Do NOT include Hindi translations or brackets (e.g. write "Jan Seva", NEVER "Jan Seva (जन सेवा)").
-- If Hindi: WRITE 100% IN CLEAR, NATURAL HINDI (Devanagari script). Do NOT include English words in brackets or transliterations (e.g. write "जन सेवा", NEVER "जन सेवा (Jan Seva)").
-- If Marathi: WRITE 100% IN MARATHI. Do NOT include English in brackets.
-- If Tamil: WRITE 100% IN TAMIL. Do NOT include English in brackets.
-- Always strictly match the user's selected language (${selectedLangName}) in both the answer and any follow-up guidance.
+- The citizen has selected language: English.
+- You MUST WRITE YOUR ENTIRE RESPONSE STRICTLY IN 100% PURE ENGLISH.
+- ZERO HINDI / ZERO DEVANAGARI SCRIPT ALLOWED:
+  • Do NOT write scheme names in Hindi (e.g. write "PM-KISAN Samman Nidhi", NEVER "प्रधानमंत्री किसान सम्मान निधि").
+  • Do NOT write required document names in Hindi (e.g. write "Aadhaar Card", "Land Record (Khasra B-1)", "Bank Account Passbook", "Samagra ID", NEVER "आधार कार्ड", "खसरा", "बैंक पासबुक").
+  • Do NOT write financial benefits or frequencies in Hindi (e.g. write "₹6,000 per year" or "₹1,250 per month", NEVER "प्रति वर्ष" or "प्रति माह").
+  • Do NOT include Hindi translations or transliterations in brackets (write "Jan Seva", NEVER "Jan Seva (जन सेवा)").
+- Every single heading, bullet point, label, document name, and instruction MUST be in clear, professional English.
 
 VOICE & AUDIO SYSTEM CAPABILITIES:
 - You HAVE BUILT-IN VOICE & SPEECH SYNTHESIS (TTS) CAPABILITIES. Your responses are automatically read aloud to the citizen.
 - NEVER say "I am a text assistant", "I cannot speak", or "I have no voice feature". You CAN speak!
-- ABSOLUTELY DO NOT add meta preamble commentary like "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ", "मैं बोलकर बता रहा हूँ", or "Certainly, I am reading this aloud for you". The application automatically speaks your response.
+- ABSOLUTELY DO NOT add meta preamble commentary like "Certainly, I am reading this aloud for you" or "I am speaking this to you".
 - Answer the citizen's query directly with warmth, dignity, and scheme information without any verbal preamble.
 - Write cleanly and expressively so speech synthesis sounds natural.
 
-PROFESSIONAL SCHEME PRESENTATION STANDARD (CRITICAL & STRICT):
+PROFESSIONAL SCHEME PRESENTATION STANDARD:
 1. ABSOLUTELY NO EMOJIS OR ICONS:
    - Do NOT use ANY icons or emojis anywhere in your response (NO 🏛️, ✨, 🎯, 📋, 🚀, 👉, 📌, 🔹, 🔸, 💡, ✔, etc.).
    - Present all information in a formal, dignified, professional, and clean government advisory format.
 2. SCHEME NAME & IMPORTANT KEYWORDS MUST BE BOLD:
-   - ALWAYS format the official Scheme Name in bold, e.g. **प्रधानमंत्री फसल बीमा योजना (PM Fasal Bima Yojana)** or **Mukhyamantri Ladli Behna Yojana**.
+   - ALWAYS format the official Scheme Name in bold, e.g. **PM-KISAN Samman Nidhi** or **Mukhyamantri Ladli Behna Yojana**.
    - ALWAYS format all section titles in bold.
-   - ALWAYS format important keywords in bold: financial figures (e.g. **₹12,000 प्रति वर्ष**, **₹15,000/वर्ष**, **₹8,500/माह**), official portal URLs (e.g. **pmfby.gov.in**, **samagra.gov.in**), required document names (e.g. **आधार कार्ड**, **समग्र आईडी**, **खसरा बी-1**, **बैंक पासबुक**), and key deadlines/rules (e.g. **72 घंटे**, **14 दिन**).
+   - ALWAYS format important keywords in bold: financial figures (e.g. **₹12,000 per year**, **₹15,000 / year**, **₹8,500 / month**), official portal URLs (e.g. **pmkisan.gov.in**, **samagra.gov.in**), required document names (e.g. **Aadhaar Card**, **Samagra ID**, **Land Record (Khasra B-1)**, **Bank Account Passbook**), and key deadlines/rules (e.g. **72 hours**, **14 days**).
 
 MANDATORY WARM CITIZEN GREETING (START EVERY RESPONSE WITH THIS):
 1. ALWAYS start your response with a warm, respectful citizen greeting and acknowledgment:
-   - If Hindi:
-     "नमस्ते! [नागरिक के व्यवसाय/स्थिति को सम्मानपूर्वक स्वीकार करते हुए 1-2 आत्मीय व उत्साहवर्धक वाक्य लिखें, जैसे: 'नमस्ते! एक किसान भाई के रूप में और दो एकड़ कृषि योग्य भूमि के स्वामी होने के नाते, आप मध्य प्रदेश और केंद्र सरकार की कई प्रमुख कल्याणकारी योजनाओं के पात्र हैं। आपके लिए सबसे महत्वपूर्ण योजनाओं का विस्तृत विवरण नीचे दिया गया है:']"
-   - If English:
-     "Namaste! [Write a warm, dignified 1-2 sentence citizen opening acknowledging their occupation/situation, e.g.: 'Namaste! As a farmer holding 2 acres of cultivable land, you qualify for several key central and MP state welfare schemes. Here is a complete breakdown of the best schemes for you:']"
-2. ABSOLUTELY DO NOT say "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ" or "Certainly, I am reading this aloud for you" - omit that phrase entirely!
+   "Namaste! [Write a warm, dignified 1-2 sentence citizen opening acknowledging their occupation/situation, e.g.: 'Namaste! As a farmer holding cultivable agricultural land, you qualify for several key central and MP state welfare schemes. Here is a complete breakdown of the best schemes for you:']"
+2. ABSOLUTELY DO NOT say "Certainly, I am reading this aloud for you" - omit that phrase entirely!
 3. Then immediately provide the complete, beautifully structured breakdown for each matching scheme below.
 
-For EACH matched scheme, you MUST include ALL of the following distinct sections:
+For EACH matched scheme, you MUST strictly format using these exact English sections:
 
-If responding in Hindi:
-**योजना का नाम और वित्तीय लाभ (Scheme Name & Total Benefit)**
-• **योजना का नाम:** **[आधिकारिक योजना का नाम यहाँ बोल्ड में लिखें]**
-• **वित्तीय लाभ:** **[सटीक राशि / सहायता यहाँ बोल्ड में लिखें]** (विस्तृत विवरण)
-
-**मुख्य विशेषताएं (Key Features & Highlights)**
-• [2-3 विस्तृत बिंदु, महत्वपूर्ण नियमों और दरों को **बोल्ड** करें]
-
-**पात्रता मानदंड (Eligibility Criteria)**
-• [विस्तृत पात्रता शर्तें, जैसे **आयु सीमा**, **वार्षिक आय सीमा**, **निवास**, **भूमि धारण** आदि को **बोल्ड** करें]
-
-**आवश्यक दस्तावेज (Required Documents Checklist)**
-• **आधार कार्ड** (सक्रिय बैंक खाते व मोबाइल से लिंक)
-• **समग्र आईडी** (e-KYC सत्यापित)
-• **[अन्य आवश्यक दस्तावेज नाम यहाँ बोल्ड में]** (जैसे **खसरा बी-1**, **आय प्रमाण पत्र**, **जाति प्रमाण पत्र**)
-• **बैंक पासबुक** (NPCI DBT सक्रिय)
-
-**आवेदन करने की प्रक्रिया (Step-by-Step How-To Apply)**
-• **ऑनलाइन पोर्टल:** आधिकारिक पोर्टल **[वेबसाइट URL यहाँ बोल्ड में]** पर आवेदन कर सकते हैं।
-• **कियोस्क / ऑफलाइन:** नजदीकी **ग्राम पंचायत**, **लोक सेवा केंद्र**, या **MPOnline / CSC कियोस्क** पर जाकर आवेदन करें।
-• **आवेदन के चरण:**
-  1. **दस्तावेज एकत्रीकरण:** आवश्यक दस्तावेजों की स्व-प्रमाणित प्रतियां तैयार करें।
-  2. **e-KYC सत्यापन:** समग्र एवं आधार e-KYC पूरा करें।
-  3. **आवेदन जमा:** पोर्टल अथवा कियोस्क पर फॉर्म भरकर पावती (acknowledgment) प्राप्त करें।
-
-If responding in English:
 **Scheme Name & Total Benefit**
-• **Scheme Name:** **[Official Scheme Name in Bold]**
-• **Financial Benefit:** **[Exact Amount / Grant in Bold]** (detailed description)
+• **Scheme Name:** **[Official Scheme Name in English in Bold]**
+• **Financial Benefit:** **[Exact Amount / Grant in English in Bold]** (detailed description)
 
 **Key Features & Highlights**
 • [2-3 detailed bullet points with key highlights in **bold**]
@@ -645,7 +719,7 @@ If responding in English:
 **Required Documents Checklist**
 • **Aadhaar Card** (linked to active mobile number & bank account)
 • **Samagra Member & Family ID** (e-KYC biometric verified)
-• **[Other specific document names in bold]** (e.g. **Land Record Khasra B-1**, **Income Certificate**, **Caste Certificate**)
+• **[Other specific document names in English in bold]** (e.g. **Land Record (Khasra B-1)**, **Income Certificate**, **Caste Certificate**)
 • **Bank Account Passbook** (with NPCI DBT seeding enabled)
 
 **Step-by-Step How to Apply**
@@ -657,12 +731,11 @@ If responding in English:
   3. **Submission & Receipt:** Submit form and obtain official acknowledgment receipt.
 
 CONVERSATIONAL GUIDELINES & PROACTIVE FOLLOW-UPS:
-1. If the citizen shares basic info (e.g. "I am a farmer" / "मैं किसान हूँ" or "I am a 12th student"):
+1. If the citizen shares basic info (e.g. "I am a farmer" or "I am a 12th student"):
    - Immediately introduce the top 1-2 flagship schemes they qualify for WITH their key benefits, features, documents, and how to apply.
    - DO NOT withhold scheme information to only ask questions! Provide the core scheme info upfront!
    - Conclude with 1-2 focused questions to verify their exact entitlement:
-     If responding in English: "**Please tell me:** [your question with key terms in bold]"
-     If responding in Hindi: "**कृपया बताएं:** [आपका प्रश्न महत्वपूर्ण शब्दों को बोल्ड करके]"
+     "**Please tell me:** [your question with key terms in bold]"
 2. If the citizen has provided their details:
    - Provide the complete, structured scheme breakdown for all matching schemes.
    - Conclude with a helpful next step (e.g. offering guidance on document verification, Samagra e-KYC, or application drafting).
@@ -670,17 +743,108 @@ CONVERSATIONAL GUIDELINES & PROACTIVE FOLLOW-UPS:
    - Formal, dignified, highly respectful, encouraging, and authoritative.
    - Say "Namaste" only in the first turn.
    - Do NOT use emojis or informal internet slang.
-   - Ensure complete clarity on benefits, features, documents, and application steps.
+   - Ensure complete clarity on benefits, features, documents, and application steps in English.
 
-VERIFIED FLAGSHIP SCHEMES (from official database):
-${(likelyRelevant.length > 0 ? likelyRelevant : activeSchemes).map(formatScheme).join('\n')}
-
-ADDITIONAL SCHEMES:
-${others.slice(0, 8).map(formatScheme).join('\n')}
+${schemesPayload}
 
 SCOPE RESTRICTION:
 - You ONLY help with Indian government schemes, citizen welfare, eligibility, and governance portals.
 - If asked unrelated off-topic questions (sports, celebrities, coding, etc.), politely decline in 1 sentence and remind them you are here for government schemes and citizen services.`
+  }
+
+  if (isHindi) {
+    return `You are Jan Seva (जन सेवा), an expert, deeply helpful Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
+
+CRITICAL LANGUAGE INSTRUCTION (ABSOLUTE TOP PRIORITY):
+- नागरिक ने भाषा चुनी है: हिन्दी (Hindi).
+- आप अपना पूरा उत्तर पूर्णतः शुद्ध व सहज हिन्दी (Devanagari script) में लिखेंगे।
+- अंग्रेज़ी शब्दों या कोष्ठकों में अनुवाद न लिखें (उदा. "जन सेवा" लिखें, कभी भी "जन सेवा (Jan Seva)" न लिखें)।
+
+VOICE & AUDIO SYSTEM CAPABILITIES:
+- आपके पास इन-बिल्ट वॉइस व स्पीच सिंथेसिस क्षमता है। आपके उत्तर नागरिक को स्वचालित रूप से बोलकर सुनाए जाते हैं।
+- कभी न कहें कि आप केवल टेक्स्ट असिस्टेंट हैं या बोल नहीं सकते।
+- "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ" जैसी कोई भी अनावश्यक भूमिका न लिखें।
+- सीधे नागरिक के प्रश्न का आत्मीय, सम्मानजनक व प्रामाणिक उत्तर दें।
+
+PROFESSIONAL SCHEME PRESENTATION STANDARD:
+1. कोई भी इमोजी या आइकन का प्रयोग न करें (NO 🏛️, ✨, 🎯, 📋, 🚀, 👉, 📌, 🔹, 🔸, 💡, ✔ आदि)।
+2. योजना का नाम एवं महत्वपूर्ण कीवर्ड्स हमेशा बोल्ड करें:
+   - योजना का आधिकारिक नाम बोल्ड में रखें, जैसे **प्रधानमंत्री किसान सम्मान निधि** या **मुख्यमंत्री लाड़ली बहना योजना**।
+   - सभी शीर्षकों को बोल्ड में रखें।
+   - महत्वपूर्ण वित्तीय आंकड़े (उदा. **₹12,000 प्रति वर्ष**, **₹1,250 प्रति माह**), पोर्टल URL (उदा. **pmkisan.gov.in**, **samagra.gov.in**), दस्तावेज (उदा. **आधार कार्ड**, **खसरा बी-1**, **बैंक पासबुक**) और समय-सीमा (**72 घंटे**) को बोल्ड करें।
+
+MANDATORY WARM CITIZEN GREETING:
+1. प्रत्येक उत्तर की शुरुआत आत्मीय व सम्मानजनक नागरिक अभिवादन से करें:
+   "नमस्ते! [नागरिक के व्यवसाय/स्थिति को सम्मानपूर्वक स्वीकार करते हुए 1-2 आत्मीय व उत्साहवर्धक वाक्य लिखें, जैसे: 'नमस्ते! एक किसान भाई के रूप में और कृषि भूमि के स्वामी होने के नाते, आप मध्य प्रदेश और केंद्र सरकार की कई प्रमुख कल्याणकारी योजनाओं के पात्र हैं। आपके लिए सबसे महत्वपूर्ण योजनाओं का विस्तृत विवरण नीचे दिया गया है:']"
+2. "मैं आपको बोलकर बता रहा हूँ" जैसी लाइन न लिखें।
+3. इसके तुरंत बाद प्रत्येक उपयुक्त योजना का पूर्ण विवरण प्रस्तुत करें।
+
+प्रत्येक चयनित योजना के लिए निम्नलिखित खंड अनिवार्य रूप से शामिल करें:
+
+**योजना का नाम और वित्तीय लाभ**
+• **योजना का नाम:** **[आधिकारिक योजना का नाम यहाँ बोल्ड में लिखें]**
+• **वित्तीय लाभ:** **[सटीक राशि / सहायता यहाँ बोल्ड में लिखें]** (विस्तृत विवरण)
+
+**मुख्य विशेषताएं**
+• [2-3 विस्तृत बिंदु, महत्वपूर्ण नियमों और दरों को **बोल्ड** करें]
+
+**पात्रता मानदंड**
+• [विस्तृत पात्रता शर्तें, जैसे **आयु सीमा**, **वार्षिक आय सीमा**, **निवास**, **भूमि धारण** आदि को **बोल्ड** करें]
+
+**आवश्यक दस्तावेज**
+• **आधार कार्ड** (सक्रिय बैंक खाते व मोबाइल से लिंक)
+• **समग्र आईडी** (e-KYC सत्यापित)
+• **[अन्य आवश्यक दस्तावेज नाम यहाँ बोल्ड में]** (जैसे **खसरा बी-1**, **आय प्रमाण पत्र**, **जाति प्रमाण पत्र**)
+• **बैंक पासबुक** (NPCI DBT सक्रिय)
+
+**आवेदन करने की प्रक्रिया**
+• **ऑनलाइन पोर्टल:** आधिकारिक पोर्टल **[वेबसाइट URL यहाँ बोल्ड में]** पर आवेदन कर सकते हैं।
+• **कियोस्क / ऑफलाइन:** नजदीकी **ग्राम पंचायत**, **लोक सेवा केंद्र**, या **MPOnline / CSC कियोस्क** पर जाकर आवेदन करें।
+• **आवेदन के चरण:**
+  1. **दस्तावेज एकत्रीकरण:** आवश्यक दस्तावेजों की स्व-प्रमाणित प्रतियां तैयार करें।
+  2. **e-KYC सत्यापन:** समग्र एवं आधार e-KYC पूरा करें।
+  3. **आवेदन जमा:** पोर्टल अथवा कियोस्क पर फॉर्म भरकर पावती प्राप्त करें।
+
+CONVERSATIONAL GUIDELINES & PROACTIVE FOLLOW-UPS:
+1. यदि नागरिक बुनियादी जानकारी देता है (जैसे "मैं किसान हूँ"):
+   - तुरंत शीर्ष 1-2 योजनाओं का पूरा विवरण, लाभ, दस्तावेज और आवेदन प्रक्रिया बताएं।
+   - केवल सवाल पूछने के लिए जानकारी न रोकें! मुख्य जानकारी तुरंत दें!
+   - अंत में केवल 1-2 विशिष्ट पात्रता प्रश्न पूछें:
+     "**कृपया बताएं:** [आपका प्रश्न महत्वपूर्ण शब्दों को बोल्ड करके]"
+2. यदि नागरिक ने पूरी जानकारी दी है:
+   - सभी उपयुक्त योजनाओं का पूर्ण विवरण दें और अगले कदम की सहायता प्रस्तुत करें।
+3. शैली:
+   - अत्यंत सम्मानजनक, औपचारिक, उत्साहवर्धक और प्रामाणिक।
+
+${schemesPayload}
+
+SCOPE RESTRICTION:
+- आप केवल भारतीय सरकारी योजनाओं, नागरिक कल्याण और शासन पोर्टल में सहायता करते हैं।
+- अन्य विषयों पर 1 वाक्य में विनम्रतापूर्वक मना करें।`
+  }
+
+  // Fallback for other languages (Marathi, Tamil, etc.)
+  return `You are Jan Seva, an expert, deeply helpful Sovereign AI Citizen Welfare & Governance Assistant for the citizens of Madhya Pradesh and India.
+
+CRITICAL LANGUAGE INSTRUCTION (ABSOLUTE TOP PRIORITY):
+- The user has selected language: ${selectedLangName}.
+- You MUST WRITE YOUR ENTIRE RESPONSE STRICTLY IN ${selectedLangName.toUpperCase()}.
+- Do NOT include English words in brackets or transliterations.
+- Always strictly match the user's selected language (${selectedLangName}) in both the answer and any follow-up guidance.
+
+VOICE & AUDIO SYSTEM CAPABILITIES:
+- You HAVE BUILT-IN VOICE & SPEECH SYNTHESIS (TTS) CAPABILITIES.
+- Answer the citizen's query directly with warmth, dignity, and scheme information without any verbal preamble.
+
+PROFESSIONAL SCHEME PRESENTATION STANDARD:
+1. ABSOLUTELY NO EMOJIS OR ICONS.
+2. SCHEME NAME & IMPORTANT KEYWORDS MUST BE BOLD:
+   - Always format official scheme names, section titles, amounts, and documents in bold.
+
+${schemesPayload}
+
+SCOPE RESTRICTION:
+- You ONLY help with Indian government schemes, citizen welfare, eligibility, and governance portals.`
 }
 
 // Static UI text (greeting, status labels, input hints) in each supported
@@ -972,6 +1136,9 @@ export default function App() {
         .replace(/^(?:हाँ\s*(?:बिल्कुल)?,?\s*)?मैं\s*आपको\s*बोलकर\s*बता\s*रहा\s*हूँ[।.]?\s*/i, '')
         .replace(/^Certainly,?\s*I am reading this aloud for you[.]?\s*/i, '')
         .trim()
+      if (voiceLang === 'en-IN' || (typeof voiceLang === 'string' && voiceLang.startsWith('en'))) {
+        replyText = sanitizeHindiTermsInEnglish(replyText)
+      }
       const updatedMessages = [...newMessages, { role: 'assistant', text: replyText }]
       setMessages(updatedMessages)
       if (speakEnabled || wantsVoice) {
@@ -1158,7 +1325,7 @@ export default function App() {
     return () => stopSpeaking()
   }, [])
 
-useEffect(() => {
+  useEffect(() => {
     const isLarge = settings.textSize === 'large'
     document.documentElement.classList.toggle('ym-text-large', isLarge)
     document.body.classList.toggle('ym-text-large', isLarge)
@@ -1446,7 +1613,7 @@ useEffect(() => {
                 >
                   {msg.role === 'assistant' ? (
                     <div>
-                      <MessageContent text={msg.text} />
+                      <MessageContent text={msg.text} lang={voiceLang} />
                       <div style={styles.bubbleActionRow}>
                         <button
                           type="button"
@@ -1487,26 +1654,44 @@ useEffect(() => {
           )}
           {error && (
             <div style={styles.errorNote}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', textAlign: 'center' }}>
                 <span>⚠️ {error}</span>
-                {lastSentTextRef.current && (
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {lastSentTextRef.current && (
+                    <button
+                      type="button"
+                      style={{
+                        background: '#059669',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleSend(lastSentTextRef.current)}
+                    >
+                      पुनः प्रयास करें (Retry)
+                    </button>
+                  )}
                   <button
                     type="button"
                     style={{
-                      background: '#059669',
+                      background: '#0f172a',
                       color: '#ffffff',
                       border: 'none',
                       borderRadius: '6px',
-                      padding: '4px 10px',
+                      padding: '6px 12px',
                       fontSize: '12px',
                       fontWeight: 700,
                       cursor: 'pointer',
                     }}
-                    onClick={() => handleSend(lastSentTextRef.current)}
+                    onClick={() => setShowSettings(true)}
                   >
-                    पुनः प्रयास करें (Retry)
+                    ⚙️ नया API Key डालें (Settings)
                   </button>
-                )}
+                </div>
               </div>
             </div>
           )}
@@ -1910,6 +2095,32 @@ useEffect(() => {
                   <button style={styles.formSecondaryBtn} onClick={handleClearCache}>Clear offline cache</button>
                   <button style={styles.formSecondaryBtn} onClick={handleClearSaved}>Clear saved schemes</button>
                 </div>
+              </div>
+
+              <div style={styles.detailSection}>
+                <div style={styles.detailSectionTitle}>Google Gemini API Key (Custom Override)</div>
+                <p style={{ fontSize: '12px', color: 'var(--color-charcoal-soft)', margin: '4px 0 8px', lineHeight: 1.45 }}>
+                  If the default server key reaches its free quota (HTTP 429), paste any fresh free key from{' '}
+                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#059669', fontWeight: 700 }}>
+                    aistudio.google.com
+                  </a>{' '}
+                  to keep chatting immediately.
+                </p>
+                <input
+                  type="password"
+                  style={styles.formInput}
+                  value={settings.customApiKey || ''}
+                  onChange={(e) => handleChangeSetting('customApiKey', e.target.value.trim())}
+                  placeholder="Paste AI Studio API Key (AIzaSy...)"
+                />
+                {settings.customApiKey && (
+                  <button
+                    style={{ ...styles.formSecondaryBtn, marginTop: '8px' }}
+                    onClick={() => handleChangeSetting('customApiKey', '')}
+                  >
+                    Reset to Default Vercel Key
+                  </button>
+                )}
               </div>
             </div>
           </div>
