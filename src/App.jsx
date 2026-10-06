@@ -1158,7 +1158,7 @@ export default function App() {
     return () => stopSpeaking()
   }, [])
 
-  useEffect(() => {
+useEffect(() => {
     const isLarge = settings.textSize === 'large'
     document.documentElement.classList.toggle('ym-text-large', isLarge)
     document.body.classList.toggle('ym-text-large', isLarge)
@@ -1487,44 +1487,26 @@ export default function App() {
           )}
           {error && (
             <div style={styles.errorNote}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px', textAlign: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', flexWrap: 'wrap' }}>
                 <span>⚠️ {error}</span>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {lastSentTextRef.current && (
-                    <button
-                      type="button"
-                      style={{
-                        background: '#059669',
-                        color: '#ffffff',
-                        border: 'none',
-                        borderRadius: '6px',
-                        padding: '6px 12px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => handleSend(lastSentTextRef.current)}
-                    >
-                      पुनः प्रयास करें (Retry)
-                    </button>
-                  )}
+                {lastSentTextRef.current && (
                   <button
                     type="button"
                     style={{
-                      background: '#0f172a',
+                      background: '#059669',
                       color: '#ffffff',
                       border: 'none',
                       borderRadius: '6px',
-                      padding: '6px 12px',
+                      padding: '4px 10px',
                       fontSize: '12px',
                       fontWeight: 700,
                       cursor: 'pointer',
                     }}
-                    onClick={() => setShowSettings(true)}
+                    onClick={() => handleSend(lastSentTextRef.current)}
                   >
-                    ⚙️ नया API Key डालें (Settings)
+                    पुनः प्रयास करें (Retry)
                   </button>
-                </div>
+                )}
               </div>
             </div>
           )}
@@ -1928,32 +1910,6 @@ export default function App() {
                   <button style={styles.formSecondaryBtn} onClick={handleClearCache}>Clear offline cache</button>
                   <button style={styles.formSecondaryBtn} onClick={handleClearSaved}>Clear saved schemes</button>
                 </div>
-              </div>
-
-              <div style={styles.detailSection}>
-                <div style={styles.detailSectionTitle}>Google Gemini API Key (Custom Override)</div>
-                <p style={{ fontSize: '12px', color: 'var(--color-charcoal-soft)', margin: '4px 0 8px', lineHeight: 1.45 }}>
-                  If the default server key reaches its free quota (HTTP 429), paste any fresh free key from{' '}
-                  <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#059669', fontWeight: 700 }}>
-                    aistudio.google.com
-                  </a>{' '}
-                  to keep chatting immediately.
-                </p>
-                <input
-                  type="password"
-                  style={styles.formInput}
-                  value={settings.customApiKey || ''}
-                  onChange={(e) => handleChangeSetting('customApiKey', e.target.value.trim())}
-                  placeholder="Paste AI Studio API Key (AIzaSy...)"
-                />
-                {settings.customApiKey && (
-                  <button
-                    style={{ ...styles.formSecondaryBtn, marginTop: '8px' }}
-                    onClick={() => handleChangeSetting('customApiKey', '')}
-                  >
-                    Reset to Default Vercel Key
-                  </button>
-                )}
               </div>
             </div>
           </div>
