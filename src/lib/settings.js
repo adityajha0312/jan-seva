@@ -3,7 +3,6 @@ const SETTINGS_KEY = 'jan_seva_settings'
 export const DEFAULT_SETTINGS = {
   textSize: 'normal', // 'normal' | 'large'
   defaultVoiceLang: 'hi-IN', // Defaults to Hindi for MP citizen governance
-  customApiKey: '', // Optional user/judge override Google Gemini API key
 }
 
 export function getSettings() {
