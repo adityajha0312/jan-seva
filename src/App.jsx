@@ -504,8 +504,8 @@ const DEFAULT_SCHEMES = [
 // relevant based on the conversation so far in English, Hindi, and Hinglish.
 const CATEGORY_KEYWORDS = {
   farmer: [
-    'farmer', 'farming', 'kisan', 'kishan', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet',
-    'किसान', 'किशन', 'किसन', 'खेती', 'फसल', 'जमीन', 'एकड़', 'कृषि', 'पटवारी', 'खसरा', 'खाद', 'बीज', 'kisan kalyan'
+    'farmer', 'farming', 'kisan', 'kishan', 'kish', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet',
+    'किसान', 'किशन', 'किश', 'किसन', 'खेती', 'फसल', 'जमीन', 'एकड़', 'कृषि', 'पटवारी', 'खसरा', 'खाद', 'बीज', 'kisan kalyan'
   ],
   student: [
     'student', 'scholarship', 'school', 'college', 'class ', 'study', 'studying', 'graduate', 'education', 'marks', '10th', '12th',
@@ -595,7 +595,14 @@ PROFESSIONAL SCHEME PRESENTATION STANDARD (CRITICAL & STRICT):
    - ALWAYS format all section titles in bold.
    - ALWAYS format important keywords in bold: financial figures (e.g. **₹12,000 प्रति वर्ष**, **₹15,000/वर्ष**, **₹8,500/माह**), official portal URLs (e.g. **pmfby.gov.in**, **samagra.gov.in**), required document names (e.g. **आधार कार्ड**, **समग्र आईडी**, **खसरा बी-1**, **बैंक पासबुक**), and key deadlines/rules (e.g. **72 घंटे**, **14 दिन**).
 
-Whenever the citizen matches with scheme(s), asks what schemes they qualify for, or inquires about a scheme, you MUST provide an IN-DEPTH, COMPLETE, AND BEAUTIFULLY STRUCTURED breakdown for each matching scheme.
+MANDATORY WARM CITIZEN GREETING (START EVERY RESPONSE WITH THIS):
+1. ALWAYS start your response with a warm, respectful citizen greeting and acknowledgment:
+   - If Hindi:
+     "नमस्ते! [नागरिक के व्यवसाय/स्थिति को सम्मानपूर्वक स्वीकार करते हुए 1-2 आत्मीय व उत्साहवर्धक वाक्य लिखें, जैसे: 'नमस्ते! एक किसान भाई के रूप में और दो एकड़ कृषि योग्य भूमि के स्वामी होने के नाते, आप मध्य प्रदेश और केंद्र सरकार की कई प्रमुख कल्याणकारी योजनाओं के पात्र हैं। आपके लिए सबसे महत्वपूर्ण योजनाओं का विस्तृत विवरण नीचे दिया गया है:']"
+   - If English:
+     "Namaste! [Write a warm, dignified 1-2 sentence citizen opening acknowledging their occupation/situation, e.g.: 'Namaste! As a farmer holding 2 acres of cultivable land, you qualify for several key central and MP state welfare schemes. Here is a complete breakdown of the best schemes for you:']"
+2. ABSOLUTELY DO NOT say "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ" or "Certainly, I am reading this aloud for you" - omit that phrase entirely!
+3. Then immediately provide the complete, beautifully structured breakdown for each matching scheme below.
 
 For EACH matched scheme, you MUST include ALL of the following distinct sections:
 
