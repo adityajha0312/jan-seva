@@ -15,50 +15,6 @@ let speechQueue = []
 let isSpeakingQueue = false
 let currentOnEndCallback = null
 
-// Phonetic corrector for Indian governance & citizen welfare terms.
-// Browser Web Speech API frequently mishears "किसान" / "किशन" as "किस" ("kiss"), etc.
-export function correctSpeechTranscript(text, lang = 'hi-IN') {
-  if (!text) return ''
-  let corrected = text
-
-  // 1. "किस / kiss / kishan" -> "किसान" (Farmer) corrections:
-  // "मैं किस हूं/हूँ", "हम किस हैं", "किस भाई", "एक किस के नाते"
-  corrected = corrected.replace(/\bमैं\s+किस\s+(हूँ|हूं|हु)\b/gi, 'मैं किसान $1')
-  corrected = corrected.replace(/\bहम\s+किस\s+(हैं|हे)\b/gi, 'हम किसान $1')
-  corrected = corrected.replace(/\bकिस\s+(हूँ|हूं|हु)\b/gi, 'किसान $1')
-  corrected = corrected.replace(/\bकिस\s+(भाई|परिवार|क्रेडिट|योजना|आंदोलन)\b/gi, 'किसान $1')
-
-  // "किशन / किसन" -> "किसान"
-  corrected = corrected.replace(/\bमैं\s+(किशन|किसन)\s+(हूँ|हूं|हु)\b/gi, 'मैं किसान $2')
-  corrected = corrected.replace(/\b(किशन|किसन)\s+(हूँ|हूं|हु)\b/gi, 'किसान $2')
-  corrected = corrected.replace(/\b(किशन|किसन)\s+(भाई|कल्याण|क्रेडिट)\b/gi, 'किसान $2')
-
-  // If sentence contains agriculture context words (जमीन, एकड़, हेक्टेयर, फसल, खेती, बीघा, खसरा, पटवारी, खाद, बीज, khet, land, acre, crop),
-  // convert any standalone "किस", "किशन", "किसन", or "kiss" to "किसान"
-  const hasFarmingContext = /(?:जमीन|एकड़|एकड|हेक्टेयर|फसल|खेती|बीघा|खसरा|खाद|बीज|पटवारी|khet|land|acre|crop|cultivat)/i.test(corrected)
-  if (hasFarmingContext) {
-    corrected = corrected.replace(/\b(किस|किशन|किसन|kiss)\b/gi, 'किसान')
-  }
-
-  // English / Hinglish: "I am a kiss", "main kiss hoon", "kiss farmer"
-  corrected = corrected.replace(/\b(main|mai)\s+(?:a\s+)?(kiss|kis|kishan)\s+(hoon|hu|hun)\b/gi, '$1 kisan $3')
-  corrected = corrected.replace(/\bI\s+am\s+(?:a\s+)?(kiss|kis|kishan)\b/gi, 'I am a farmer')
-
-  // 2. Ladli Behna & Women scheme corrections
-  corrected = corrected.replace(/\b(लाडली|लाडली|लाड़ली)\s*(बहना|बहन|बेहना)\b/gi, 'लाड़ली बहना')
-
-  // 3. Samagra ID corrections
-  corrected = corrected.replace(/\bसमग्र\s*आई\s*डी\b/gi, 'समग्र आईडी')
-
-  // 4. Ayushman Bharat corrections
-  corrected = corrected.replace(/\b(आयुष्मान|आयुस्मान)\s*(भारत)?\b/gi, 'आयुष्मान भारत')
-
-  // 5. Sambal Yojana corrections
-  corrected = corrected.replace(/\b(संबल|सम्बल)\s*(योजना)?\b/gi, 'संबल योजना')
-
-  return corrected
-}
-
 // Starts listening for speech and returns a controller object with a stop() method.
 export function startListening({ lang = 'hi-IN', onResult, onEnd, onError }) {
   if (!SpeechRecognitionAPI) {
@@ -86,9 +42,8 @@ export function startListening({ lang = 'hi-IN', onResult, onEnd, onError }) {
     }
 
     const combined = (finalTranscript + interimTranscript).trim()
-    const correctedCombined = correctSpeechTranscript(combined, lang)
     const isLastFinal = event.results[event.results.length - 1]?.isFinal || false
-    onResult?.(correctedCombined, isLastFinal)
+    onResult?.(combined, isLastFinal)
   }
 
   recognition.onerror = (event) => {
@@ -123,8 +78,6 @@ export function startListening({ lang = 'hi-IN', onResult, onEnd, onError }) {
 function cleanTextForSpeech(text, lang = 'hi-IN') {
   if (!text) return ''
   let cleaned = text
-    .replace(/^(?:हाँ\s*(?:बिल्कुल)?,?\s*)?मैं\s*आपको\s*बोलकर\s*बता\s*रहा\s*हूँ[।.]?\s*/i, '')
-    .replace(/^Certainly,?\s*I am reading this aloud for you[.]?\s*/i, '')
     .replace(/#{1,6}\s+/g, '')
     .replace(/\*\*/g, '')
     .replace(/\*/g, '')
