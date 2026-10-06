@@ -10,6 +10,7 @@ import {
   MicIcon, StopIcon, SpeakerOnIcon, SpeakerOffIcon, MenuIcon, CloseIcon, PlusChatIcon,
   GridIcon, DocumentIcon, BookmarkIcon, UserCircleIcon, SettingsGearIcon, GlobeIcon,
   SendIcon, SearchIcon, ShieldAlertIcon, CalculatorIcon, BarChartIcon, BriefcaseJobIcon,
+  PortalGatewayIcon,
 } from './Icons'
 import ApplicationForm from './ApplicationForm'
 import LandingPage from './LandingPage'
@@ -1206,16 +1207,29 @@ export default function App() {
 
       {/* Left sidebar: brand + primary navigation */}
       <aside className={`ym-shell-left${isMobileNavOpen ? ' ym-open' : ''}`} style={styles.sidebarLeft}>
-        <div style={styles.sidebarBrand}>
+        <div
+          style={{ ...styles.sidebarBrand, cursor: 'pointer' }}
+          onClick={() => { setStarted(false); setIsMobileNavOpen(false) }}
+          title="Return to Main Portal"
+        >
           <Logo size={36} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <div style={styles.sidebarBrandTitle}>Jan Seva (जन सेवा)</div>
             <div style={styles.sidebarBrandSub}>AI Citizen Governance</div>
           </div>
-          <button className="ym-mobile-close-btn" style={styles.mobileCloseBtn} onClick={() => setIsMobileNavOpen(false)} aria-label="Close menu">
+          <button className="ym-mobile-close-btn" style={styles.mobileCloseBtn} onClick={(e) => { e.stopPropagation(); setIsMobileNavOpen(false) }} aria-label="Close menu">
             <CloseIcon size={16} color="#0f172a" />
           </button>
         </div>
+
+        <button
+          className="ym-nav-item"
+          onClick={() => { setStarted(false); setIsMobileNavOpen(false) }}
+          style={{ margin: '2px 0 4px', fontWeight: 700, color: '#047857', background: 'rgba(5, 150, 105, 0.08)', border: '1px solid rgba(5, 150, 105, 0.22)' }}
+          title="Return to Main Portal"
+        >
+          <PortalGatewayIcon size={15} color="#059669" /> Main Portal
+        </button>
 
         <button className="ym-nav-item ym-nav-primary" onClick={handleClearChat} style={{ margin: '2px 0 4px' }}>
           <PlusChatIcon size={15} color="#ffffff" /> New Chat
@@ -1286,7 +1300,11 @@ export default function App() {
             <button className="ym-mobile-menu-btn" style={styles.mobileMenuBtn} onClick={() => setIsMobileNavOpen(true)} aria-label="Open menu">
               <MenuIcon size={19} color="#0f172a" />
             </button>
-            <div>
+            <div
+              style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column' }}
+              onClick={() => setStarted(false)}
+              title="Return to Main Portal"
+            >
               <h1 className="ym-title-text" style={styles.title}>Jan Seva (जन सेवा)</h1>
               <p className="ym-subtitle-text" style={styles.subtitle}>
                 <span style={{ ...styles.statusDot, background: isOnline ? '#10b981' : '#f59e0b' }} />
@@ -1295,6 +1313,14 @@ export default function App() {
             </div>
           </div>
           <div style={styles.headerActions}>
+            <button
+              className="ym-icon-btn"
+              onClick={() => setStarted(false)}
+              title="Return to Main Portal"
+              style={{ fontWeight: 700, color: '#047857', background: 'rgba(5, 150, 105, 0.08)' }}
+            >
+              <PortalGatewayIcon size={14} color="#047857" /> Portal
+            </button>
             <button
               className="ym-icon-btn ym-header-desktop-only"
               onClick={() => setShowScorecard(true)}
