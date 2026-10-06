@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { fetchAllSchemes } from './lib/supabase'
 import { askGemini } from './lib/gemini'
-import { startListening, speakText, stopSpeaking, isVoiceInputSupported, isVoiceOutputSupported } from './lib/speech'
+import { startListening, speakText, stopSpeaking, isVoiceInputSupported, isVoiceOutputSupported, correctSpeechTranscript } from './lib/speech'
 import { subscribeToConnectionStatus, isCurrentlyOnline, getCacheAge, getSchemesFromCache, getSavedSchemeIds, toggleSavedScheme, clearSchemesCache, clearSavedSchemes } from './lib/offline'
 import { getProfile, saveProfile, clearProfile, profileToOpener } from './lib/profile'
 import { getSettings, saveSettings } from './lib/settings'
@@ -157,6 +157,15 @@ function MessageContent({ text }) {
   lines.forEach((line, idx) => {
     const rawTrimmed = line.trim()
     const trimmed = cleanAndFormatLine(rawTrimmed)
+
+    // Strip unnecessary voice meta preamble lines
+    if (
+      /^(?:हाँ\s*(?:बिल्कुल)?,?\s*)?मैं\s*आपको\s*बोलकर\s*बता\s*रहा\s*हूँ[।.]?$/i.test(trimmed) ||
+      /^Certainly,?\s*I am reading this aloud for you[.]?$/i.test(trimmed)
+    ) {
+      return
+    }
+
     const headingMatch = /^(#{1,6})\s+(.*)$/.exec(trimmed)
 
     // Detect section titles (e.g. Scheme Name & Benefit, Key Features, Eligibility, Documents, How to Apply)
@@ -495,8 +504,8 @@ const DEFAULT_SCHEMES = [
 // relevant based on the conversation so far in English, Hindi, and Hinglish.
 const CATEGORY_KEYWORDS = {
   farmer: [
-    'farmer', 'farming', 'kisan', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet',
-    'किसान', 'खेती', 'फसल', 'जमीन', 'एकड़', 'कृषि', 'पटवारी', 'खसरा', 'खाद', 'बीज', 'kisan kalyan'
+    'farmer', 'farming', 'kisan', 'kishan', 'agricultur', 'land', 'acre', 'hectare', 'crop', 'khet',
+    'किसान', 'किशन', 'किसन', 'खेती', 'फसल', 'जमीन', 'एकड़', 'कृषि', 'पटवारी', 'खसरा', 'खाद', 'बीज', 'kisan kalyan'
   ],
   student: [
     'student', 'scholarship', 'school', 'college', 'class ', 'study', 'studying', 'graduate', 'education', 'marks', '10th', '12th',
@@ -573,8 +582,8 @@ CRITICAL LANGUAGE INSTRUCTION (ABSOLUTE TOP PRIORITY):
 VOICE & AUDIO SYSTEM CAPABILITIES:
 - You HAVE BUILT-IN VOICE & SPEECH SYNTHESIS (TTS) CAPABILITIES. Your responses are automatically read aloud to the citizen.
 - NEVER say "I am a text assistant", "I cannot speak", or "I have no voice feature". You CAN speak!
-- If the citizen asks in English ("speak to me", "read aloud", "read it out"): Acknowledge warmly in English: "Certainly, I am reading this aloud for you..."
-- If the citizen asks in Hindi ("बोल के बताओ", "आवाज़ में बताओ"): Acknowledge warmly in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..."
+- ABSOLUTELY DO NOT add meta preamble commentary like "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ", "मैं बोलकर बता रहा हूँ", or "Certainly, I am reading this aloud for you". The application automatically speaks your response.
+- Answer the citizen's query directly with warmth, dignity, and scheme information without any verbal preamble.
 - Write cleanly and expressively so speech synthesis sounds natural.
 
 PROFESSIONAL SCHEME PRESENTATION STANDARD (CRITICAL & STRICT):
@@ -915,7 +924,8 @@ export default function App() {
       setIsListening(false)
     }
 
-    const textToSend = (overrideText ?? input).trim()
+    const rawText = (overrideText ?? input).trim()
+    const textToSend = correctSpeechTranscript(rawText, voiceLang)
     if (!textToSend || loading) return
 
     lastSentTextRef.current = textToSend
@@ -949,7 +959,12 @@ export default function App() {
 
       const conversationText = newMessages.map((m) => m.text).join(' ')
       const systemInstruction = buildSystemInstruction(schemes, conversationText, voiceLang)
-      const replyText = await askGemini(systemInstruction, newMessages)
+      let replyText = await askGemini(systemInstruction, newMessages)
+      // Strip any voice preamble / meta lines like "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ।"
+      replyText = replyText
+        .replace(/^(?:हाँ\s*(?:बिल्कुल)?,?\s*)?मैं\s*आपको\s*बोलकर\s*बता\s*रहा\s*हूँ[।.]?\s*/i, '')
+        .replace(/^Certainly,?\s*I am reading this aloud for you[.]?\s*/i, '')
+        .trim()
       const updatedMessages = [...newMessages, { role: 'assistant', text: replyText }]
       setMessages(updatedMessages)
       if (speakEnabled || wantsVoice) {
@@ -1069,7 +1084,8 @@ export default function App() {
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
       listenControllerRef.current?.stop()
       setIsListening(false)
-      const speechToSend = latestVoiceTextRef.current.trim() || input.trim()
+      const rawSpeech = latestVoiceTextRef.current.trim() || input.trim()
+      const speechToSend = correctSpeechTranscript(rawSpeech, voiceLang)
       if (speechToSend) {
         handleSend(speechToSend, true)
       }
@@ -1089,8 +1105,9 @@ export default function App() {
     listenControllerRef.current = startListening({
       lang: voiceLang,
       onResult: (transcript, isFinal) => {
-        latestVoiceTextRef.current = transcript
-        setInput(transcript)
+        const cleaned = correctSpeechTranscript(transcript, voiceLang)
+        latestVoiceTextRef.current = cleaned
+        setInput(cleaned)
 
         // Clear pending silence timer whenever new speech or word chunk arrives
         if (silenceTimerRef.current) {
