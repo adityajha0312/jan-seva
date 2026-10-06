@@ -29,6 +29,7 @@ const VOICE_LANGUAGES = [
   { code: 'ta-IN', label: 'தமிழ்' },
 ]
 
+
 const QUICK_LINKS = [
   { label: 'PM-KISAN', url: 'https://pmkisan.gov.in' },
   { label: 'Ayushman Bharat', url: 'https://beneficiary.nha.gov.in' },
@@ -45,16 +46,72 @@ const QUICK_LINKS = [
 ]
 
 function renderInline(text, keyPrefix) {
+  if (!text) return null
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g)
   return parts.map((part, i) => {
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={`${keyPrefix}-${i}`}>{part.slice(2, -2)}</strong>
+      return (
+        <strong key={`${keyPrefix}-${i}`} style={{ fontWeight: 800, color: '#0f172a' }}>
+          {part.slice(2, -2)}
+        </strong>
+      )
     }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
       return <em key={`${keyPrefix}-${i}`}>{part.slice(1, -1)}</em>
     }
     return <span key={`${keyPrefix}-${i}`}>{part}</span>
   })
+}
+
+// Cleans icons/emojis from lines and bolds scheme names & important keywords
+function cleanAndFormatLine(line) {
+  if (!line) return ''
+  let cleaned = line.trim()
+
+  // 1. Strip leading decorative emojis & icons from bullet points or line starts
+  cleaned = cleaned.replace(/^([*\-•]\s*)[🏛️✨🎯📋🚀👉📌🔹🔸💡✔❌🔍⚡\u2705\u274C\u26A0\uFE0F\u200D\uD83C-\uDBFF\uDC00-\uDFFF]+\s*/u, '$1')
+  cleaned = cleaned.replace(/^[🏛️✨🎯📋🚀👉📌🔹🔸💡✔❌🔍⚡\u2705\u274C\u26A0\uFE0F\u200D\uD83C-\uDBFF\uDC00-\uDFFF]+\s*/u, '')
+
+  // 2. Ensure Scheme Name label and the actual scheme name value are bold
+  // Matches: "• योजना का नाम: प्रधानमंत्री फसल बीमा योजना..." or "• Scheme Name: ..."
+  cleaned = cleaned.replace(
+    /^([*\-•]\s*)?(?:(\*{0,2})(योजना का नाम|Scheme Name)(\*{0,2}))\s*:\s*(.+)$/i,
+    (m, bullet, b1, label, b2, val) => {
+      const b = bullet || ''
+      const cleanVal = val.trim()
+      const boldVal = cleanVal.startsWith('**') && cleanVal.endsWith('**') ? cleanVal : `**${cleanVal.replace(/^\*\*|\*\*$/g, '')}**`
+      return `${b}**${label}:** ${boldVal}`
+    }
+  )
+
+  // 3. Ensure financial benefit label is bold
+  cleaned = cleaned.replace(
+    /^([*\-•]\s*)?(?:(\*{0,2})(वित्तीय लाभ|Financial Benefit)(\*{0,2}))\s*:\s*(.+)$/i,
+    (m, bullet, b1, label, b2, val) => {
+      const b = bullet || ''
+      return `${b}**${label}:** ${val.trim()}`
+    }
+  )
+
+  // 4. Ensure online portal / kiosk labels are bold
+  cleaned = cleaned.replace(
+    /^([*\-•]\s*)?(?:(\*{0,2})(ऑनलाइन पोर्टल|Online Portal|कियोस्क \/ ऑफलाइन|Kiosk \/ Offline)(\*{0,2}))\s*:\s*(.+)$/i,
+    (m, bullet, b1, label, b2, val) => {
+      const b = bullet || ''
+      return `${b}**${label}:** ${val.trim()}`
+    }
+  )
+
+  // 5. Auto-bold common official document names if present at the start of a document checklist item
+  cleaned = cleaned.replace(
+    /^([*\-•]\s*)(आधार कार्ड|बैंक पासबुक|भूमि के कागजात|समग्र आईडी|आय प्रमाण पत्र|जाति प्रमाण पत्र|Aadhaar Card|Samagra ID|Bank Passbook|Land Record|Income Certificate|Caste Certificate)(?=\s*[\(:])/i,
+    '$1**$2**'
+  )
+
+  // 6. Auto-bold official government domain URLs (e.g. pmfby.gov.in, samagra.gov.in)
+  cleaned = cleaned.replace(/(?<!\*\*)\b([a-zA-Z0-9-]+\.(?:gov\.in|nic\.in))\b(?!\*\*)/gi, '**$1**')
+
+  return cleaned
 }
 
 function MessageContent({ text }) {
@@ -66,24 +123,30 @@ function MessageContent({ text }) {
   function flushList(key) {
     if (currentList.length > 0) {
       blocks.push(
-        <ul key={`ul-${key}`} style={{ margin: '4px 0', paddingLeft: '20px' }}>
-          {currentList.map((line, i) => (
-            <li key={i} style={{ marginBottom: '3px' }}>
-              {renderInline(line.replace(/^[*\-]\s+/, ''), `li-${key}-${i}`)}
-            </li>
-          ))}
+        <ul key={`ul-${key}`} style={{ margin: '6px 0', paddingLeft: '20px' }}>
+          {currentList.map((line, i) => {
+            const formatted = cleanAndFormatLine(line)
+            return (
+              <li key={i} style={{ marginBottom: '4px', lineHeight: 1.55 }}>
+                {renderInline(formatted.replace(/^[*\-•]\s+/, ''), `li-${key}-${i}`)}
+              </li>
+            )
+          })}
         </ul>
       )
       currentList = []
     }
     if (currentOrderedList.length > 0) {
       blocks.push(
-        <ol key={`ol-${key}`} style={{ margin: '4px 0', paddingLeft: '22px' }}>
-          {currentOrderedList.map((line, i) => (
-            <li key={i} style={{ marginBottom: '3px' }}>
-              {renderInline(line.replace(/^\d+[\.)]\s+/, ''), `oli-${key}-${i}`)}
-            </li>
-          ))}
+        <ol key={`ol-${key}`} style={{ margin: '6px 0', paddingLeft: '22px' }}>
+          {currentOrderedList.map((line, i) => {
+            const formatted = cleanAndFormatLine(line)
+            return (
+              <li key={i} style={{ marginBottom: '4px', lineHeight: 1.55 }}>
+                {renderInline(formatted.replace(/^\d+[\.)]\s+/, ''), `oli-${key}-${i}`)}
+              </li>
+            )
+          })}
         </ol>
       )
       currentOrderedList = []
@@ -91,8 +154,15 @@ function MessageContent({ text }) {
   }
 
   lines.forEach((line, idx) => {
-    const trimmed = line.trim()
+    const rawTrimmed = line.trim()
+    const trimmed = cleanAndFormatLine(rawTrimmed)
     const headingMatch = /^(#{1,6})\s+(.*)$/.exec(trimmed)
+
+    // Detect section titles (e.g. Scheme Name & Benefit, Key Features, Eligibility, Documents, How to Apply)
+    const isSectionHeading = /^\*{0,2}(योजना का नाम और लाभ|योजना का नाम|मुख्य विशेषताएं|पात्रता|आवश्यक दस्तावेज|आवेदन करने की|Scheme Name & Total Benefit|Scheme Name|Key Features|Eligibility|Required Documents|How to Apply|Step-by-Step)/i.test(trimmed)
+      && !/^[*\-•\d]/.test(rawTrimmed)
+      && trimmed.length < 90
+
     if (headingMatch) {
       flushList(idx)
       const level = headingMatch[1].length
@@ -100,16 +170,34 @@ function MessageContent({ text }) {
         <div
           key={idx}
           style={{
-            fontWeight: 700,
-            color: 'var(--color-forest)',
+            fontWeight: 800,
+            color: '#065f46',
             fontSize: level <= 2 ? '15.5px' : '14.5px',
-            margin: '10px 0 4px',
+            margin: '14px 0 6px',
+            letterSpacing: '0.01em',
           }}
         >
           {renderInline(headingMatch[2], `h-${idx}`)}
         </div>
       )
-    } else if (/^[*\-]\s+/.test(trimmed)) {
+    } else if (isSectionHeading) {
+      flushList(idx)
+      const cleanTitle = trimmed.replace(/^\*\*|\*\*$/g, '').trim()
+      blocks.push(
+        <div
+          key={idx}
+          style={{
+            fontWeight: 800,
+            color: '#047857',
+            fontSize: '14px',
+            margin: '14px 0 6px',
+            letterSpacing: '0.01em',
+          }}
+        >
+          {cleanTitle}
+        </div>
+      )
+    } else if (/^[*\-•]\s+/.test(trimmed)) {
       if (currentOrderedList.length > 0) flushList(idx)
       currentList.push(trimmed)
     } else if (/^\d+[\.)]\s+/.test(trimmed)) {
@@ -122,7 +210,7 @@ function MessageContent({ text }) {
       } else if (trimmed === '--' || trimmed === '---' || trimmed === '***') {
         blocks.push(<hr key={idx} style={{ border: 'none', borderTop: '1px solid rgba(20,83,45,0.12)', margin: '8px 0' }} />)
       } else {
-        blocks.push(<div key={idx}>{renderInline(line, `p-${idx}`)}</div>)
+        blocks.push(<div key={idx} style={{ margin: '4px 0' }}>{renderInline(trimmed, `p-${idx}`)}</div>)
       }
     }
   })
@@ -294,7 +382,7 @@ const DEFAULT_SCHEMES = [
     scheme_name_hindi: 'गांव की बेटी एवं प्रतिभा किरण योजना',
     category: 'student',
     level: 'State (Madhya Pradesh)',
-    benefits: 'Scholarship grant of ₹5,00,000 - ₹7,500 per academic year (₹500 - ₹750/month for 10 months) paid directly into girl student bank account',
+    benefits: 'Scholarship grant of ₹5,000 - ₹7,500 per academic year (₹500 - ₹750/month for 10 months) paid directly into girl student bank account',
     eligibility_criteria: [
       'Gaon Ki Beti: Rural MP girl students passing 12th with 60%+ first division from a village school and studying in college',
       'Pratibha Kiran: Urban BPL girl students passing 12th with 60%+'
@@ -464,7 +552,7 @@ function buildSystemInstruction(schemes, conversationText, currentLang = 'en-IN'
   const selectedLangName = langNames[currentLang] || 'English'
 
   const formatScheme = (s) => `
-🏛️ SCHEME: ${s.scheme_name} ${s.scheme_name_hindi ? `(${s.scheme_name_hindi})` : ''} [Category: ${s.category}, Level: ${s.level || 'State/Central'}]
+SCHEME: ${s.scheme_name} ${s.scheme_name_hindi ? `(${s.scheme_name_hindi})` : ''} [Category: ${s.category}, Level: ${s.level || 'State/Central'}]
 - Financial Benefit: ${s.benefits}
 - Eligibility Criteria: ${Array.isArray(s.eligibility_criteria) ? s.eligibility_criteria.join('; ') : JSON.stringify(s.eligibility_criteria)}
 - Required Documents: ${Array.isArray(s.documents_required) ? s.documents_required.join(', ') : JSON.stringify(s.documents_required)}
@@ -488,35 +576,84 @@ VOICE & AUDIO SYSTEM CAPABILITIES:
 - If the citizen asks in Hindi ("बोल के बताओ", "आवाज़ में बताओ"): Acknowledge warmly in Hindi: "हाँ बिल्कुल, मैं आपको बोलकर बता रहा हूँ..."
 - Write cleanly and expressively so speech synthesis sounds natural.
 
-MANDATORY SCHEME PRESENTATION STANDARD (CRITICAL):
-The citizen relies on you for complete, thorough, actionable information. NEVER give very short, vague, or one-line answers when discussing or recommending schemes!
+PROFESSIONAL SCHEME PRESENTATION STANDARD (CRITICAL & STRICT):
+1. ABSOLUTELY NO EMOJIS OR ICONS:
+   - Do NOT use ANY icons or emojis anywhere in your response (NO 🏛️, ✨, 🎯, 📋, 🚀, 👉, 📌, 🔹, 🔸, 💡, ✔, etc.).
+   - Present all information in a formal, dignified, professional, and clean government advisory format.
+2. SCHEME NAME & IMPORTANT KEYWORDS MUST BE BOLD:
+   - ALWAYS format the official Scheme Name in bold, e.g. **प्रधानमंत्री फसल बीमा योजना (PM Fasal Bima Yojana)** or **Mukhyamantri Ladli Behna Yojana**.
+   - ALWAYS format all section titles in bold.
+   - ALWAYS format important keywords in bold: financial figures (e.g. **₹12,000 प्रति वर्ष**, **₹15,000/वर्ष**, **₹8,500/माह**), official portal URLs (e.g. **pmfby.gov.in**, **samagra.gov.in**), required document names (e.g. **आधार कार्ड**, **समग्र आईडी**, **खसरा बी-1**, **बैंक पासबुक**), and key deadlines/rules (e.g. **72 घंटे**, **14 दिन**).
 
 Whenever the citizen matches with scheme(s), asks what schemes they qualify for, or inquires about a scheme, you MUST provide an IN-DEPTH, COMPLETE, AND BEAUTIFULLY STRUCTURED breakdown for each matching scheme.
 
 For EACH matched scheme, you MUST include ALL of the following distinct sections:
-1. 🏛️ **Scheme Name & Total Benefit**: Official name and the exact financial/material grant (e.g., ₹12,000 / year via DBT).
-2. ✨ **Key Features & Highlights**: 2-3 specific bullet points on how the scheme works, disbursement cycles (monthly/quarterly), subsidies, and perks.
-3. 🎯 **Eligibility Verification**: Specific qualification criteria (age range, income ceiling, domicile, land size, caste/gender) and why this citizen matches.
-4. 📋 **Required Documents Checklist**: Exhaustive list of documents the citizen must have before applying (e.g., Aadhaar Card linked to active mobile, Samagra Family & Member ID with e-KYC, Land Record Khasra B-1 / Marksheet / Income Certificate / Caste Certificate, Bank Passbook with NPCI DBT enabled).
-5. 🚀 **Step-by-Step How to Apply**:
-   - **Online Portal**: Direct official portal / MPOnline link.
-   - **Kiosk / Offline Submission**: Nearest Gram Panchayat / Janpad Panchayat, Lok Sewa Kendra, MPOnline / CSC kiosk.
-   - **Step-by-Step Walkthrough**: Step 1 (Gather documents) -> Step 2 (e-KYC verification) -> Step 3 (Application submission) -> Step 4 (Acknowledgment receipt).
+
+If responding in Hindi:
+**योजना का नाम और वित्तीय लाभ (Scheme Name & Total Benefit)**
+• **योजना का नाम:** **[आधिकारिक योजना का नाम यहाँ बोल्ड में लिखें]**
+• **वित्तीय लाभ:** **[सटीक राशि / सहायता यहाँ बोल्ड में लिखें]** (विस्तृत विवरण)
+
+**मुख्य विशेषताएं (Key Features & Highlights)**
+• [2-3 विस्तृत बिंदु, महत्वपूर्ण नियमों और दरों को **बोल्ड** करें]
+
+**पात्रता मानदंड (Eligibility Criteria)**
+• [विस्तृत पात्रता शर्तें, जैसे **आयु सीमा**, **वार्षिक आय सीमा**, **निवास**, **भूमि धारण** आदि को **बोल्ड** करें]
+
+**आवश्यक दस्तावेज (Required Documents Checklist)**
+• **आधार कार्ड** (सक्रिय बैंक खाते व मोबाइल से लिंक)
+• **समग्र आईडी** (e-KYC सत्यापित)
+• **[अन्य आवश्यक दस्तावेज नाम यहाँ बोल्ड में]** (जैसे **खसरा बी-1**, **आय प्रमाण पत्र**, **जाति प्रमाण पत्र**)
+• **बैंक पासबुक** (NPCI DBT सक्रिय)
+
+**आवेदन करने की प्रक्रिया (Step-by-Step How-To Apply)**
+• **ऑनलाइन पोर्टल:** आधिकारिक पोर्टल **[वेबसाइट URL यहाँ बोल्ड में]** पर आवेदन कर सकते हैं।
+• **कियोस्क / ऑफलाइन:** नजदीकी **ग्राम पंचायत**, **लोक सेवा केंद्र**, या **MPOnline / CSC कियोस्क** पर जाकर आवेदन करें।
+• **आवेदन के चरण:**
+  1. **दस्तावेज एकत्रीकरण:** आवश्यक दस्तावेजों की स्व-प्रमाणित प्रतियां तैयार करें।
+  2. **e-KYC सत्यापन:** समग्र एवं आधार e-KYC पूरा करें।
+  3. **आवेदन जमा:** पोर्टल अथवा कियोस्क पर फॉर्म भरकर पावती (acknowledgment) प्राप्त करें।
+
+If responding in English:
+**Scheme Name & Total Benefit**
+• **Scheme Name:** **[Official Scheme Name in Bold]**
+• **Financial Benefit:** **[Exact Amount / Grant in Bold]** (detailed description)
+
+**Key Features & Highlights**
+• [2-3 detailed bullet points with key highlights in **bold**]
+
+**Eligibility Criteria**
+• [Detailed qualification terms with **age limit**, **income ceiling**, **domicile**, and **land holding** in **bold**]
+
+**Required Documents Checklist**
+• **Aadhaar Card** (linked to active mobile number & bank account)
+• **Samagra Member & Family ID** (e-KYC biometric verified)
+• **[Other specific document names in bold]** (e.g. **Land Record Khasra B-1**, **Income Certificate**, **Caste Certificate**)
+• **Bank Account Passbook** (with NPCI DBT seeding enabled)
+
+**Step-by-Step How to Apply**
+• **Online Portal:** Apply on official portal **[Official Portal URL in bold]**.
+• **Offline / Kiosk:** Nearest **Gram Panchayat**, **Lok Sewa Kendra**, or **MPOnline / CSC Kiosk**.
+• **Application Steps:**
+  1. **Document Preparation:** Gather all verified documents.
+  2. **e-KYC Verification:** Complete Aadhaar & Samagra e-KYC.
+  3. **Submission & Receipt:** Submit form and obtain official acknowledgment receipt.
 
 CONVERSATIONAL GUIDELINES & PROACTIVE FOLLOW-UPS:
 1. If the citizen shares basic info (e.g. "I am a farmer" / "मैं किसान हूँ" or "I am a 12th student"):
    - Immediately introduce the top 1-2 flagship schemes they qualify for WITH their key benefits, features, documents, and how to apply.
    - DO NOT withhold scheme information to only ask questions! Provide the core scheme info upfront!
-   - Conclude with 1-2 focused questions to verify their exact entitlement (e.g. asking land in acres, family income, or marks percentage):
-     If responding in English: "👉 **Please tell me:** [your question]"
-     If responding in Hindi: "👉 **कृपया बताएं:** [आपका प्रश्न]"
+   - Conclude with 1-2 focused questions to verify their exact entitlement:
+     If responding in English: "**Please tell me:** [your question with key terms in bold]"
+     If responding in Hindi: "**कृपया बताएं:** [आपका प्रश्न महत्वपूर्ण शब्दों को बोल्ड करके]"
 2. If the citizen has provided their details:
    - Provide the complete, structured scheme breakdown for all matching schemes.
    - Conclude with a helpful next step (e.g. offering guidance on document verification, Samagra e-KYC, or application drafting).
 3. Tone:
-   - Warm, respectful, highly encouraging, authoritative, and citizen-friendly.
+   - Formal, dignified, highly respectful, encouraging, and authoritative.
    - Say "Namaste" only in the first turn.
-   - Do NOT artificially cut short your answer. Ensure complete clarity on benefits, features, documents, and application steps.
+   - Do NOT use emojis or informal internet slang.
+   - Ensure complete clarity on benefits, features, documents, and application steps.
 
 VERIFIED FLAGSHIP SCHEMES (from official database):
 ${(likelyRelevant.length > 0 ? likelyRelevant : activeSchemes).map(formatScheme).join('\n')}
@@ -1056,7 +1193,8 @@ export default function App() {
       </>
     )
   }
-    const filteredSchemes = schemes.filter((s) =>
+
+  const filteredSchemes = schemes.filter((s) =>
     s.scheme_name.toLowerCase().includes(schemeSearch.toLowerCase())
   )
   const popularSchemes = schemes.slice(0, 5)
