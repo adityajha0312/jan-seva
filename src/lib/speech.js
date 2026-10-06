@@ -16,47 +16,63 @@ let isSpeakingQueue = false
 let currentOnEndCallback = null
 
 // Phonetic corrector for Indian governance & citizen welfare terms.
-// Browser Web Speech API frequently mishears "किसान" / "किशन" as "किस" ("kiss"), etc.
+// Browser Web Speech API frequently mishears "किसान" / "किशन" as "किश" ("kish") or "किस" ("kiss"), etc.
 export function correctSpeechTranscript(text, lang = 'hi-IN') {
   if (!text) return ''
   let corrected = text
 
-  // 1. "किस / kiss / kishan" -> "किसान" (Farmer) corrections:
-  // "मैं किस हूं/हूँ", "हम किस हैं", "किस भाई", "एक किस के नाते"
-  corrected = corrected.replace(/\bमैं\s+किस\s+(हूँ|हूं|हु)\b/gi, 'मैं किसान $1')
-  corrected = corrected.replace(/\bहम\s+किस\s+(हैं|हे)\b/gi, 'हम किसान $1')
-  corrected = corrected.replace(/\bकिस\s+(हूँ|हूं|हु)\b/gi, 'किसान $1')
-  corrected = corrected.replace(/\bकिस\s+(भाई|परिवार|क्रेडिट|योजना|आंदोलन)\b/gi, 'किसान $1')
+  // 1. Collapse immediate stuttered/repeated words (e.g. "मैं मैं मैं मैं" -> "मैं")
+  corrected = corrected.replace(/(\b[\u0900-\u097F\w]+\b)(?:\s+\1\b)+/gi, '$1')
 
-  // "किशन / किसन" -> "किसान"
-  corrected = corrected.replace(/\bमैं\s+(किशन|किसन)\s+(हूँ|हूं|हु)\b/gi, 'मैं किसान $2')
-  corrected = corrected.replace(/\b(किशन|किसन)\s+(हूँ|हूं|हु)\b/gi, 'किसान $2')
-  corrected = corrected.replace(/\b(किशन|किसन)\s+(भाई|कल्याण|क्रेडिट)\b/gi, 'किसान $2')
+  // 2. Collapse repeated adjacent multi-word clauses from mobile speech glitches
+  corrected = corrected.replace(/(.{4,40}?)\s+\1(?:\s+\1)*/gi, '$1')
+
+  // 3. "किश / किस / किशन / किसन / kish / kiss / kis / kishan" -> "किसान" (Farmer) corrections:
+  // Matches "मैं किश हूँ", "मैं किस हूं", "मैं किश", "मैं किस", "मैं किशन हूँ", "हम किस हैं"
+  corrected = corrected.replace(
+    /\b(मैं|हम)\s+(?:एक\s+)?(?:किश|किस|किशन|किसन|kiss|kish|kis|kishan)\s*(हूँ|हूं|हु|हैं|हे)?\b/gi,
+    (m, p1, p2) => `${p1} किसान ${p2 || 'हूँ'}`
+  )
+
+  // Matches standalone "किश हूँ", "किस हूँ", "किशन हूँ", "किसन हूँ", "kish hu"
+  corrected = corrected.replace(
+    /\b(?:किश|किस|किशन|किसन|kiss|kish|kis|kishan)\s+(हूँ|हूं|हु|हैं|हे)\b/gi,
+    'किसान $1'
+  )
+
+  // Matches "किश भाई", "किस भाई", "किशन भाई", "किस परिवार", "किस क्रेडिट"
+  corrected = corrected.replace(
+    /\b(?:किश|किस|किशन|किसन)\s+(भाई|परिवार|कल्याण|क्रेडिट|योजना|आंदोलन|मित्र)\b/gi,
+    'किसान $1'
+  )
 
   // If sentence contains agriculture context words (जमीन, एकड़, हेक्टेयर, फसल, खेती, बीघा, खसरा, पटवारी, खाद, बीज, khet, land, acre, crop),
-  // convert any standalone "किस", "किशन", "किसन", or "kiss" to "किसान"
-  const hasFarmingContext = /(?:जमीन|एकड़|एकड|हेक्टेयर|फसल|खेती|बीघा|खसरा|खाद|बीज|पटवारी|khet|land|acre|crop|cultivat)/i.test(corrected)
+  // convert any standalone "किश", "किस", "किशन", "किसन", "kish", or "kiss" to "किसान" (excluding questions like "किस योजना/फसल")
+  const hasFarmingContext = /(?:जमीन|एकड़|एकड|हेक्टेयर|फसल|खेती|बीघा|खसरा|खाद|बीज|पटवारी|बोनी|कृषि|khet|land|acre|crop|cultivat)/i.test(corrected)
   if (hasFarmingContext) {
-    corrected = corrected.replace(/\b(किस|किशन|किसन|kiss)\b/gi, 'किसान')
+    corrected = corrected.replace(
+      /\b(?:किश|किस|किशन|किसन|kiss|kish|kis)\b(?!\s*(?:योजना|फसल|दस्तावेज|दस्तावेज़|प्रकार|तरह|बैंक|तारीख|तारीख़|समय))/gi,
+      'किसान'
+    )
   }
 
-  // English / Hinglish: "I am a kiss", "main kiss hoon", "kiss farmer"
-  corrected = corrected.replace(/\b(main|mai)\s+(?:a\s+)?(kiss|kis|kishan)\s+(hoon|hu|hun)\b/gi, '$1 kisan $3')
-  corrected = corrected.replace(/\bI\s+am\s+(?:a\s+)?(kiss|kis|kishan)\b/gi, 'I am a farmer')
+  // English / Hinglish: "I am a kiss/kish", "main kiss/kish hoon", "kiss farmer"
+  corrected = corrected.replace(/\b(main|mai)\s+(?:ek\s+|a\s+)?(?:kiss|kis|kish|kishan)\s*(hoon|hu|hun)?\b/gi, '$1 kisan $2')
+  corrected = corrected.replace(/\bI\s+am\s+(?:a\s+)?(?:kiss|kis|kish|kishan)\b/gi, 'I am a farmer')
 
-  // 2. Ladli Behna & Women scheme corrections
+  // 4. Ladli Behna & Women scheme corrections
   corrected = corrected.replace(/\b(लाडली|लाडली|लाड़ली)\s*(बहना|बहन|बेहना)\b/gi, 'लाड़ली बहना')
 
-  // 3. Samagra ID corrections
+  // 5. Samagra ID corrections
   corrected = corrected.replace(/\bसमग्र\s*आई\s*डी\b/gi, 'समग्र आईडी')
 
-  // 4. Ayushman Bharat corrections
+  // 6. Ayushman Bharat corrections
   corrected = corrected.replace(/\b(आयुष्मान|आयुस्मान)\s*(भारत)?\b/gi, 'आयुष्मान भारत')
 
-  // 5. Sambal Yojana corrections
+  // 7. Sambal Yojana corrections
   corrected = corrected.replace(/\b(संबल|सम्बल)\s*(योजना)?\b/gi, 'संबल योजना')
 
-  return corrected
+  return corrected.trim()
 }
 
 // Starts listening for speech and returns a controller object with a stop() method.
@@ -66,22 +82,39 @@ export function startListening({ lang = 'hi-IN', onResult, onEnd, onError }) {
     return { stop: () => {} }
   }
 
+  const isMobile = typeof navigator !== 'undefined' && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)
   const recognition = new SpeechRecognitionAPI()
   recognition.lang = lang
   recognition.interimResults = true
-  recognition.continuous = true // Continuous listening prevents premature cutoff when citizen pauses
+  // On mobile (Android Chrome), continuous: true causes severe duplicate transcript looping
+  // ("main main main main kish..."). Single-utterance mode is clean and stable.
+  recognition.continuous = !isMobile
   let manualStop = false
 
   recognition.onresult = (event) => {
     let finalTranscript = ''
     let interimTranscript = ''
 
-    for (let i = 0; i < event.results.length; i++) {
-      const result = event.results[i]
-      if (result.isFinal) {
-        finalTranscript += result[0].transcript + ' '
-      } else {
-        interimTranscript += result[0].transcript
+    if (isMobile) {
+      // On mobile devices, grab the current active result directly to prevent cumulative loop repeats
+      const lastIdx = event.results.length - 1
+      const res = event.results[lastIdx]
+      if (res && res[0]) {
+        const text = res[0].transcript
+        if (res.isFinal) {
+          finalTranscript = text
+        } else {
+          interimTranscript = text
+        }
+      }
+    } else {
+      for (let i = 0; i < event.results.length; i++) {
+        const result = event.results[i]
+        if (result.isFinal) {
+          finalTranscript += result[0].transcript + ' '
+        } else {
+          interimTranscript += result[0].transcript
+        }
       }
     }
 
