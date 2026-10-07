@@ -201,10 +201,12 @@ function cleanAndFormatLine(line, lang = 'en-IN') {
 }
 
 function MessageContent({ text, lang = 'en-IN' }) {
+  const isEnglish = lang === 'en-IN' || (typeof lang === 'string' && lang.startsWith('en'))
   const lines = text.split('\n')
   const blocks = []
   let currentList = []
   let currentOrderedList = []
+  let schemeCount = 0
 
   function flushList(key) {
     if (currentList.length > 0) {
@@ -212,9 +214,23 @@ function MessageContent({ text, lang = 'en-IN' }) {
         <ul key={`ul-${key}`} style={{ margin: '6px 0', paddingLeft: '20px' }}>
           {currentList.map((line, i) => {
             const formatted = cleanAndFormatLine(line, lang)
+            const cleanLine = formatted.replace(/^[*\-•]\s+/, '')
+            const isSchemeNameLine = /^\*{0,2}(?:Scheme Name|योजना का नाम)\*{0,2}:/i.test(cleanLine)
             return (
-              <li key={i} style={{ marginBottom: '4px', lineHeight: 1.55 }}>
-                {renderInline(formatted.replace(/^[*\-•]\s+/, ''), `li-${key}-${i}`)}
+              <li
+                key={i}
+                style={{
+                  marginBottom: '5px',
+                  lineHeight: 1.55,
+                  ...(isSchemeNameLine ? {
+                    fontSize: '14.5px',
+                    fontWeight: 700,
+                    color: '#0f172a',
+                    padding: '2px 0',
+                  } : {}),
+                }}
+              >
+                {renderInline(cleanLine, `li-${key}-${i}`)}
               </li>
             )
           })}
@@ -251,14 +267,135 @@ function MessageContent({ text, lang = 'en-IN' }) {
       return
     }
 
+    // Explicit separator lines e.g. "---", "***"
+    if (trimmed === '--' || trimmed === '---' || trimmed === '***') {
+      flushList(idx)
+      blocks.push(
+        <div
+          key={`sep-${idx}`}
+          style={{
+            margin: '26px 0 16px',
+            borderTop: '2px dashed #94a3b8',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <span
+            style={{
+              marginTop: '-11px',
+              background: '#ffffff',
+              padding: '2px 14px',
+              fontSize: '11px',
+              fontWeight: 800,
+              color: '#475569',
+              border: '1px solid #cbd5e1',
+              borderRadius: '999px',
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+            }}
+          >
+            {isEnglish ? 'Next Scheme' : 'अगली योजना'}
+          </span>
+        </div>
+      )
+      return
+    }
+
     const headingMatch = /^(#{1,6})\s+(.*)$/.exec(trimmed)
 
+    // Detect if this is an explicit numbered scheme heading e.g. "### Scheme 1: ..." or "### योजना 2: ..."
+    const isNumberedSchemeHeading = headingMatch && /^(?:Scheme|योजना)\s*(\d+)[:\-]?\s*(.*)$/i.exec(headingMatch[2])
+
     // Detect section titles (e.g. Scheme Name & Benefit, Key Features, Eligibility, Documents, How to Apply)
-    const isSectionHeading = /^\*{0,2}(योजना का नाम और लाभ|योजना का नाम|मुख्य विशेषताएं|पात्रता|आवश्यक दस्तावेज|आवेदन करने की|Scheme Name & Total Benefit|Scheme Name|Key Features|Eligibility|Required Documents|How to Apply|Step-by-Step)/i.test(trimmed)
+    const isSectionHeading = /^\*{0,2}(योजना का नाम और वित्तीय लाभ|योजना का नाम और लाभ|योजना का नाम|मुख्य विशेषताएं|पात्रता मानदंड|पात्रता|आवश्यक दस्तावेज|आवेदन करने की प्रक्रिया|आवेदन करने की|Scheme Name & Total Benefit|Scheme Name and Total Benefit|Scheme Name|Key Features & Highlights|Key Features|Eligibility Criteria|Eligibility|Required Documents Checklist|Required Documents|How to Apply|Step-by-Step How to Apply|Step-by-Step)/i.test(trimmed)
       && !/^[*\-•\d]/.test(rawTrimmed)
       && trimmed.length < 90
 
-    if (headingMatch) {
+    // Detect if this section title is the scheme opener: "Scheme Name & Total Benefit" or "योजना का नाम और वित्तीय लाभ"
+    const isSchemeOpener = isSectionHeading && /^\*{0,2}(?:योजना\s*का\s*नाम\s*और\s*(?:वित्तीय\s*)?लाभ|Scheme\s*Name\s*&\s*(?:Total\s*)?Benefit|Scheme\s*Name\s*and\s*(?:Total\s*)?Benefit)\*{0,2}$/i.test(trimmed)
+
+    if (isNumberedSchemeHeading) {
+      flushList(idx)
+      const num = parseInt(isNumberedSchemeHeading[1], 10) || (schemeCount + 1)
+      schemeCount = num
+      if (schemeCount > 1) {
+        blocks.push(
+          <div
+            key={`num-sep-${idx}`}
+            style={{
+              margin: '26px 0 16px',
+              borderTop: '2px dashed #94a3b8',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <span
+              style={{
+                marginTop: '-11px',
+                background: '#ffffff',
+                padding: '2px 14px',
+                fontSize: '11px',
+                fontWeight: 800,
+                color: '#475569',
+                border: '1px solid #cbd5e1',
+                borderRadius: '999px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              }}
+            >
+              {isEnglish ? `Next Scheme (${schemeCount})` : `अगली योजना (${schemeCount})`}
+            </span>
+          </div>
+        )
+      }
+      blocks.push(
+        <div
+          key={`num-hdr-${idx}`}
+          style={{
+            marginTop: schemeCount > 1 ? '10px' : '14px',
+            marginBottom: '12px',
+            padding: '11px 14px',
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+            border: '1.5px solid #a7f3d0',
+            borderLeft: '5px solid #059669',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
+          }}
+        >
+          <span
+            style={{
+              background: '#047857',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isEnglish ? `Scheme ${schemeCount}` : `योजना ${schemeCount}`}
+          </span>
+          <span
+            style={{
+              fontSize: '15px',
+              fontWeight: 800,
+              color: '#065f46',
+            }}
+          >
+            {isNumberedSchemeHeading[2] ? renderInline(isNumberedSchemeHeading[2], `nsh-${idx}`) : (isEnglish ? 'Scheme Breakdown' : 'योजना विवरण')}
+          </span>
+        </div>
+      )
+    } else if (headingMatch) {
       flushList(idx)
       const level = headingMatch[1].length
       blocks.push(
@@ -275,6 +412,88 @@ function MessageContent({ text, lang = 'en-IN' }) {
           {renderInline(headingMatch[2], `h-${idx}`)}
         </div>
       )
+    } else if (isSchemeOpener) {
+      flushList(idx)
+      schemeCount++
+      const cleanTitle = trimmed.replace(/^\*\*|\*\*$/g, '').trim()
+
+      // If this is Scheme 2 or higher, add the clear separation divider
+      if (schemeCount > 1) {
+        blocks.push(
+          <div
+            key={`op-sep-${idx}`}
+            style={{
+              margin: '28px 0 16px',
+              borderTop: '2px dashed #94a3b8',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <span
+              style={{
+                marginTop: '-11px',
+                background: '#ffffff',
+                padding: '2px 14px',
+                fontSize: '11px',
+                fontWeight: 800,
+                color: '#475569',
+                border: '1px solid #cbd5e1',
+                borderRadius: '999px',
+                letterSpacing: '0.04em',
+                textTransform: 'uppercase',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+              }}
+            >
+              {isEnglish ? `Next Scheme (${schemeCount})` : `अगली योजना (${schemeCount})`}
+            </span>
+          </div>
+        )
+      }
+
+      blocks.push(
+        <div
+          key={`scheme-card-${idx}`}
+          style={{
+            marginTop: schemeCount > 1 ? '10px' : '14px',
+            marginBottom: '12px',
+            padding: '11px 14px',
+            background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+            border: '1.5px solid #a7f3d0',
+            borderLeft: '5px solid #059669',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: '0 2px 8px rgba(5, 150, 105, 0.08)',
+          }}
+        >
+          <span
+            style={{
+              background: '#047857',
+              color: '#ffffff',
+              fontSize: '11px',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {isEnglish ? `Scheme ${schemeCount}` : `योजना ${schemeCount}`}
+          </span>
+          <span
+            style={{
+              fontSize: '14.5px',
+              fontWeight: 800,
+              color: '#065f46',
+            }}
+          >
+            {cleanTitle}
+          </span>
+        </div>
+      )
     } else if (isSectionHeading) {
       flushList(idx)
       const cleanTitle = trimmed.replace(/^\*\*|\*\*$/g, '').trim()
@@ -284,8 +503,10 @@ function MessageContent({ text, lang = 'en-IN' }) {
           style={{
             fontWeight: 800,
             color: '#047857',
-            fontSize: '14px',
+            fontSize: '13.5px',
             margin: '14px 0 6px',
+            paddingLeft: '8px',
+            borderLeft: '3px solid #10b981',
             letterSpacing: '0.01em',
           }}
         >
@@ -302,8 +523,6 @@ function MessageContent({ text, lang = 'en-IN' }) {
       flushList(idx)
       if (trimmed === '') {
         blocks.push(<div key={idx} style={{ height: '6px' }} />)
-      } else if (trimmed === '--' || trimmed === '---' || trimmed === '***') {
-        blocks.push(<hr key={idx} style={{ border: 'none', borderTop: '1px solid rgba(20,83,45,0.12)', margin: '8px 0' }} />)
       } else {
         blocks.push(<div key={idx} style={{ margin: '4px 0' }}>{renderInline(trimmed, `p-${idx}`)}</div>)
       }
@@ -704,31 +923,39 @@ MANDATORY WARM CITIZEN GREETING (START EVERY RESPONSE WITH THIS):
 2. ABSOLUTELY DO NOT say "Certainly, I am reading this aloud for you" - omit that phrase entirely!
 3. Then immediately provide the complete, beautifully structured breakdown for each matching scheme below.
 
-For EACH matched scheme, you MUST strictly format using these exact English sections:
+SCHEME NUMBERING & SEPARATION STANDARD (CRITICAL FOR CITIZEN CLARITY):
+- When presenting multiple schemes (e.g. 2 schemes):
+  1. Clearly number and separate each scheme so the citizen can easily tell where Scheme 1 ends and Scheme 2 begins.
+  2. Put a horizontal divider '---' between schemes.
+  3. Start each scheme with a clear numbered header:
+     ### Scheme 1: [Official Name in Bold]
+     **Scheme Name & Total Benefit**
+     • **Scheme Name:** **[Official Scheme Name in English in Bold]**
+     • **Financial Benefit:** **[Exact Amount / Grant in English in Bold]** (detailed description)
 
-**Scheme Name & Total Benefit**
-• **Scheme Name:** **[Official Scheme Name in English in Bold]**
-• **Financial Benefit:** **[Exact Amount / Grant in English in Bold]** (detailed description)
+     **Key Features & Highlights**
+     • [2-3 detailed bullet points with key highlights in **bold**]
 
-**Key Features & Highlights**
-• [2-3 detailed bullet points with key highlights in **bold**]
+     **Eligibility Criteria**
+     • [Detailed qualification terms with **age limit**, **income ceiling**, **domicile**, and **land holding** in **bold**]
 
-**Eligibility Criteria**
-• [Detailed qualification terms with **age limit**, **income ceiling**, **domicile**, and **land holding** in **bold**]
+     **Required Documents Checklist**
+     • **Aadhaar Card** (linked to active mobile number & bank account)
+     • **Samagra Member & Family ID** (e-KYC biometric verified)
+     • **[Other specific document names in English in bold]** (e.g. **Land Record (Khasra B-1)**, **Income Certificate**, **Caste Certificate**)
+     • **Bank Account Passbook** (with NPCI DBT seeding enabled)
 
-**Required Documents Checklist**
-• **Aadhaar Card** (linked to active mobile number & bank account)
-• **Samagra Member & Family ID** (e-KYC biometric verified)
-• **[Other specific document names in English in bold]** (e.g. **Land Record (Khasra B-1)**, **Income Certificate**, **Caste Certificate**)
-• **Bank Account Passbook** (with NPCI DBT seeding enabled)
+     **Step-by-Step How to Apply**
+     • **Online Portal:** Apply on official portal **[Official Portal URL in bold]**.
+     • **Offline / Kiosk:** Nearest **Gram Panchayat**, **Lok Sewa Kendra**, or **MPOnline / CSC Kiosk**.
+     • **Application Steps:**
+       1. **Document Preparation:** Gather all verified documents.
+       2. **e-KYC Verification:** Complete Aadhaar & Samagra e-KYC.
+       3. **Submission & Receipt:** Submit form and obtain official acknowledgment receipt.
 
-**Step-by-Step How to Apply**
-• **Online Portal:** Apply on official portal **[Official Portal URL in bold]**.
-• **Offline / Kiosk:** Nearest **Gram Panchayat**, **Lok Sewa Kendra**, or **MPOnline / CSC Kiosk**.
-• **Application Steps:**
-  1. **Document Preparation:** Gather all verified documents.
-  2. **e-KYC Verification:** Complete Aadhaar & Samagra e-KYC.
-  3. **Submission & Receipt:** Submit form and obtain official acknowledgment receipt.
+     ---
+     ### Scheme 2: [Official Name in Bold]
+     (Provide the complete, structured breakdown for Scheme 2 using the same exact format)
 
 CONVERSATIONAL GUIDELINES & PROACTIVE FOLLOW-UPS:
 1. If the citizen shares basic info (e.g. "I am a farmer" or "I am a 12th student"):
@@ -779,31 +1006,38 @@ MANDATORY WARM CITIZEN GREETING:
 2. "मैं आपको बोलकर बता रहा हूँ" जैसी लाइन न लिखें।
 3. इसके तुरंत बाद प्रत्येक उपयुक्त योजना का पूर्ण विवरण प्रस्तुत करें।
 
-प्रत्येक चयनित योजना के लिए निम्नलिखित खंड अनिवार्य रूप से शामिल करें:
+योजनाओं का स्पष्ट विभाजन एवं क्रमांकन (अति महत्वपूर्ण):
+- जब एक से अधिक योजनाएं बताएं, तो नागरिक की स्पष्टता के लिए प्रत्येक योजना को अलग-अलग क्रमांकित व विभाजित करें।
+- प्रत्येक योजना के बीच '---' का प्रयोग अवश्य करें।
+- प्रत्येक योजना की शुरुआत स्पष्ट क्रमांकित शीर्षक से करें:
+  ### योजना 1: [आधिकारिक योजना का नाम यहाँ बोल्ड में लिखें]
+  **योजना का नाम और वित्तीय लाभ**
+  • **योजना का नाम:** **[आधिकारिक योजना का नाम यहाँ बोल्ड में लिखें]**
+  • **वित्तीय लाभ:** **[सटीक राशि / सहायता यहाँ बोल्ड में लिखें]** (विस्तृत विवरण)
 
-**योजना का नाम और वित्तीय लाभ**
-• **योजना का नाम:** **[आधिकारिक योजना का नाम यहाँ बोल्ड में लिखें]**
-• **वित्तीय लाभ:** **[सटीक राशि / सहायता यहाँ बोल्ड में लिखें]** (विस्तृत विवरण)
+  **मुख्य विशेषताएं**
+  • [2-3 विस्तृत बिंदु, महत्वपूर्ण नियमों और दरों को **बोल्ड** करें]
 
-**मुख्य विशेषताएं**
-• [2-3 विस्तृत बिंदु, महत्वपूर्ण नियमों और दरों को **बोल्ड** करें]
+  **पात्रता मानदंड**
+  • [विस्तृत पात्रता शर्तें, जैसे **आयु सीमा**, **वार्षिक आय सीमा**, **निवास**, **भूमि धारण** आदि को **बोल्ड** करें]
 
-**पात्रता मानदंड**
-• [विस्तृत पात्रता शर्तें, जैसे **आयु सीमा**, **वार्षिक आय सीमा**, **निवास**, **भूमि धारण** आदि को **बोल्ड** करें]
+  **आवश्यक दस्तावेज**
+  • **आधार कार्ड** (सक्रिय बैंक खाते व मोबाइल से लिंक)
+  • **समग्र आईडी** (e-KYC सत्यापित)
+  • **[अन्य आवश्यक दस्तावेज नाम यहाँ बोल्ड में]** (जैसे **खसरा बी-1**, **आय प्रमाण पत्र**, **जाति प्रमाण पत्र**)
+  • **बैंक पासबुक** (NPCI DBT सक्रिय)
 
-**आवश्यक दस्तावेज**
-• **आधार कार्ड** (सक्रिय बैंक खाते व मोबाइल से लिंक)
-• **समग्र आईडी** (e-KYC सत्यापित)
-• **[अन्य आवश्यक दस्तावेज नाम यहाँ बोल्ड में]** (जैसे **खसरा बी-1**, **आय प्रमाण पत्र**, **जाति प्रमाण पत्र**)
-• **बैंक पासबुक** (NPCI DBT सक्रिय)
+  **आवेदन करने की प्रक्रिया**
+  • **ऑनलाइन पोर्टल:** आधिकारिक पोर्टल **[वेबसाइट URL यहाँ बोल्ड में]** पर आवेदन कर सकते हैं।
+  • **कियोस्क / ऑफलाइन:** नजदीकी **ग्राम पंचायत**, **लोक सेवा केंद्र**, या **MPOnline / CSC कियोस्क** पर जाकर आवेदन करें।
+  • **आवेदन के चरण:**
+    1. **दस्तावेज एकत्रीकरण:** आवश्यक दस्तावेजों की स्व-प्रमाणित प्रतियां तैयार करें।
+    2. **e-KYC सत्यापन:** समग्र एवं आधार e-KYC पूरा करें।
+    3. **आवेदन जमा:** पोर्टल अथवा कियोस्क पर फॉर्म भरकर पावती प्राप्त करें।
 
-**आवेदन करने की प्रक्रिया**
-• **ऑनलाइन पोर्टल:** आधिकारिक पोर्टल **[वेबसाइट URL यहाँ बोल्ड में]** पर आवेदन कर सकते हैं।
-• **कियोस्क / ऑफलाइन:** नजदीकी **ग्राम पंचायत**, **लोक सेवा केंद्र**, या **MPOnline / CSC कियोस्क** पर जाकर आवेदन करें।
-• **आवेदन के चरण:**
-  1. **दस्तावेज एकत्रीकरण:** आवश्यक दस्तावेजों की स्व-प्रमाणित प्रतियां तैयार करें।
-  2. **e-KYC सत्यापन:** समग्र एवं आधार e-KYC पूरा करें।
-  3. **आवेदन जमा:** पोर्टल अथवा कियोस्क पर फॉर्म भरकर पावती प्राप्त करें।
+  ---
+  ### योजना 2: [आधिकारिक योजना का नाम यहाँ बोल्ड में लिखें]
+  (दूसरी योजना के लिए भी यही स्पष्ट प्रारूप दोहराएं)
 
 CONVERSATIONAL GUIDELINES & PROACTIVE FOLLOW-UPS:
 1. यदि नागरिक बुनियादी जानकारी देता है (जैसे "मैं किसान हूँ"):
